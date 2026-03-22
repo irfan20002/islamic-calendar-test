@@ -667,6 +667,8 @@ function getAdjustedHijri(date) {
   return gToHCorrected(adjusted);
 }
 if (!window._apiHijriDay) { window._apiHijriDay = getAdjustedHijri(new Date()).day; }
+if (!window._apiHijriMonth) { window._apiHijriMonth = getAdjustedHijri(new Date()).month; }
+if (!window._apiHijriYear) { window._apiHijriYear = getAdjustedHijri(new Date()).year; }
 renderMoonPhaseSVG(new Date());
 
 function updateHijriHeader() {
@@ -2342,13 +2344,15 @@ function updateSpecialBanner() {
   const _hm  = window._apiHijriMonth;
   const _hd  = window._apiHijriDay;
   console.log('[Banner] dow='+_dow+' hm='+_hm+' hd='+_hd+' el='+!!_el);
+  // If Hijri data not loaded yet, retry
+  if (!_hm && _dow !== 5) { setTimeout(updateSpecialBanner, 1000); return; }
   const _heart = `<span style="font-size:12px;display:inline-block;animation:heartbeat 1.2s ease-in-out infinite;margin-left:3px">❤️</span>`;
   const _shimmer = (text) => `<span style="font-size:14px;font-weight:800;font-family:Georgia,serif;white-space:nowrap;animation:rainbow 3s linear infinite">${text}</span>`;
   if (_hm === 9) {
     _el.innerHTML = _shimmer('🌙 Ramadan Mubarak') + _heart;
-  } else if (_hm === 10 && _hd === 1) {
+  } else if (_hm === 10 && _hd >= 1 && _hd <= 3) {
     _el.innerHTML = _shimmer('🎉 Eid al-Fitr Mubarak') + _heart;
-  } else if (_hm === 12 && _hd === 10) {
+  } else if (_hm === 12 && _hd >= 10 && _hd <= 12) {
     _el.innerHTML = _shimmer('🐑 Eid al-Adha Mubarak') + _heart;
   } else if (_dow === 5) {
     _el.innerHTML = _shimmer('🕌 Jumu\'ah Mubarak') + _heart;
