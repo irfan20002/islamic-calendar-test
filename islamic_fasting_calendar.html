@@ -55,6 +55,7 @@
   .rainbow-title { animation: rainbow 5s linear infinite; position: relative; display: inline-block; }
   .glitter-wrap { position: relative; display: inline-block; overflow: hidden; }
   .hijri-gold { animation: rainbow 5s linear infinite; font-weight: 700; background: linear-gradient(135deg,#f5c200 0%,#ffe033 50%,#f0b800 100%) !important; padding: 4px 14px; border-radius: 20px; display: inline-block; box-shadow: 0 2px 6px rgba(180,130,0,0.25); }
+  .hijri-green { font-weight: 700; background: #1D9E75 !important; color: #ffffff !important; padding: 4px 14px; border-radius: 20px; display: inline-block; box-shadow: 0 2px 4px rgba(0,100,60,0.2); animation: none; }
 
   @keyframes sparkle {
     0%   { opacity: 0; transform: scale(0) rotate(0deg); }
@@ -1820,10 +1821,10 @@ function updateClock() {
     if (holy && banner) {
       banner.style.display = 'block';
       banner.innerHTML = `<b>🌙 ${holy[0]}:</b> ${holy[1]} <span style="color:#1a7a4a;font-weight:600">Do:</span> ${holy[2]}`;
-      if (dlH) { dlH.style.background = ''; }
+      if (dlH) { dlH.className = 'hijri-gold'; }
     } else {
       if (banner) banner.style.display = 'none';
-      if (dlH) { dlH.style.background = ''; }
+      if (dlH) { dlH.className = 'hijri-green'; }
     }
   }
 
