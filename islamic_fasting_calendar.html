@@ -1283,69 +1283,74 @@ async function requestNotifPermission() {
 
 function scheduleNotifications() {
   if (!_prayerTimes || Notification.permission !== 'granted') return;
-  if (!isFastingToday()) return;
 
-  const now = new Date();
-  const fajr    = parseTime(_prayerTimes.Fajr);
-  const maghrib = parseTime(_prayerTimes.Maghrib);
+  const now      = new Date();
+  const fajr     = parseTime(_prayerTimes.Fajr);
+  const sunrise  = parseTime(_prayerTimes.Sunrise);
+  const maghrib  = parseTime(_prayerTimes.Maghrib);
+  const fasting  = isFastingToday();
 
-  // Suhoor reminder — 20 min before Fajr
-  const suhoorAlert = new Date(fajr.getTime() - 20 * 60000);
-  if (suhoorAlert > now) {
-    setTimeout(() => {
-      new Notification('🌅 Suhoor reminder', {
-        body: `Fajr in 20 minutes at ${to12hr(_prayerTimes.Fajr)}. Make your intention and finish eating.`,
-        icon: 'icon-192.png',
-        badge: 'icon-192.png'
-      });
-    }, suhoorAlert - now);
+  function schedule(ms, title, body) {
+    if (ms > 0) setTimeout(() => new Notification(title, { body, icon: 'icon-192.png', badge: 'icon-192.png' }), ms);
   }
 
-  // Fajr notification — fast begins
-  if (fajr > now) {
-    setTimeout(() => {
-      new Notification('🌄 Fast has begun', {
-        body: `Fajr time. Your fast is now in effect. May Allah accept it.`,
-        icon: 'icon-192.png'
-      });
-    }, fajr - now);
+  if (fasting) {
+    // 30 min before Fajr — Suhoor start
+    schedule(fajr - now - 30*60000,
+      '🍽️ Suhoor time',
+      `Fajr is at ${to12hr(_prayerTimes.Fajr)}. Eat and make your intention.`);
+
+    // 2 min before Fajr — Suhoor ending
+    schedule(fajr - now - 2*60000,
+      '⏰ Suhoor ending in 2 minutes',
+      `Fajr at ${to12hr(_prayerTimes.Fajr)}. Stop eating now.`);
+
+    // At Maghrib — Iftar
+    schedule(maghrib - now,
+      '🌙 Iftar time!',
+      `Maghrib at ${to12hr(_prayerTimes.Maghrib)}. Break your fast. Allahu Akbar!`);
+  } else {
+    // Not fasting — Maghrib prayer reminder
+    schedule(maghrib - now,
+      '🕌 Maghrib prayer time',
+      `Maghrib is at ${to12hr(_prayerTimes.Maghrib)}.`);
   }
 
-  // Iftar notification — Maghrib
-  if (maghrib > now) {
-    setTimeout(() => {
-      new Notification('🌙 Iftar time!', {
-        body: `Maghrib at ${to12hr(_prayerTimes.Maghrib)}. Break your fast. Allahu Akbar!`,
-        icon: 'icon-192.png'
-      });
-    }, maghrib - now);
-  }
+  // Ishraq — 25 min after Sunrise (every day)
+  schedule(sunrise - now + 25*60000,
+    '🌅 Time to pray Ishraq',
+    `25 minutes have passed since sunrise. Pray 2 rakats of Ishraq.`);
 }
 
 function scheduleEveReminders() {
-  // Check if tomorrow is a special fasting day, notify at 9 PM tonight
   if (Notification.permission !== 'granted') return;
-  const tomorrow = new Date(TODAY);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStr = tomorrow.toDateString();
-  const fastDates = allFastDates();
-  if (!fastDates.has(tomorrowStr)) return;
 
-  // Find which fast it is
-  const match = FASTS.find(f => f.dates.some(d => d.toDateString() === tomorrowStr));
-  const fastName = match ? match.name : 'a sunnah fast';
+  // Check tomorrow and day after for weekly fasts (Mon/Thu) and special fasts
+  [1, 2].forEach(daysAhead => {
+    const future = new Date(TODAY);
+    future.setDate(future.getDate() + daysAhead);
+    const futureStr = future.toDateString();
+    const fastDates = allFastDates();
+    if (!fastDates.has(futureStr)) return;
 
-  const ninepm = new Date(TODAY);
-  ninepm.setHours(21, 0, 0, 0);
-  const now = new Date();
-  if (ninepm > now) {
-    setTimeout(() => {
-      new Notification('🌙 Fast tomorrow', {
+    const match = FASTS.find(f => f.dates.some(d => d.toDateString() === futureStr));
+    const dow = future.getDay();
+    const fastName = match ? match.name : (dow===1 ? 'Monday fast' : dow===4 ? 'Thursday fast' : 'a sunnah fast');
+
+    // Notify at 9pm the evening before
+    const ninepm = new Date(future);
+    ninepm.setDate(ninepm.getDate() - 1);
+    ninepm.setHours(21, 0, 0, 0);
+    const now = new Date();
+    const ms = ninepm - now;
+    if (ms > 0) {
+      setTimeout(() => new Notification('🌙 Fast tomorrow', {
         body: `Tomorrow is ${fastName}. Make your intention tonight. May Allah give you strength.`,
-        icon: 'icon-192.png'
-      });
-    }, ninepm - now);
-  }
+        icon: 'icon-192.png',
+        badge: 'icon-192.png'
+      }), ms);
+    }
+  });
 }
 
 updateNotifIcon();

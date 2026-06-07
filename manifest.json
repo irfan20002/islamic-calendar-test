@@ -1,0 +1,22 @@
+{
+  "name": "Islamic Fasting Calendar",
+  "short_name": "Fasting",
+  "description": "Islamic fasting calendar with prayer times and reminders",
+  "start_url": "islamic_fasting_calendar.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#c8860a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
