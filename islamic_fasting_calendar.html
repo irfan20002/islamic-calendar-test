@@ -119,7 +119,23 @@
   /* Suhoor / Iftar countdown banner */
   /* countdown inline styles only — no separate banner classes needed */
   /* ── Dashboard / score+prayer widget ── */
-  .dashboard-box { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: .75rem; }
+  .dashboard-box { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: .75rem; position: relative; overflow: hidden; border-radius: var(--border-radius-lg); }
+  @keyframes shoot-ltr {
+    0%   { transform: translateX(-150px); opacity: 1; }
+    100% { transform: translateX(120vw); opacity: 0; }
+  }
+  @keyframes shoot-rtl {
+    0%   { transform: translateX(150px); opacity: 1; }
+    100% { transform: translateX(-120vw); opacity: 0; }
+  }
+  .shooting-star {
+    position: absolute;
+    pointer-events: none;
+    width: 80px;
+    height: 2px;
+    border-radius: 50%;
+    z-index: 10;
+  }
   @media (max-width: 580px) {
     .dashboard-box { grid-template-columns: 1fr; }
   }
@@ -1378,6 +1394,37 @@ function scheduleEveReminders() {
 }
 
 updateNotifIcon();
+
+// ── Shooting stars ───────────────────────────────────────────────
+(function() {
+  const box = document.querySelector('.dashboard-box');
+  if (!box) return;
+
+  function shootStar() {
+    const star = document.createElement('div');
+    star.className = 'shooting-star';
+    const ltr = Math.random() > 0.5;
+    const top = 10 + Math.random() * 80; // random vertical position %
+    const duration = 5.8 + Math.random() * 0.4;
+    const colors = [
+      ['#ff99cc', 'rgba(255,150,200,0.9)'],
+      ['#ffffff', 'rgba(255,255,255,0.9)'],
+      ['#cc88ff', 'rgba(180,100,255,0.9)'],
+    ];
+    const [grad, glow] = colors[Math.floor(Math.random() * colors.length)];
+    star.style.cssText = `
+      top: ${top}%;
+      ${ltr ? 'left: 0' : 'right: 0'};
+      background: linear-gradient(${ltr ? '90deg' : '270deg'}, rgba(255,255,255,0) 0%, ${grad} 60%, #fff 100%);
+      box-shadow: 0 0 6px 2px ${glow};
+      animation: ${ltr ? 'shoot-ltr' : 'shoot-rtl'} ${duration}s ease-out forwards;
+    `;
+    box.appendChild(star);
+    setTimeout(() => star.remove(), duration * 1000 + 100);
+  }
+
+  setInterval(shootStar, 1000);
+})();
 
 // ── Glitter sparkles ─────────────────────────────────────────────
 (function() {
