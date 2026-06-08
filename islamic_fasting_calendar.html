@@ -1222,7 +1222,7 @@ function initPrayers() {
   }
   navigator.geolocation.getCurrentPosition(pos => {
     const { latitude: lat, longitude: lon } = pos.coords;
-    // Call loadPrayers immediately — don't wait for reverse geocode
+    window._cachedLat = lat; window._cachedLon = lon; window._cachedCity = 'Your location';
     loadPrayers(lat, lon, 'Your location');
   }, err => {
     document.getElementById('prayer-box').innerHTML = '<div class="prayer-error">Please allow location access to see prayer times.</div>';
@@ -1263,11 +1263,23 @@ function retryLocation() {
 }
 
 initPrayers();
-// Refresh prayer times every minute for live countdown
+// Re-render prayer box when next prayer changes
+let _lastNextPrayerIdx = -1;
 setInterval(() => {
-  const box = document.getElementById('prayer-box');
-  if(box.querySelector('.prayer-grid')) initPrayers();
-}, 60000);
+  if (!_prayerTimes) return;
+  const now = new Date();
+  const parsed = PRAYER_KEYS.map(k => parseTime(_prayerTimes[k]));
+  let ni = parsed.findIndex(p => p > now);
+  if (ni === -1) ni = 0;
+  if (ni !== _lastNextPrayerIdx) {
+    _lastNextPrayerIdx = ni;
+    if (window._cachedLat !== null) {
+      loadPrayers(window._cachedLat, window._cachedLon, window._cachedCity || 'Your location');
+    } else {
+      initPrayers();
+    }
+  }
+}, 10000);
 
 renderUpcoming();
 calcScore();
