@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#c8860a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Fasting Calendar">
 <link rel="manifest" href="manifest.json">
 <title>Islamic Fasting Calendar</title>
@@ -31,38 +33,11 @@
     }
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: var(--font-sans); background: var(--color-background-secondary); color: var(--color-text-primary); min-height: 100vh; display: flex; justify-content: center; padding: .5rem .5rem; }
+  body { font-family: var(--font-sans); background: var(--color-background-secondary); color: var(--color-text-primary); min-height: 100vh; display: flex; justify-content: center; padding: 2rem 1rem; }
   .container { width: 100%; max-width: 640px; }
-  .app { padding: 1rem; background: var(--color-background-primary); border-radius: var(--border-radius-lg); border: 0.5px solid var(--color-border-tertiary); }
+  .app { padding: 1.5rem; background: var(--color-background-primary); border-radius: var(--border-radius-lg); border: 0.5px solid var(--color-border-tertiary); }
   .header { display: flex; flex-direction: row; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; }
   .header h1 { font-size: 17px; font-weight: 500; white-space: nowrap; }
-  @keyframes flash-alert {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.2; }
-  }
-  .flash-alert { animation: flash-alert 0.8s ease-in-out infinite; }
-  @keyframes rainbow {
-    0%   { color: #ff0000; }
-    14%  { color: #ff7700; }
-    28%  { color: #ffff00; }
-    42%  { color: #00cc00; }
-    57%  { color: #0099ff; }
-    71%  { color: #6600ff; }
-    85%  { color: #ff00cc; }
-    100% { color: #ff0000; }
-  }
-  .rainbow-title { animation: rainbow 5s linear infinite; position: relative; display: inline-block; }
-  .glitter-wrap { position: relative; display: inline-block; }
-  @keyframes sparkle {
-    0%   { opacity: 0; transform: scale(0) rotate(0deg); }
-    50%  { opacity: 1; transform: scale(1) rotate(180deg); }
-    100% { opacity: 0; transform: scale(0) rotate(360deg); }
-  }
-  .sparkle {
-    position: absolute;
-    pointer-events: none;
-    animation: sparkle linear infinite;
-  }
   .header p { font-size: 13px; color: var(--color-text-secondary); margin-top: 2px; }
   .tabs { display: flex; gap: 8px; margin-bottom: 1.5rem; border-bottom: 0.5px solid var(--color-border-tertiary); }
   .tab { font-size: 15px; font-weight: 500; padding: 7px 16px; border: none; background: none; color: var(--color-text-secondary); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -0.5px; font-family: var(--font-sans); border-radius: 8px 8px 0 0; transition: all 0.15s; }
@@ -88,8 +63,6 @@
   .fast-hijri { font-size: 11px; color: var(--color-text-tertiary); margin-top: 1px; }
   .countdown { font-size: 12px; font-weight: 500; padding: 3px 8px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
   .cd-soon { background: #E1F5EE; color: #0F6E56; }
-  .cd-tomorrow { background: #0a3d8f; color: #ffffff; font-weight: 700; }
-  .cd-tomorrow.flash-alert { background: #0a3d8f !important; color: #ffffff !important; }
   .cd-future { background: var(--color-background-secondary); color: var(--color-text-secondary); }
   .month-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; margin-bottom: 1rem; }
   .day-label { font-size: 10px; color: var(--color-text-tertiary); text-align: center; padding: 4px 0; }
@@ -126,42 +99,26 @@
   /* Suhoor / Iftar countdown banner */
   /* countdown inline styles only — no separate banner classes needed */
   /* ── Dashboard / score+prayer widget ── */
-  .dashboard-box { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: .75rem; position: relative; overflow: hidden; border-radius: var(--border-radius-lg); }
-  @keyframes shoot-ltr {
-    0%   { transform: translateX(-150px); opacity: 1; }
-    100% { transform: translateX(120vw); opacity: 0; }
-  }
-  @keyframes shoot-rtl {
-    0%   { transform: translateX(150px); opacity: 1; }
-    100% { transform: translateX(-120vw); opacity: 0; }
-  }
-  .shooting-star {
-    position: absolute;
-    pointer-events: none;
-    width: 80px;
-    height: 2px;
-    border-radius: 50%;
-    z-index: 10;
-  }
+  .dashboard-box { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: .75rem; }
   @media (max-width: 580px) {
     .dashboard-box { grid-template-columns: 1fr; }
   }
   /* Score card — tree-growth tile design */
-  .dashboard-left { background: #F5E8C7; border-radius: var(--border-radius-lg); padding: .875rem; color: #3d1f00; overflow: hidden; }
+  .dashboard-left { background: #1a5c3a; border-radius: var(--border-radius-lg); padding: .875rem; color: white; overflow: hidden; }
   .dash-header { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
   .dash-header-title { font-size: 13px; font-weight: 600; opacity: .9; }
   .dash-tiles { display: grid; grid-template-columns: 1fr 1px 1fr 1px 1fr 1px 1fr; gap: 0; align-items: start; }
-  .dash-tile-divider { background: rgba(80,40,0,.15); align-self: stretch; margin: 0 2px; }
+  .dash-tile-divider { background: rgba(255,255,255,.18); align-self: stretch; margin: 0 2px; }
   .dash-tile { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0 2px; }
-  .dash-tile-label { font-size: 13px; font-weight: 600; color: #5c2d00; text-align: center; line-height: 1.2; height: 24px; display: flex; align-items: center; justify-content: center; }
-  .dash-tile-tree { font-size: 54px; line-height: 1; display: flex; align-items: center; justify-content: center; height: 64px; min-height: 64px; }
+  .dash-tile-label { font-size: 10px; font-weight: 600; opacity: .75; text-align: center; line-height: 1.2; height: 24px; display: flex; align-items: center; justify-content: center; }
+  .dash-tile-tree { font-size: 30px; line-height: 1; display: flex; align-items: center; justify-content: center; height: 40px; min-height: 40px; }
   .dash-tile-num { font-size: 24px; font-weight: 700; line-height: 1; }
   .dash-tile-bar-wrap { width: 100%; margin-top: 4px; position: relative; }
   .dash-tile-bar-fill { height: 100%; border-radius: 99px; transition: width 0.4s ease; }
-  .dash-tile-bar-base { background: #ffffff; border: 1.5px solid rgba(80,40,0,.3); }
+  .dash-tile-bar-base { background: rgba(255,255,255,.55); }
   .dash-tile-bar-progress { background: #5DCAA5; }
   .dash-tile-bar-excess { background: #f0c040; }
-  .dash-tile-delta { font-size: 10px; font-weight: 600; background: rgba(80,40,0,.15); color: #3d1f00; border-radius: 12px; padding: 2px 8px; margin-top: 2px; white-space: nowrap; }
+  .dash-tile-delta { font-size: 10px; font-weight: 600; background: rgba(255,255,255,.22); border-radius: 12px; padding: 2px 8px; margin-top: 2px; white-space: nowrap; }
 
   /* Prayer card */
   .dashboard-right { background: var(--color-background-primary); border: 1.5px solid #1D9E75; border-radius: var(--border-radius-lg); padding: .75rem .875rem; min-width: 0; }
@@ -204,33 +161,31 @@
 <div class="container">
 <div class="app">
   <h2 class="sr-only">Islamic fasting calendar — auto-updating</h2>
-  <div class="header" style="background: linear-gradient(135deg, #c8860a 0%, #e8a800 25%, #ffe033 50%, #e8a800 75%, #c8860a 100%); border-radius: var(--border-radius-lg); padding: .5rem 1rem .6rem; margin-bottom: 1rem; display:flex; align-items:flex-start; justify-content:space-between; gap:8px; overflow:hidden;">
-    <!-- Left: title + name + countdown -->
-    <div style="flex:1;min-width:0">
-      <div class="glitter-wrap" id="glitter-wrap">
-  <h1 class="rainbow-title" id="rainbow-title" style="font-size:18px;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,0.3);">Islamic fasting calendar</h1>
-</div>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:2px;flex-wrap:nowrap">
-        <p style="color:#0f5c2e;font-size:13px;font-weight:600;margin:0;white-space:nowrap">Irfan Bandey</p>
-        <div id="fast-countdown-wrap" style="flex:1;min-width:0"></div>
-      </div>
+  <div class="header" style="background: linear-gradient(135deg, #c8860a 0%, #e8a800 25%, #ffe033 50%, #e8a800 75%, #c8860a 100%); border-radius: var(--border-radius-lg); padding: .875rem 1.25rem; margin-bottom: 1.25rem; display:flex; align-items:center; justify-content:space-between; gap:8px;">
+    <!-- Left: title + name -->
+    <div style="flex:0 0 auto">
+      <h1 style="color:#fff;font-size:22px;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,0.3);">Islamic fasting calendar</h1>
+      <p style="color:#0f5c2e;font-size:14px;font-weight:600;margin-top:2px;">Irfan Bandey</p>
     </div>
+    <!-- Center: countdown (hidden when not fasting) -->
+    <div id="fast-countdown-wrap" style="flex:1;text-align:center"></div>
     <!-- Right: moon + stars + simulate -->
     <div style="flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-      <div style="position:relative;width:48px;height:36px;display:flex;align-items:center;justify-content:center">
-        <svg style="position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;pointer-events:none" viewBox="0 0 48 36">
+      <div style="position:relative;width:52px;height:38px;display:flex;align-items:center;justify-content:center">
+        <svg style="position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;pointer-events:none" viewBox="0 0 52 38">
           <g class="star-twinkle" style="animation-delay:0s">
             <polygon points="5,0 6.5,3.5 10,3.5 7.2,5.8 8.2,9.5 5,7.2 1.8,9.5 2.8,5.8 0,3.5 3.5,3.5" fill="white" transform="translate(1,1)"/>
           </g>
           <g class="star-twinkle" style="animation-delay:0.8s">
-            <polygon points="4,0 5.2,2.8 8,2.8 5.8,4.6 6.6,7.5 4,5.8 1.4,7.5 2.2,4.6 0,2.8 2.8,2.8" fill="white" transform="translate(36,1)"/>
+            <polygon points="4,0 5.2,2.8 8,2.8 5.8,4.6 6.6,7.5 4,5.8 1.4,7.5 2.2,4.6 0,2.8 2.8,2.8" fill="white" transform="translate(40,1)"/>
           </g>
           <g class="star-twinkle" style="animation-delay:1.4s">
-            <polygon points="3.5,0 4.5,2.5 7,2.5 5,4 5.8,6.5 3.5,5 1.2,6.5 2,4 0,2.5 2.5,2.5" fill="white" transform="translate(1,22)"/>
+            <polygon points="3.5,0 4.5,2.5 7,2.5 5,4 5.8,6.5 3.5,5 1.2,6.5 2,4 0,2.5 2.5,2.5" fill="white" transform="translate(2,24)"/>
           </g>
         </svg>
-        <svg id="moon-phase-svg" width="28" height="28" viewBox="0 0 28 28" aria-label="Current moon phase" role="img" style="position:relative;z-index:1"></svg>
+        <svg id="moon-phase-svg" width="30" height="30" viewBox="0 0 28 28" aria-label="Current moon phase" role="img" style="position:relative;z-index:1"></svg>
       </div>
+      <button onclick="toggleSimulation()" id="sim-btn" style="font-family:var(--font-sans);font-size:9px;padding:2px 8px;border-radius:20px;border:1px solid rgba(255,255,255,0.4);background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.9);cursor:pointer">▶ Simulate</button>
     </div>
   </div>
 
@@ -663,8 +618,12 @@ function treeEmojiMonth(n) {
 }
 
 function treeEmojiYear(n) {
-  if (n === 0) return '';
-  return '🌴<div style="width:32px;height:7px;background:linear-gradient(180deg,#c8a05a,#a07040);border-radius:50%;margin:-4px auto 0;opacity:0.85"></div>';
+  if (n === 0)  return '';
+  if (n <= 4)   return '🌱';
+  if (n <= 14)  return '🌿';
+  if (n <= 39)  return '🌳';
+  if (n <= 79)  return '🌴';
+  return '🌴🌴';
 }
 
 function calcScore() {
@@ -704,11 +663,11 @@ function calcScore() {
 
   // Tree emojis — prev tiles static, cur tiles have swaying span inside
   document.getElementById('sc-month-prev-tree').textContent = treeEmojiMonth(lastMonth);
-  document.getElementById('sc-year-prev-tree').innerHTML  = treeEmojiYear(lastYear);
+  document.getElementById('sc-year-prev-tree').textContent  = treeEmojiYear(lastYear);
   const curMonthSpan = document.querySelector('#sc-month-cur-tree .tree-sway');
   const curYearSpan  = document.querySelector('#sc-year-cur-tree .tree-sway');
   if (curMonthSpan) curMonthSpan.textContent = treeEmojiMonth(thisMonth);
-  if (curYearSpan)  curYearSpan.innerHTML  = treeEmojiYear(thisYear);
+  if (curYearSpan)  curYearSpan.textContent  = treeEmojiYear(thisYear);
 
   // Delta badges — only show when there is something to compare (either side > 0)
   function renderDelta(elId, diff, cur, prev) {
@@ -750,21 +709,21 @@ function calcScore() {
     for (let i = 0; i < segs; i++) {
       const filled = i < cur;
       const isExcess = prev > 0 && i >= prev && filled;
-      const color = isExcess ? '#f0c040' : (filled ? segColor(i, segs) : 'rgba(80,40,0,0.1)');
+      const color = isExcess ? '#f0c040' : (filled ? segColor(i, segs) : 'rgba(255,255,255,0.12)');
       segHTML += `<div style="flex:1;height:100%;background:${color};border-radius:2px;margin:0 1px;transition:background 0.3s"></div>`;
     }
 
     // Needle at prev position
     const needleHTML = needlePct !== null ? `
-      <div style="position:absolute;top:-3px;bottom:-3px;width:3px;background:rgba(80,40,0,0.7);border-radius:2px;left:calc(${needlePct}% - 1.5px);box-shadow:0 0 4px rgba(0,0,0,0.4)"></div>` : '';
+      <div style="position:absolute;top:-3px;bottom:-3px;width:3px;background:rgba(255,255,255,0.9);border-radius:2px;left:calc(${needlePct}% - 1.5px);box-shadow:0 0 4px rgba(0,0,0,0.4)"></div>` : '';
 
     // Percentage label
     const pct = prev > 0 ? Math.round((cur / prev) * 100) : (cur > 0 ? 100 : 0);
-    const pctColor = cur > prev ? '#c8860a' : 'rgba(80,40,0,0.6)';
+    const pctColor = cur > prev ? '#f0c040' : 'rgba(255,255,255,0.7)';
     const pctLabel = prev > 0 ? `<div style="font-size:9px;font-weight:700;color:${pctColor};text-align:center;margin-top:3px">${pct}% of prev</div>` : '';
 
     wrap.innerHTML = `
-      <div style="position:relative;height:10px;border-radius:99px;overflow:visible;background:#ffffff;border:2px solid rgba(80,40,0,0.35);box-shadow:0 0 4px rgba(80,40,0,0.15)">
+      <div style="position:relative;height:10px;border-radius:99px;overflow:visible;background:rgba(255,255,255,0.08);border:2px solid rgba(255,255,255,0.75);box-shadow:0 0 6px rgba(255,255,255,0.25)">
         <div style="display:flex;width:100%;height:100%;border-radius:99px;overflow:hidden;padding:1px">
           ${segHTML}
         </div>
@@ -815,7 +774,7 @@ function renderUpcoming() {
     const isWeekly = !!f.weekly;
     const iconBg = isWeekly ? '#E6F1FB' : '#E1F5EE';
     const iconColor = isWeekly ? '#185FA5' : '#0F6E56';
-    let cdClass = diff === 1 ? 'cd-tomorrow' : diff <= 7 ? 'cd-soon' : 'cd-future';
+    let cdClass = diff <= 7 ? 'cd-soon' : 'cd-future';
     let countText = diff===0 ? 'Today' : diff===1 ? 'Tomorrow' : `In ${diff} days`;
     const dateStr = f.dates.length>1 ? `${formatDate(first)} – ${formatDate(last)}` : formatDate(first);
     const key = `fast_${f.name}_${firstDate(f).toDateString()}`;
@@ -1010,15 +969,6 @@ function to12hr(str) {
 function renderPrayers(times, city) {
   // Store globally for countdown banner
   _prayerTimes = times;
-  window._prayerTimesGlobal = times;
-  // Flash Tomorrow badges if after Maghrib
-  setTimeout(() => {
-    const maghrib = parseTime(times.Maghrib);
-    const afterMaghrib = new Date() > maghrib;
-    document.querySelectorAll('.cd-tomorrow').forEach(el => {
-      el.classList.toggle('flash-alert', afterMaghrib);
-    });
-  }, 100);
 
   const now = new Date();
   const parsed = PRAYER_KEYS.map((k,i) => ({ name: PRAYER_NAMES[i], time: parseTime(times[k]), str: times[k] }));
@@ -1052,9 +1002,9 @@ function renderPrayers(times, city) {
         </div>
       </div>
       <div style="text-align:right">
-        <div style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1px" id="next-prayer-label">Next prayer</div>
-        <div style="font-size:17px;font-weight:700;color:var(--color-text-primary);line-height:1.1;white-space:nowrap">${next.name} <span style="font-weight:400;color:var(--color-text-secondary)">${to12hr(next.str).replace(/(AM|PM)$/, '<span style=\"font-size:11px;font-weight:400\">$1</span>')}</span></div>
-        <div style="font-size:14px;color:#1D9E75;font-weight:600;margin-top:2px" id="next-prayer-countdown">in ${countdown}</div>
+        <div style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1px">Next prayer</div>
+        <div style="font-size:17px;font-weight:700;color:var(--color-text-primary);line-height:1.1">${next.name} <span style="font-weight:400;color:var(--color-text-secondary)">${to12hr(next.str)}</span></div>
+        <div style="font-size:14px;color:#1D9E75;font-weight:600;margin-top:2px">in ${countdown}</div>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:2px;margin-bottom:6px">
@@ -1075,21 +1025,6 @@ function renderPrayers(times, city) {
   if (_countdownInterval) clearInterval(_countdownInterval);
   _countdownInterval = setInterval(updateCountdownBanner, 1000);
 
-  // Flash next prayer label within 15 mins
-  setInterval(() => {
-    const el = document.getElementById('next-prayer-countdown');
-    const lbl = document.getElementById('next-prayer-label');
-    if (!el) return;
-    const now2 = new Date();
-    const parsed2 = PRAYER_KEYS.map(k => parseTime(times[k]));
-    let ni = parsed2.findIndex(p => p > now2);
-    if (ni === -1) ni = 0;
-    const ms = parsed2[ni] - now2;
-    const isClose = ms > 0 && ms <= 15 * 60000;
-    el.classList.toggle('flash-alert', isClose);
-    if (lbl) lbl.classList.toggle('flash-alert', isClose);
-  }, 1000);
-
   // Post to service worker for background notifications
   if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
     navigator.serviceWorker.controller.postMessage({
@@ -1107,78 +1042,7 @@ function renderPrayers(times, city) {
   }
 }
 
-function calcPrayerTimesLocal(lat, lon) {
-  // Standalone prayer time calculation — no API needed
-  // Based on ISNA method (angle 15/15), similar to AlAdhan method=2
-  const date = new Date();
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-
-  function julianDay(y, m, d) {
-    if (m <= 2) { y -= 1; m += 12; }
-    const A = Math.floor(y / 100);
-    const B = 2 - A + Math.floor(A / 4);
-    return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + d + B - 1524.5;
-  }
-
-  function sunPosition(jd) {
-    const D = jd - 2451545.0;
-    const g = (357.529 + 0.98560028 * D) % 360;
-    const q = (280.459 + 0.98564736 * D) % 360;
-    const L = (q + 1.915 * Math.sin(g * Math.PI/180) + 0.020 * Math.sin(2 * g * Math.PI/180)) % 360;
-    const e = 23.439 - 0.00000036 * D;
-    const RA = Math.atan2(Math.cos(e * Math.PI/180) * Math.sin(L * Math.PI/180), Math.cos(L * Math.PI/180)) * 180/Math.PI / 15;
-    const dec = Math.asin(Math.sin(e * Math.PI/180) * Math.sin(L * Math.PI/180)) * 180/Math.PI;
-    const EqT = q/15 - ((RA + 360) % 24);
-    return { dec, EqT };
-  }
-
-  function toHHMM(hours) {
-    const h = Math.floor(hours) % 24;
-    const m = Math.floor((hours - Math.floor(hours)) * 60);
-    return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
-  }
-
-  function hourAngle(angle, lat, dec) {
-    const num = -Math.sin(angle * Math.PI/180) - Math.sin(lat * Math.PI/180) * Math.sin(dec * Math.PI/180);
-    const den = Math.cos(lat * Math.PI/180) * Math.cos(dec * Math.PI/180);
-    const val = num / den;
-    if (val < -1 || val > 1) return null;
-    return Math.acos(val) * 180/Math.PI / 15;
-  }
-
-  const jd = julianDay(year, month, day);
-  const { dec, EqT } = sunPosition(jd);
-  const tz = -date.getTimezoneOffset() / 60;
-  const noon = 12 - EqT - lon/15 + tz;
-
-  const fajrHA   = hourAngle(-15, lat, dec);
-  const sunriseHA = hourAngle(-0.833, lat, dec);
-  const asrHA    = (function() {
-    // Shafi shadow factor = 1
-    const target = Math.atan(1 + Math.tan(Math.abs(lat - dec) * Math.PI/180)) * 180/Math.PI;
-    return hourAngle(-target, lat, dec);
-  })();
-  const maghribHA = hourAngle(-0.833, lat, dec);
-  const ishaHA   = hourAngle(-15, lat, dec);
-
-  return {
-    Fajr:    toHHMM(noon - fajrHA),
-    Sunrise: toHHMM(noon - sunriseHA),
-    Dhuhr:   toHHMM(noon + 0.033),
-    Asr:     toHHMM(noon + asrHA),
-    Maghrib: toHHMM(noon + maghribHA),
-    Isha:    toHHMM(noon + ishaHA),
-  };
-}
-
 function loadPrayers(lat, lon, city) {
-  // Calculate locally first (instant, no network)
-  const timings = calcPrayerTimesLocal(lat, lon);
-  renderPrayers(timings, city);
-
-  // Also try API in background to get more precise times
   const today = new Date();
   const dd = String(today.getDate()).padStart(2,'0');
   const mm = String(today.getMonth()+1).padStart(2,'0');
@@ -1187,8 +1051,11 @@ function loadPrayers(lat, lon, city) {
     .then(r => r.json())
     .then(data => {
       if(data.code === 200) renderPrayers(data.data.timings, city);
+      else document.getElementById('prayer-box').innerHTML = '<div class="prayer-error">Could not load prayer times.</div>';
     })
-    .catch(() => {}); // silently ignore — local times already shown
+    .catch(() => {
+      document.getElementById('prayer-box').innerHTML = '<div class="prayer-error">Could not load prayer times. Check your connection.</div>';
+    });
 }
 
 function initPrayers() {
@@ -1198,11 +1065,28 @@ function initPrayers() {
   }
   navigator.geolocation.getCurrentPosition(pos => {
     const { latitude: lat, longitude: lon } = pos.coords;
-    // Call loadPrayers immediately — don't wait for reverse geocode
-    loadPrayers(lat, lon, 'Your location');
-  }, err => {
-    document.getElementById('prayer-box').innerHTML = '<div class="prayer-error">Please allow location access to see prayer times.</div>';
-  }, { timeout: 8000, maximumAge: 600000 });
+    // Reverse geocode city name
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`)
+      .then(r => r.json())
+      .then(geo => {
+        const city = geo.address.city || geo.address.town || geo.address.village || 'Your location';
+        loadPrayers(lat, lon, city);
+      })
+      .catch(() => loadPrayers(lat, lon, `${lat.toFixed(2)}, ${lon.toFixed(2)}`));
+  }, () => {
+    // If running in Electron (Mac app), fall back to Houston
+    const isElectron = navigator.userAgent.toLowerCase().includes('electron');
+    if(isElectron) {
+      loadPrayers(29.7604, -95.3698, 'Houston');
+    } else {
+      const errCodes = {1:'PERMISSION_DENIED', 2:'POSITION_UNAVAILABLE', 3:'TIMEOUT'};
+    document.getElementById('prayer-box').innerHTML = `
+      <div class="prayer-error">Location error — code: <strong>${err.code} (${errCodes[err.code]||'UNKNOWN'})</strong><br>${err.message||''}</div>
+      <div style="text-align:center;margin-top:.75rem">
+        <button onclick="retryLocation()" style="font-family:var(--font-sans);font-size:13px;padding:6px 16px;border-radius:20px;border:1px solid #1D9E75;background:#E1F5EE;color:#085041;cursor:pointer">Retry location</button>
+      </div>`;
+    }
+  });
 }
 
 function toggleFast(el, key) {
@@ -1253,7 +1137,31 @@ calcScore();
 let _prayerTimes = null;
 let _countdownInterval = null;
 
+// ── Simulation mode ──────────────────────────────────────────────
+let _simActive = false;
+
+function toggleSimulation() {
+  _simActive = !_simActive;
+  const btn = document.getElementById('sim-btn');
+  if (_simActive) {
+    btn.textContent = '⏹ Stop';
+    btn.style.color = '#fff';
+    btn.style.borderColor = 'rgba(255,255,255,0.6)';
+    btn.style.background = 'rgba(0,0,0,0.2)';
+    updateCountdownBanner();
+    if (_countdownInterval) clearInterval(_countdownInterval);
+    _countdownInterval = setInterval(updateCountdownBanner, 1000);
+  } else {
+    btn.textContent = '▶ Simulate';
+    btn.style.color = 'rgba(255,255,255,0.85)';
+    btn.style.borderColor = 'rgba(255,255,255,0.4)';
+    btn.style.background = 'rgba(255,255,255,0.15)';
+    updateCountdownBanner();
+  }
+}
+
 function isFastingToday() {
+  if (_simActive) return true;
   const fastDates = allFastDates();
   return fastDates.has(TODAY.toDateString());
 }
@@ -1288,10 +1196,12 @@ function updateCountdownBanner() {
   const mm = String(m).padStart(2,'0');
   const ss = String(s).padStart(2,'0');
 
-  wrap.innerHTML = `<div style="display:flex;align-items:center;gap:5px;margin-top:3px">
-    <span style="font-size:12px">${icon}</span>
-    <span style="font-size:10px;font-weight:600;color:#0a3d1f;text-transform:uppercase;letter-spacing:.05em">${label} in</span>
-    <span style="font-size:16px;font-weight:700;color:#0f5c2e;font-variant-numeric:tabular-nums;line-height:1">${hh}:${mm}:${ss}</span>
+  wrap.innerHTML = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1px">
+    <div style="display:flex;align-items:center;gap:5px">
+      <span style="font-size:14px">${icon}</span>
+      <span style="font-size:10px;font-weight:600;color:#0a3d1f;text-transform:uppercase;letter-spacing:.07em">${label} in</span>
+    </div>
+    <span style="font-size:22px;font-weight:700;color:#0f5c2e;font-variant-numeric:tabular-nums;line-height:1">${hh}:${mm}:${ss}</span>
   </div>`;
 }
 
@@ -1341,164 +1251,81 @@ async function requestNotifPermission() {
   if (perm === 'granted') {
     scheduleNotifications();
     scheduleEveReminders();
-    // Use service worker to show notification (required on iOS)
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({
-        type: 'SHOW_NOTIFICATION',
-        title: 'Islamic Fasting Calendar',
-        body: 'Notifications enabled! You\'ll receive Suhoor, Iftar & prayer reminders.'
-      });
-    } else {
-      new Notification('Islamic Fasting Calendar', {
-        body: 'Notifications enabled! You\'ll receive Suhoor, Iftar & prayer reminders.',
-        icon: 'icon-192.png'
-      });
-    }
+    new Notification('Islamic Fasting Calendar', {
+      body: 'Notifications enabled! You\'ll receive Suhoor, Iftar & eve-of-fast reminders.',
+      icon: 'icon-192.png'
+    });
   }
 }
 
 function scheduleNotifications() {
   if (!_prayerTimes || Notification.permission !== 'granted') return;
+  if (!isFastingToday()) return;
 
-  const now      = new Date();
-  const fajr     = parseTime(_prayerTimes.Fajr);
-  const sunrise  = parseTime(_prayerTimes.Sunrise);
-  const maghrib  = parseTime(_prayerTimes.Maghrib);
-  const fasting  = isFastingToday();
+  const now = new Date();
+  const fajr    = parseTime(_prayerTimes.Fajr);
+  const maghrib = parseTime(_prayerTimes.Maghrib);
 
-  function schedule(ms, title, body) {
-    if (ms > 0) setTimeout(() => new Notification(title, { body, icon: 'icon-192.png', badge: 'icon-192.png' }), ms);
+  // Suhoor reminder — 20 min before Fajr
+  const suhoorAlert = new Date(fajr.getTime() - 20 * 60000);
+  if (suhoorAlert > now) {
+    setTimeout(() => {
+      new Notification('🌅 Suhoor reminder', {
+        body: `Fajr in 20 minutes at ${to12hr(_prayerTimes.Fajr)}. Make your intention and finish eating.`,
+        icon: 'icon-192.png',
+        badge: 'icon-192.png'
+      });
+    }, suhoorAlert - now);
   }
 
-  if (fasting) {
-    // 30 min before Fajr — Suhoor start
-    schedule(fajr - now - 30*60000,
-      '🍽️ Suhoor time',
-      `Fajr is at ${to12hr(_prayerTimes.Fajr)}. Eat and make your intention.`);
-
-    // 2 min before Fajr — Suhoor ending
-    schedule(fajr - now - 2*60000,
-      '⏰ Suhoor ending in 2 minutes',
-      `Fajr at ${to12hr(_prayerTimes.Fajr)}. Stop eating now.`);
-
-    // At Maghrib — Iftar
-    schedule(maghrib - now,
-      '🌙 Iftar time!',
-      `Maghrib at ${to12hr(_prayerTimes.Maghrib)}. Break your fast. Allahu Akbar!`);
-  } else {
-    // Not fasting — Maghrib prayer reminder
-    schedule(maghrib - now,
-      '🕌 Maghrib prayer time',
-      `Maghrib is at ${to12hr(_prayerTimes.Maghrib)}.`);
+  // Fajr notification — fast begins
+  if (fajr > now) {
+    setTimeout(() => {
+      new Notification('🌄 Fast has begun', {
+        body: `Fajr time. Your fast is now in effect. May Allah accept it.`,
+        icon: 'icon-192.png'
+      });
+    }, fajr - now);
   }
 
-  // Ishraq — 25 min after Sunrise (every day)
-  schedule(sunrise - now + 25*60000,
-    '🌅 Time to pray Ishraq',
-    `25 minutes have passed since sunrise. Pray 2 rakats of Ishraq.`);
+  // Iftar notification — Maghrib
+  if (maghrib > now) {
+    setTimeout(() => {
+      new Notification('🌙 Iftar time!', {
+        body: `Maghrib at ${to12hr(_prayerTimes.Maghrib)}. Break your fast. Allahu Akbar!`,
+        icon: 'icon-192.png'
+      });
+    }, maghrib - now);
+  }
 }
 
 function scheduleEveReminders() {
+  // Check if tomorrow is a special fasting day, notify at 9 PM tonight
   if (Notification.permission !== 'granted') return;
+  const tomorrow = new Date(TODAY);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toDateString();
+  const fastDates = allFastDates();
+  if (!fastDates.has(tomorrowStr)) return;
 
-  // Check tomorrow and day after for weekly fasts (Mon/Thu) and special fasts
-  [1, 2].forEach(daysAhead => {
-    const future = new Date(TODAY);
-    future.setDate(future.getDate() + daysAhead);
-    const futureStr = future.toDateString();
-    const fastDates = allFastDates();
-    if (!fastDates.has(futureStr)) return;
+  // Find which fast it is
+  const match = FASTS.find(f => f.dates.some(d => d.toDateString() === tomorrowStr));
+  const fastName = match ? match.name : 'a sunnah fast';
 
-    const match = FASTS.find(f => f.dates.some(d => d.toDateString() === futureStr));
-    const dow = future.getDay();
-    const fastName = match ? match.name : (dow===1 ? 'Monday fast' : dow===4 ? 'Thursday fast' : 'a sunnah fast');
-
-    // Notify at 9pm the evening before
-    const ninepm = new Date(future);
-    ninepm.setDate(ninepm.getDate() - 1);
-    ninepm.setHours(21, 0, 0, 0);
-    const now = new Date();
-    const ms = ninepm - now;
-    if (ms > 0) {
-      setTimeout(() => new Notification('🌙 Fast tomorrow', {
+  const ninepm = new Date(TODAY);
+  ninepm.setHours(21, 0, 0, 0);
+  const now = new Date();
+  if (ninepm > now) {
+    setTimeout(() => {
+      new Notification('🌙 Fast tomorrow', {
         body: `Tomorrow is ${fastName}. Make your intention tonight. May Allah give you strength.`,
-        icon: 'icon-192.png',
-        badge: 'icon-192.png'
-      }), ms);
-    }
-  });
+        icon: 'icon-192.png'
+      });
+    }, ninepm - now);
+  }
 }
 
 updateNotifIcon();
-
-// ── Shooting stars ───────────────────────────────────────────────
-(function() {
-  const box = document.querySelector('.dashboard-box');
-  if (!box) return;
-
-  function shootStar() {
-    const star = document.createElement('div');
-    star.className = 'shooting-star';
-    const ltr = Math.random() > 0.5;
-    const top = 10 + Math.random() * 80; // random vertical position %
-    const duration = 5.8 + Math.random() * 0.4;
-    const colors = [
-      ['#ff99cc', 'rgba(255,150,200,0.9)'],
-      ['#ffffff', 'rgba(255,255,255,0.9)'],
-      ['#cc88ff', 'rgba(180,100,255,0.9)'],
-    ];
-    const [grad, glow] = colors[Math.floor(Math.random() * colors.length)];
-    star.style.cssText = `
-      top: ${top}%;
-      ${ltr ? 'left: 0' : 'right: 0'};
-      background: linear-gradient(${ltr ? '90deg' : '270deg'}, rgba(255,255,255,0) 0%, ${grad} 60%, #fff 100%);
-      box-shadow: 0 0 6px 2px ${glow};
-      animation: ${ltr ? 'shoot-ltr' : 'shoot-rtl'} ${duration}s ease-out forwards;
-    `;
-    box.appendChild(star);
-    setTimeout(() => star.remove(), duration * 1000 + 100);
-  }
-
-  setInterval(shootStar, 1000);
-})();
-
-// ── Glitter sparkles ─────────────────────────────────────────────
-(function() {
-  const wrap = document.getElementById('glitter-wrap');
-  if (!wrap) return;
-  const colors = ['#fff', '#ffe066', '#ff99cc', '#99ffee', '#aaddff', '#ffaaff', '#ccff99'];
-  const shapes = ['★', '✦', '·', '✸', '⬥'];
-  let sparkles = [];
-
-  function createSparkle() {
-    const el = document.createElement('span');
-    el.className = 'sparkle';
-    const size = 8 + Math.random() * 10;
-    const x = Math.random() * 100;
-    const y = Math.random() * 100;
-    const duration = 0.8 + Math.random() * 1.2;
-    const delay = Math.random() * 2;
-    el.textContent = shapes[Math.floor(Math.random() * shapes.length)];
-    el.style.cssText = `
-      left: ${x}%;
-      top: ${y}%;
-      font-size: ${size}px;
-      color: ${colors[Math.floor(Math.random() * colors.length)]};
-      animation-duration: ${duration}s;
-      animation-delay: ${delay}s;
-      text-shadow: 0 0 4px #fff;
-    `;
-    wrap.appendChild(el);
-    sparkles.push(el);
-    setTimeout(() => {
-      el.remove();
-      sparkles = sparkles.filter(s => s !== el);
-    }, (duration + delay) * 1000 + 100);
-  }
-
-  // Create sparkles continuously
-  setInterval(createSparkle, 180);
-})();
 </script>
 </body>
 </html>
