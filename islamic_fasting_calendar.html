@@ -1004,7 +1004,7 @@ function to12hr(str) {
   return `${h12}:${String(m).padStart(2,'0')} ${ampm}`;
 }
 
-function renderPrayers(times, city) {
+function renderPrayers(times, city, scheduleNotifs = false) {
   // Store globally for countdown banner
   _prayerTimes = times;
 
@@ -1042,7 +1042,7 @@ function renderPrayers(times, city) {
       <div style="text-align:right">
         <div style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1px">Next prayer</div>
         <div style="font-size:17px;font-weight:700;color:var(--color-text-primary);line-height:1.1">${next.name} <span style="font-weight:400;color:var(--color-text-secondary)">${to12hr(next.str)}</span></div>
-        <div style="font-size:14px;color:#1D9E75;font-weight:600;margin-top:2px">in ${countdown}</div>
+        <div style="font-size:14px;color:#1D9E75;font-weight:600;margin-top:2px" id="next-prayer-countdown">in ${countdown}</div>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:2px;margin-bottom:6px">
@@ -1055,7 +1055,7 @@ function renderPrayers(times, city) {
       }).join('')}
     </div>
     <div style="text-align:center;font-size:11px;color:var(--color-text-tertiary)">
-      <i class="ti ti-map-pin" style="font-size:11px;vertical-align:-1px" aria-hidden="true"></i> ${city}
+      <i class="ti ti-map-pin" style="font-size:11px;vertical-align:-1px" aria-hidden="true"></i> <span id="prayer-city-label">${city}</span>
     </div>`;
 
   // Start Suhoor/Iftar countdown banner
@@ -1073,8 +1073,8 @@ function renderPrayers(times, city) {
     });
   }
 
-  // Auto-schedule browser notifications if already permitted
-  if (Notification.permission === 'granted') {
+  // Auto-schedule browser notifications only when using accurate API times
+  if (scheduleNotifs && Notification.permission === 'granted') {
     scheduleNotifications();
     scheduleEveReminders();
   }
@@ -1147,11 +1147,11 @@ function calcPrayerTimesLocal(lat, lon) {
 }
 
 function loadPrayers(lat, lon, city) {
-  // Calculate locally first (instant, no network)
+  // Calculate locally first (instant, no network) — do NOT schedule notifications yet
   const timings = calcPrayerTimesLocal(lat, lon);
-  renderPrayers(timings, city);
+  renderPrayers(timings, city, false);
 
-  // Also try API in background to get more precise times
+  // Get accurate times from API — schedule notifications only after this
   const today = new Date();
   const dd = String(today.getDate()).padStart(2,'0');
   const mm = String(today.getMonth()+1).padStart(2,'0');
@@ -1159,9 +1159,15 @@ function loadPrayers(lat, lon, city) {
   fetch(`https://api.aladhan.com/v1/timings/${dd}-${mm}-${yyyy}?latitude=${lat}&longitude=${lon}&method=2`)
     .then(r => r.json())
     .then(data => {
-      if(data.code === 200) renderPrayers(data.data.timings, city);
+      if(data.code === 200) renderPrayers(data.data.timings, city, true);
     })
-    .catch(() => {}); // silently ignore — local times already shown
+    .catch(() => {
+      // API failed — schedule notifications from local times as fallback
+      if (Notification.permission === 'granted') {
+        scheduleNotifications();
+        scheduleEveReminders();
+      }
+    });
 }
 
 function initPrayers() {
@@ -1173,6 +1179,19 @@ function initPrayers() {
     const { latitude: lat, longitude: lon } = pos.coords;
     // Call loadPrayers immediately — don't wait for reverse geocode
     loadPrayers(lat, lon, 'Your location');
+    // Get city name in background — updates label only, doesn't affect prayer times
+    const ctrl = new AbortController();
+    setTimeout(() => ctrl.abort(), 5000);
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`, { signal: ctrl.signal })
+      .then(r => r.json())
+      .then(geo => {
+        const city = geo.address.city || geo.address.town || geo.address.village || null;
+        if (city) {
+          const loc = document.getElementById('prayer-city-label');
+          if (loc) loc.textContent = city;
+        }
+      })
+      .catch(() => {});
   }, err => {
     document.getElementById('prayer-box').innerHTML = '<div class="prayer-error">Please allow location access to see prayer times.</div>';
   }, { timeout: 8000, maximumAge: 600000 });
@@ -1212,11 +1231,20 @@ function retryLocation() {
 }
 
 initPrayers();
-// Refresh prayer times every minute for live countdown
+// Update countdown every second
 setInterval(() => {
-  const box = document.getElementById('prayer-box');
-  if(box.querySelector('.prayer-grid')) initPrayers();
-}, 60000);
+  if (!_prayerTimes) return;
+  const now = new Date();
+  const parsed = PRAYER_KEYS.map((k,i) => ({ time: parseTime(_prayerTimes[k]), str: _prayerTimes[k] }));
+  let nextIdx = parsed.findIndex(p => p.time > now);
+  if (nextIdx === -1) nextIdx = 0;
+  const diffMs = parsed[nextIdx].time - now;
+  if (diffMs < 0) { initPrayers(); return; } // crossed into next prayer, re-render
+  const diffH = Math.floor(diffMs/3600000);
+  const diffM = Math.floor((diffMs%3600000)/60000);
+  const el = document.getElementById('next-prayer-countdown');
+  if (el) el.textContent = 'in ' + (diffH > 0 ? diffH + 'h ' + diffM + 'm' : diffM + 'm');
+}, 1000);
 
 renderUpcoming();
 calcScore();
