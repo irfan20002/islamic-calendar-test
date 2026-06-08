@@ -1341,13 +1341,10 @@ async function requestNotifPermission() {
   if (perm === 'granted') {
     scheduleNotifications();
     scheduleEveReminders();
-    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject('timeout'), 3000));
-    Promise.race([navigator.serviceWorker.ready, timeoutPromise])
-      .then(reg => reg.showNotification('Islamic Fasting Calendar', {
-        body: 'Notifications enabled! You will receive Suhoor, Iftar & eve-of-fast reminders.',
-        icon: 'icon-192.png', badge: 'icon-192.png'
-      }))
-      .catch(() => alert('Notifications enabled! You will receive prayer reminders.'));
+    new Notification('Islamic Fasting Calendar', {
+      body: 'Notifications enabled! You will receive Suhoor, Iftar & eve-of-fast reminders.',
+      icon: 'icon-192.png'
+    });
   }
 }
 
