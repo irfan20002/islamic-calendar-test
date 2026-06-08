@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Notif Test">
+<link rel="manifest" href="manifest.json">
+<title>Notification Test</title>
+<style>
+  body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #f5f5f5; gap: 20px; }
+  #clock { font-size: 48px; font-weight: bold; color: #333; }
+  button { font-size: 18px; padding: 15px 30px; border-radius: 12px; border: none; background: #1D9E75; color: white; cursor: pointer; }
+  #status { font-size: 14px; color: #666; text-align: center; max-width: 300px; }
+</style>
+</head>
+<body>
+  <div id="clock">--:-- --</div>
+  <button onclick="enableNotifications()">🔔 Enable Notifications</button>
+  <div id="status">Tap the button to enable notifications</div>
+
+<script>
+function updateClock() {
+  const now = new Date();
+  let h = now.getHours();
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const s = String(now.getSeconds()).padStart(2,'0');
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  document.getElementById('clock').textContent = `${h}:${m}:${s} ${ampm}`;
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+async function enableNotifications() {
+  const status = document.getElementById('status');
+
+  if (!('Notification' in window)) {
+    status.textContent = 'Notifications not supported in this browser.';
+    return;
+  }
+
+  if (!('serviceWorker' in navigator)) {
+    status.textContent = 'Service Worker not supported.';
+    return;
+  }
+
+  status.textContent = 'Requesting permission...';
+  const perm = await Notification.requestPermission();
+  status.textContent = 'Permission: ' + perm;
+
+  if (perm === 'granted') {
+    status.textContent = 'Waiting for service worker...';
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      status.textContent = 'SW ready. Sending notification...';
+      await reg.showNotification('Test Notification', {
+        body: 'Notifications are working!',
+        icon: 'icon-192.png'
+      });
+      status.textContent = '✅ Notification sent! Did you see it?';
+    } catch(err) {
+      status.textContent = 'Error: ' + err.message;
+    }
+  } else {
+    status.textContent = 'Permission denied. Enable in Settings → Safari → Notifications.';
+  }
+}
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js')
+    .then(reg => console.log('SW registered:', reg.scope))
+    .catch(err => console.warn('SW failed:', err));
+}
+</script>
+</body>
+</html>
