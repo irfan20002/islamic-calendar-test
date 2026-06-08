@@ -37,10 +37,11 @@
   .header { display: flex; flex-direction: row; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; }
   .header h1 { font-size: 17px; font-weight: 500; white-space: nowrap; }
   @keyframes flash-alert {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.2; }
+    0% { opacity: 1; }
+    50% { opacity: 0; }
+    100% { opacity: 1; }
   }
-  .flash-alert { animation: flash-alert 0.8s ease-in-out infinite; }
+  .flash-alert { animation: flash-alert 2s ease-in-out infinite; }
   @keyframes rainbow {
     0%   { color: #ff0000; }
     14%  { color: #ff7700; }
@@ -1312,7 +1313,7 @@ function updateCountdownBanner() {
   const ss = String(s).padStart(2,'0');
 
   const isUrgent = ms <= 30 * 60000;
-  const flashStyle = isUrgent ? 'animation:flash-alert 0.8s ease-in-out infinite;' : '';
+  const flashStyle = isUrgent ? 'animation:flash-alert 2s ease-in-out infinite;' : '';
   wrap.innerHTML = `<div style="display:flex;align-items:center;gap:5px;margin-top:3px;${flashStyle}">
     <span style="font-size:12px">${icon}</span>
     <span style="font-size:10px;font-weight:600;color:#0a3d1f;text-transform:uppercase;letter-spacing:.05em">${label} in</span>
