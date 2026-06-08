@@ -36,6 +36,11 @@
   .app { padding: 1rem; background: var(--color-background-primary); border-radius: var(--border-radius-lg); border: 0.5px solid var(--color-border-tertiary); }
   .header { display: flex; flex-direction: row; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; }
   .header h1 { font-size: 17px; font-weight: 500; white-space: nowrap; }
+  @keyframes flash-alert {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
+  .flash-alert { animation: flash-alert 0.8s ease-in-out infinite; }
   @keyframes rainbow {
     0%   { color: #ff0000; }
     14%  { color: #ff7700; }
@@ -83,6 +88,8 @@
   .fast-hijri { font-size: 11px; color: var(--color-text-tertiary); margin-top: 1px; }
   .countdown { font-size: 12px; font-weight: 500; padding: 3px 8px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
   .cd-soon { background: #E1F5EE; color: #0F6E56; }
+  .cd-tomorrow { background: #0a3d8f; color: #ffffff; font-weight: 700; }
+  .cd-tomorrow.flash-alert { background: #0a3d8f !important; color: #ffffff !important; }
   .cd-future { background: var(--color-background-secondary); color: var(--color-text-secondary); }
   .month-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; margin-bottom: 1rem; }
   .day-label { font-size: 10px; color: var(--color-text-tertiary); text-align: center; padding: 4px 0; }
@@ -140,21 +147,21 @@
     .dashboard-box { grid-template-columns: 1fr; }
   }
   /* Score card — tree-growth tile design */
-  .dashboard-left { background: #1a5c3a; border-radius: var(--border-radius-lg); padding: .875rem; color: white; overflow: hidden; }
+  .dashboard-left { background: #F5E8C7; border-radius: var(--border-radius-lg); padding: .875rem; color: #3d1f00; overflow: hidden; }
   .dash-header { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
   .dash-header-title { font-size: 13px; font-weight: 600; opacity: .9; }
   .dash-tiles { display: grid; grid-template-columns: 1fr 1px 1fr 1px 1fr 1px 1fr; gap: 0; align-items: start; }
-  .dash-tile-divider { background: rgba(255,255,255,.18); align-self: stretch; margin: 0 2px; }
+  .dash-tile-divider { background: rgba(80,40,0,.15); align-self: stretch; margin: 0 2px; }
   .dash-tile { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0 2px; }
-  .dash-tile-label { font-size: 13px; font-weight: 600; opacity: .75; text-align: center; line-height: 1.2; height: 24px; display: flex; align-items: center; justify-content: center; }
-  .dash-tile-tree { font-size: 30px; line-height: 1; display: flex; align-items: center; justify-content: center; height: 40px; min-height: 40px; }
+  .dash-tile-label { font-size: 13px; font-weight: 600; color: #5c2d00; text-align: center; line-height: 1.2; height: 24px; display: flex; align-items: center; justify-content: center; }
+  .dash-tile-tree { font-size: 54px; line-height: 1; display: flex; align-items: center; justify-content: center; height: 64px; min-height: 64px; }
   .dash-tile-num { font-size: 24px; font-weight: 700; line-height: 1; }
   .dash-tile-bar-wrap { width: 100%; margin-top: 4px; position: relative; }
   .dash-tile-bar-fill { height: 100%; border-radius: 99px; transition: width 0.4s ease; }
-  .dash-tile-bar-base { background: rgba(255,255,255,.55); }
+  .dash-tile-bar-base { background: #ffffff; border: 1.5px solid rgba(80,40,0,.3); }
   .dash-tile-bar-progress { background: #5DCAA5; }
   .dash-tile-bar-excess { background: #f0c040; }
-  .dash-tile-delta { font-size: 10px; font-weight: 600; background: rgba(255,255,255,.22); border-radius: 12px; padding: 2px 8px; margin-top: 2px; white-space: nowrap; }
+  .dash-tile-delta { font-size: 10px; font-weight: 600; background: rgba(80,40,0,.15); color: #3d1f00; border-radius: 12px; padding: 2px 8px; margin-top: 2px; white-space: nowrap; }
 
   /* Prayer card */
   .dashboard-right { background: var(--color-background-primary); border: 1.5px solid #1D9E75; border-radius: var(--border-radius-lg); padding: .75rem .875rem; min-width: 0; }
@@ -656,12 +663,8 @@ function treeEmojiMonth(n) {
 }
 
 function treeEmojiYear(n) {
-  if (n === 0)  return '';
-  if (n <= 4)   return '🌱';
-  if (n <= 14)  return '🌿';
-  if (n <= 39)  return '🌳';
-  if (n <= 79)  return '🌴';
-  return '🌴🌴';
+  if (n === 0) return '';
+  return '🌴<div style="width:32px;height:7px;background:linear-gradient(180deg,#c8a05a,#a07040);border-radius:50%;margin:-4px auto 0;opacity:0.85"></div>';
 }
 
 function calcScore() {
@@ -701,11 +704,11 @@ function calcScore() {
 
   // Tree emojis — prev tiles static, cur tiles have swaying span inside
   document.getElementById('sc-month-prev-tree').textContent = treeEmojiMonth(lastMonth);
-  document.getElementById('sc-year-prev-tree').textContent  = treeEmojiYear(lastYear);
+  document.getElementById('sc-year-prev-tree').innerHTML  = treeEmojiYear(lastYear);
   const curMonthSpan = document.querySelector('#sc-month-cur-tree .tree-sway');
   const curYearSpan  = document.querySelector('#sc-year-cur-tree .tree-sway');
   if (curMonthSpan) curMonthSpan.textContent = treeEmojiMonth(thisMonth);
-  if (curYearSpan)  curYearSpan.textContent  = treeEmojiYear(thisYear);
+  if (curYearSpan)  curYearSpan.innerHTML  = treeEmojiYear(thisYear);
 
   // Delta badges — only show when there is something to compare (either side > 0)
   function renderDelta(elId, diff, cur, prev) {
@@ -747,21 +750,21 @@ function calcScore() {
     for (let i = 0; i < segs; i++) {
       const filled = i < cur;
       const isExcess = prev > 0 && i >= prev && filled;
-      const color = isExcess ? '#f0c040' : (filled ? segColor(i, segs) : 'rgba(255,255,255,0.12)');
+      const color = isExcess ? '#f0c040' : (filled ? segColor(i, segs) : 'rgba(80,40,0,0.1)');
       segHTML += `<div style="flex:1;height:100%;background:${color};border-radius:2px;margin:0 1px;transition:background 0.3s"></div>`;
     }
 
     // Needle at prev position
     const needleHTML = needlePct !== null ? `
-      <div style="position:absolute;top:-3px;bottom:-3px;width:3px;background:rgba(255,255,255,0.9);border-radius:2px;left:calc(${needlePct}% - 1.5px);box-shadow:0 0 4px rgba(0,0,0,0.4)"></div>` : '';
+      <div style="position:absolute;top:-3px;bottom:-3px;width:3px;background:rgba(80,40,0,0.7);border-radius:2px;left:calc(${needlePct}% - 1.5px);box-shadow:0 0 4px rgba(0,0,0,0.4)"></div>` : '';
 
     // Percentage label
     const pct = prev > 0 ? Math.round((cur / prev) * 100) : (cur > 0 ? 100 : 0);
-    const pctColor = cur > prev ? '#f0c040' : 'rgba(255,255,255,0.7)';
+    const pctColor = cur > prev ? '#c8860a' : 'rgba(80,40,0,0.6)';
     const pctLabel = prev > 0 ? `<div style="font-size:9px;font-weight:700;color:${pctColor};text-align:center;margin-top:3px">${pct}% of prev</div>` : '';
 
     wrap.innerHTML = `
-      <div style="position:relative;height:10px;border-radius:99px;overflow:visible;background:rgba(255,255,255,0.08);border:2px solid rgba(255,255,255,0.75);box-shadow:0 0 6px rgba(255,255,255,0.25)">
+      <div style="position:relative;height:10px;border-radius:99px;overflow:visible;background:#ffffff;border:2px solid rgba(80,40,0,0.35);box-shadow:0 0 4px rgba(80,40,0,0.15)">
         <div style="display:flex;width:100%;height:100%;border-radius:99px;overflow:hidden;padding:1px">
           ${segHTML}
         </div>
@@ -812,7 +815,7 @@ function renderUpcoming() {
     const isWeekly = !!f.weekly;
     const iconBg = isWeekly ? '#E6F1FB' : '#E1F5EE';
     const iconColor = isWeekly ? '#185FA5' : '#0F6E56';
-    let cdClass = diff <= 7 ? 'cd-soon' : 'cd-future';
+    let cdClass = diff === 1 ? 'cd-tomorrow' : diff <= 7 ? 'cd-soon' : 'cd-future';
     let countText = diff===0 ? 'Today' : diff===1 ? 'Tomorrow' : `In ${diff} days`;
     const dateStr = f.dates.length>1 ? `${formatDate(first)} – ${formatDate(last)}` : formatDate(first);
     const key = `fast_${f.name}_${firstDate(f).toDateString()}`;
@@ -1004,9 +1007,18 @@ function to12hr(str) {
   return `${h12}:${String(m).padStart(2,'0')} ${ampm}`;
 }
 
-function renderPrayers(times, city, scheduleNotifs = false) {
+function renderPrayers(times, city) {
   // Store globally for countdown banner
   _prayerTimes = times;
+  window._prayerTimesGlobal = times;
+  // Flash Tomorrow badges if after Maghrib
+  setTimeout(() => {
+    const maghrib = parseTime(times.Maghrib);
+    const afterMaghrib = new Date() > maghrib;
+    document.querySelectorAll('.cd-tomorrow').forEach(el => {
+      el.classList.toggle('flash-alert', afterMaghrib);
+    });
+  }, 100);
 
   const now = new Date();
   const parsed = PRAYER_KEYS.map((k,i) => ({ name: PRAYER_NAMES[i], time: parseTime(times[k]), str: times[k] }));
@@ -1040,8 +1052,8 @@ function renderPrayers(times, city, scheduleNotifs = false) {
         </div>
       </div>
       <div style="text-align:right">
-        <div style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1px">Next prayer</div>
-        <div style="font-size:17px;font-weight:700;color:var(--color-text-primary);line-height:1.1">${next.name} <span style="font-weight:400;color:var(--color-text-secondary)">${to12hr(next.str)}</span></div>
+        <div style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1px" id="next-prayer-label">Next prayer</div>
+        <div style="font-size:17px;font-weight:700;color:var(--color-text-primary);line-height:1.1;white-space:nowrap">${next.name} <span style="font-weight:400;color:var(--color-text-secondary)">${to12hr(next.str).replace(/(AM|PM)$/, '<span style=\"font-size:11px;font-weight:400\">$1</span>')}</span></div>
         <div style="font-size:14px;color:#1D9E75;font-weight:600;margin-top:2px" id="next-prayer-countdown">in ${countdown}</div>
       </div>
     </div>
@@ -1055,13 +1067,28 @@ function renderPrayers(times, city, scheduleNotifs = false) {
       }).join('')}
     </div>
     <div style="text-align:center;font-size:11px;color:var(--color-text-tertiary)">
-      <i class="ti ti-map-pin" style="font-size:11px;vertical-align:-1px" aria-hidden="true"></i> <span id="prayer-city-label">${city}</span>
+      <i class="ti ti-map-pin" style="font-size:11px;vertical-align:-1px" aria-hidden="true"></i> ${city}
     </div>`;
 
   // Start Suhoor/Iftar countdown banner
   updateCountdownBanner();
   if (_countdownInterval) clearInterval(_countdownInterval);
   _countdownInterval = setInterval(updateCountdownBanner, 1000);
+
+  // Flash next prayer label within 15 mins
+  setInterval(() => {
+    const el = document.getElementById('next-prayer-countdown');
+    const lbl = document.getElementById('next-prayer-label');
+    if (!el) return;
+    const now2 = new Date();
+    const parsed2 = PRAYER_KEYS.map(k => parseTime(times[k]));
+    let ni = parsed2.findIndex(p => p > now2);
+    if (ni === -1) ni = 0;
+    const ms = parsed2[ni] - now2;
+    const isClose = ms > 0 && ms <= 15 * 60000;
+    el.classList.toggle('flash-alert', isClose);
+    if (lbl) lbl.classList.toggle('flash-alert', isClose);
+  }, 1000);
 
   // Post to service worker for background notifications
   if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
@@ -1073,8 +1100,8 @@ function renderPrayers(times, city, scheduleNotifs = false) {
     });
   }
 
-  // Auto-schedule browser notifications only when using accurate API times
-  if (scheduleNotifs && Notification.permission === 'granted') {
+  // Auto-schedule browser notifications if already permitted
+  if (Notification.permission === 'granted') {
     scheduleNotifications();
     scheduleEveReminders();
   }
@@ -1147,11 +1174,11 @@ function calcPrayerTimesLocal(lat, lon) {
 }
 
 function loadPrayers(lat, lon, city) {
-  // Calculate locally first (instant, no network) — do NOT schedule notifications yet
+  // Calculate locally first (instant, no network)
   const timings = calcPrayerTimesLocal(lat, lon);
-  renderPrayers(timings, city, false);
+  renderPrayers(timings, city);
 
-  // Get accurate times from API — schedule notifications only after this
+  // Also try API in background to get more precise times
   const today = new Date();
   const dd = String(today.getDate()).padStart(2,'0');
   const mm = String(today.getMonth()+1).padStart(2,'0');
@@ -1159,15 +1186,9 @@ function loadPrayers(lat, lon, city) {
   fetch(`https://api.aladhan.com/v1/timings/${dd}-${mm}-${yyyy}?latitude=${lat}&longitude=${lon}&method=2`)
     .then(r => r.json())
     .then(data => {
-      if(data.code === 200) renderPrayers(data.data.timings, city, true);
+      if(data.code === 200) renderPrayers(data.data.timings, city);
     })
-    .catch(() => {
-      // API failed — schedule notifications from local times as fallback
-      if (Notification.permission === 'granted') {
-        scheduleNotifications();
-        scheduleEveReminders();
-      }
-    });
+    .catch(() => {}); // silently ignore — local times already shown
 }
 
 function initPrayers() {
@@ -1179,19 +1200,6 @@ function initPrayers() {
     const { latitude: lat, longitude: lon } = pos.coords;
     // Call loadPrayers immediately — don't wait for reverse geocode
     loadPrayers(lat, lon, 'Your location');
-    // Get city name in background — updates label only, doesn't affect prayer times
-    const ctrl = new AbortController();
-    setTimeout(() => ctrl.abort(), 5000);
-    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`, { signal: ctrl.signal })
-      .then(r => r.json())
-      .then(geo => {
-        const city = geo.address.city || geo.address.town || geo.address.village || null;
-        if (city) {
-          const loc = document.getElementById('prayer-city-label');
-          if (loc) loc.textContent = city;
-        }
-      })
-      .catch(() => {});
   }, err => {
     document.getElementById('prayer-box').innerHTML = '<div class="prayer-error">Please allow location access to see prayer times.</div>';
   }, { timeout: 8000, maximumAge: 600000 });
@@ -1231,20 +1239,11 @@ function retryLocation() {
 }
 
 initPrayers();
-// Update countdown every second
+// Refresh prayer times every minute for live countdown
 setInterval(() => {
-  if (!_prayerTimes) return;
-  const now = new Date();
-  const parsed = PRAYER_KEYS.map((k,i) => ({ time: parseTime(_prayerTimes[k]), str: _prayerTimes[k] }));
-  let nextIdx = parsed.findIndex(p => p.time > now);
-  if (nextIdx === -1) nextIdx = 0;
-  const diffMs = parsed[nextIdx].time - now;
-  if (diffMs < 0) { initPrayers(); return; } // crossed into next prayer, re-render
-  const diffH = Math.floor(diffMs/3600000);
-  const diffM = Math.floor((diffMs%3600000)/60000);
-  const el = document.getElementById('next-prayer-countdown');
-  if (el) el.textContent = 'in ' + (diffH > 0 ? diffH + 'h ' + diffM + 'm' : diffM + 'm');
-}, 1000);
+  const box = document.getElementById('prayer-box');
+  if(box.querySelector('.prayer-grid')) initPrayers();
+}, 60000);
 
 renderUpcoming();
 calcScore();
