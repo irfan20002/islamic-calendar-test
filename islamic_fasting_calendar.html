@@ -52,7 +52,7 @@
     100% { color: #ff0000; }
   }
   .rainbow-title { animation: rainbow 5s linear infinite; position: relative; display: inline-block; }
-  .glitter-wrap { position: relative; display: inline-block; }
+  .glitter-wrap { position: relative; display: inline-block; overflow: hidden; }
   @keyframes sparkle {
     0%   { opacity: 0; transform: scale(0) rotate(0deg); }
     50%  { opacity: 1; transform: scale(1) rotate(180deg); }
@@ -89,6 +89,8 @@
   .countdown { font-size: 12px; font-weight: 500; padding: 3px 8px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
   .cd-soon { background: #E1F5EE; color: #0F6E56; }
   .cd-tomorrow { background: #0a3d8f; color: #ffffff; font-weight: 700; }
+  .cd-today { background: #0a3d8f; color: #ffffff; font-weight: 700; }
+  .cd-today.flash-alert { background: #0a3d8f !important; color: #ffffff !important; }
   .cd-tomorrow.flash-alert { background: #0a3d8f !important; color: #ffffff !important; }
   .cd-future { background: var(--color-background-secondary); color: var(--color-text-secondary); }
   .month-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; margin-bottom: 1rem; }
@@ -204,7 +206,7 @@
 <div class="container">
 <div class="app">
   <h2 class="sr-only">Islamic fasting calendar — auto-updating</h2>
-  <div class="header" style="background: linear-gradient(135deg, #c8860a 0%, #e8a800 25%, #ffe033 50%, #e8a800 75%, #c8860a 100%); border-radius: var(--border-radius-lg); padding: .5rem 1rem .6rem; margin-bottom: 1rem; display:flex; align-items:flex-start; justify-content:space-between; gap:8px; overflow:hidden;">
+  <div class="header" style="background: linear-gradient(135deg, #f5c200 0%, #ffe033 50%, #f0b800 100%); border-radius: var(--border-radius-lg); padding: .5rem 1rem .6rem; margin-bottom: 1rem; display:flex; align-items:flex-start; justify-content:space-between; gap:8px; overflow:hidden;">
     <!-- Left: title + name + countdown -->
     <div style="flex:1;min-width:0">
       <div class="glitter-wrap" id="glitter-wrap">
@@ -798,13 +800,20 @@ function renderUpcoming() {
   const list = document.getElementById('fast-list');
   list.innerHTML = '';
   const weekly = getNextWeeklyDays(8);
+  // Add today's weekly fast if today is Mon or Thu
+  const todayDow = TODAY.getDay();
+  const todayWeekly = (todayDow === 1 || todayDow === 4)
+    ? [{ name: todayDow===1?'Monday fast':'Thursday fast', dates:[new Date(TODAY)], hijri:'Weekly sunnah', icon:'ti-repeat', note: todayDow===1?'Monday':'Thursday', weekly:true }]
+    : [];
+  const allWithRecent = [...todayWeekly, ...weekly];
   // Cut off at end of current Hijri year (last day of Dhul Hijjah)
   const todayH = gToH(TODAY);
   const endOfHijriYear = hToG(todayH.year + 1, 12, 29);
-  const all = [...FASTS, ...weekly].sort((a,b) => firstDate(a)-firstDate(b));
+  const all = [...FASTS, ...allWithRecent].sort((a,b) => firstDate(a)-firstDate(b));
   let firstUpcoming = true;
   all.forEach(f => {
     const last = lastDate(f); const first = firstDate(f);
+    // Keep fast if it ends today or in the future
     if(last < TODAY) return;
     if(first > endOfHijriYear) return;
     const diff = Math.ceil((first - TODAY) / 86400000);
@@ -815,8 +824,9 @@ function renderUpcoming() {
     const isWeekly = !!f.weekly;
     const iconBg = isWeekly ? '#E6F1FB' : '#E1F5EE';
     const iconColor = isWeekly ? '#185FA5' : '#0F6E56';
-    let cdClass = diff === 1 ? 'cd-tomorrow' : diff <= 7 ? 'cd-soon' : 'cd-future';
-    let countText = diff===0 ? 'Today' : diff===1 ? 'Tomorrow' : `In ${diff} days`;
+    const _afterMag = window._prayerTimesGlobal && new Date() > parseTime(window._prayerTimesGlobal.Maghrib);
+    let cdClass = diff === 0 ? (_afterMag ? '' : 'cd-today') : diff === 1 ? 'cd-tomorrow' : diff <= 7 ? 'cd-soon' : diff < 0 ? '' : 'cd-future';
+    let countText = diff < 0 ? '' : diff===0 ? (_afterMag ? '' : 'Today') : diff===1 ? 'Tomorrow' : `In ${diff} days`;
     const dateStr = f.dates.length>1 ? `${formatDate(first)} – ${formatDate(last)}` : formatDate(first);
     const key = `fast_${f.name}_${firstDate(f).toDateString()}`;
     const isDone = localStorage.getItem(key) === '1';
@@ -1014,10 +1024,23 @@ function renderPrayers(times, city) {
   // Flash Tomorrow badges if after Maghrib
   setTimeout(() => {
     const maghrib = parseTime(times.Maghrib);
-    const afterMaghrib = new Date() > maghrib;
+    const fajr = parseTime(times.Fajr);
+    const now = new Date();
+    // Flash Tomorrow/Today badge: after Maghrib until next Fajr
+    const afterMaghrib = now > maghrib;
+    const flashTomorrow = afterMaghrib && now < fajr;
     document.querySelectorAll('.cd-tomorrow').forEach(el => {
-      el.classList.toggle('flash-alert', afterMaghrib);
+      el.classList.toggle('flash-alert', flashTomorrow);
     });
+      // Flash Today badge: same window as Tomorrow (Maghrib to Fajr)
+    const flashToday = flashTomorrow || now < fajr;
+    document.querySelectorAll('.cd-today').forEach(el => {
+      el.classList.toggle('flash-alert', flashToday);
+    });
+    // Hide Today badge after Maghrib and re-render upcoming list
+    if (afterMaghrib) {
+      document.querySelectorAll('.cd-today').forEach(el => { el.style.display = 'none'; });
+    }
   }, 100);
 
   const now = new Date();
