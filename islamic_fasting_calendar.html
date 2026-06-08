@@ -110,6 +110,7 @@
   .fast-card.today-fast .fast-info,
   .fast-card.today-fast .countdown { position: relative; z-index: 1; }
   .today-reminder-row {
+    display:none !important;
     position: absolute; top: 0; left: 44%; right: 85px; bottom: 0;
     display: flex; align-items: center; justify-content: center;
     text-align: center;
@@ -133,6 +134,15 @@
   .fast-icon i { font-size: 18px; }
   .fast-info { flex: 1; }
   .fast-name { font-size: 14px; font-weight: 500; }
+  .fast-title-row{display:flex;align-items:center;gap:8px;}
+  .today-reminder-inline{
+    font-size:12px;
+    color:#0e9e8a;
+    font-style:italic;
+    font-weight:700;
+    white-space:nowrap;
+    margin-left:8px;
+  }
   .fast-date { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; }
   .fast-hijri { font-size: 11px; color: var(--color-text-tertiary); margin-top: 1px; }
   .countdown { font-size: 12px; font-weight: 500; padding: 3px 8px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
@@ -905,7 +915,10 @@ function renderUpcoming() {
       <div class="fast-check ${isDone ? 'checked' : ''} ${isFuture ? 'future' : ''}" ${isFuture ? '' : `onclick="toggleFast(this,'${key}')"`}></div>
       <div class="fast-icon" style="background:${iconBg}"><i class="ti ${f.icon}" style="color:${iconColor}" aria-hidden="true"></i></div>
       <div class="fast-info">
-        <div class="fast-name">${f.name}</div>
+        <div class="fast-title-row">
+<div class="fast-name">${f.name}</div>
+${isTodayFast ? `<div class="today-reminder-inline" id="fast-reminder-inline">🤲 May Allah accept it</div>` : ''}
+</div>
         <div class="fast-date">${dateStr}</div>
         <div class="fast-hijri">${f.hijri} · ${f.note}</div>
       </div>
@@ -915,7 +928,7 @@ function renderUpcoming() {
     list.appendChild(card);
     if (isTodayFast) {
       let _ri = 0;
-      const _el = card.querySelector('#fast-reminder-text');
+      const _el = card.querySelector('#fast-reminder-inline');
       if (_el) setInterval(() => {
         _ri = (_ri + 1) % REMINDERS.length;
         _el.style.animation = 'none'; void _el.offsetWidth;
