@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#c8860a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fasting Calendar">
+<link rel="manifest" href="manifest.json">
 <title>Islamic Fasting Calendar</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 <style>
@@ -31,7 +36,7 @@
   body { font-family: var(--font-sans); background: var(--color-background-secondary); color: var(--color-text-primary); min-height: 100vh; display: flex; justify-content: center; padding: 2rem 1rem; }
   .container { width: 100%; max-width: 640px; }
   .app { padding: 1.5rem; background: var(--color-background-primary); border-radius: var(--border-radius-lg); border: 0.5px solid var(--color-border-tertiary); }
-  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+  .header { display: flex; flex-direction: row; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; }
   .header h1 { font-size: 17px; font-weight: 500; white-space: nowrap; }
   .header p { font-size: 13px; color: var(--color-text-secondary); margin-top: 2px; }
   .tabs { display: flex; gap: 8px; margin-bottom: 1.5rem; border-bottom: 0.5px solid var(--color-border-tertiary); }
@@ -81,29 +86,42 @@
   .weekly-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: .75rem; }
   .day-badge { font-size: 12px; padding: 4px 12px; border-radius: 20px; background: #E1F5EE; color: #085041; font-weight: 500; }
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
-  /* ── Dashboard / score+prayer widget ── */
-  .dashboard-box { display: flex; gap: 10px; margin-bottom: .75rem; align-items: flex-start; }
-  @media (max-width: 680px) {
-    .dashboard-box { flex-direction: column; align-items: stretch; }
-    .dashboard-left { width: 100% !important; flex: none !important; align-self: auto !important; height: fit-content !important; }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.9; transform: scale(1); }
+    50%       { opacity: 0.2; transform: scale(0.6); }
   }
-  /* Score card */
-  .dashboard-left { background: #1a7a52; border-radius: var(--border-radius-lg); padding: .75rem; color: white; flex: 0 0 240px; display: flex; flex-direction: column; gap: 8px; overflow: hidden; align-self: flex-start; height: fit-content; }
-  .dash-score-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-  .dash-score-moon { font-size: 14px; }
-  .dash-score-title { font-size: 11px; font-weight: 600; opacity: .85; }
-  .dash-delta-badges { display: flex; gap: 5px; }
-  .dash-delta-badge { font-size: 10px; font-weight: 600; background: rgba(255,255,255,.2); border-radius: 6px; padding: 1px 6px; }
-  .dash-bars-wrap { display: flex; gap: 4px; align-items: flex-end; height: 58px; margin-bottom: 4px; }
-  .dash-divider { width: 1px; background: rgba(255,255,255,.2); margin: 0 3px; align-self: stretch; }
-  .dash-bar-col { display: flex; flex-direction: column; align-items: center; gap: 2px; justify-content: flex-end; }
-  .dash-bar-num { font-size: 18px; font-weight: 700; line-height: 1; }
-  .dash-bar { border-radius: 3px 3px 0 0; width: 26px; min-height: 3px; }
-  .dash-bar.cur { background: #ffffff; }
-  .dash-bar.prev { background: rgba(255,255,255,.38); }
-  .dash-bar-label { font-size: 9px; opacity: .7; text-align: center; margin-top: 2px; }
+  .star-twinkle { animation: twinkle 2s ease-in-out infinite; transform-origin: center; }
+  @keyframes sway {
+    0%, 100% { transform: rotate(-4deg); }
+    50%       { transform: rotate(4deg); }
+  }
+  .tree-sway { display: inline-block; animation: sway 3s ease-in-out infinite; transform-origin: bottom center; }
+  /* Suhoor / Iftar countdown banner */
+  /* countdown inline styles only — no separate banner classes needed */
+  /* ── Dashboard / score+prayer widget ── */
+  .dashboard-box { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: .75rem; }
+  @media (max-width: 580px) {
+    .dashboard-box { grid-template-columns: 1fr; }
+  }
+  /* Score card — tree-growth tile design */
+  .dashboard-left { background: #1a5c3a; border-radius: var(--border-radius-lg); padding: .875rem; color: white; overflow: hidden; }
+  .dash-header { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+  .dash-header-title { font-size: 13px; font-weight: 600; opacity: .9; }
+  .dash-tiles { display: grid; grid-template-columns: 1fr 1px 1fr 1px 1fr 1px 1fr; gap: 0; align-items: start; }
+  .dash-tile-divider { background: rgba(255,255,255,.18); align-self: stretch; margin: 0 2px; }
+  .dash-tile { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0 2px; }
+  .dash-tile-label { font-size: 10px; font-weight: 600; opacity: .75; text-align: center; line-height: 1.2; height: 24px; display: flex; align-items: center; justify-content: center; }
+  .dash-tile-tree { font-size: 30px; line-height: 1; display: flex; align-items: center; justify-content: center; height: 40px; min-height: 40px; }
+  .dash-tile-num { font-size: 24px; font-weight: 700; line-height: 1; }
+  .dash-tile-bar-wrap { width: 100%; margin-top: 4px; position: relative; }
+  .dash-tile-bar-fill { height: 100%; border-radius: 99px; transition: width 0.4s ease; }
+  .dash-tile-bar-base { background: rgba(255,255,255,.55); }
+  .dash-tile-bar-progress { background: #5DCAA5; }
+  .dash-tile-bar-excess { background: #f0c040; }
+  .dash-tile-delta { font-size: 10px; font-weight: 600; background: rgba(255,255,255,.22); border-radius: 12px; padding: 2px 8px; margin-top: 2px; white-space: nowrap; }
+
   /* Prayer card */
-  .dashboard-right { background: var(--color-background-primary); border: 2px solid #1D9E75; border-radius: var(--border-radius-lg); padding: .75rem .875rem; flex: 1; min-width: 0; }
+  .dashboard-right { background: var(--color-background-primary); border: 1.5px solid #1D9E75; border-radius: var(--border-radius-lg); padding: .75rem .875rem; min-width: 0; }
   .score-box { background: linear-gradient(135deg, #0F6E56, #1D9E75); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; margin-bottom: 1rem; color: white; }
   .score-title { font-size: 11px; font-weight: 500; opacity: 0.8; text-transform: uppercase; letter-spacing: .06em; margin-bottom: .75rem; }
   .score-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: .75rem; }
@@ -143,57 +161,79 @@
 <div class="container">
 <div class="app">
   <h2 class="sr-only">Islamic fasting calendar — auto-updating</h2>
-  <div class="header">
-    <div>
-      <h1>Islamic fasting calendar (Irfan Bandey)</h1>
+  <div class="header" style="background: linear-gradient(135deg, #c8860a 0%, #e8a800 25%, #ffe033 50%, #e8a800 75%, #c8860a 100%); border-radius: var(--border-radius-lg); padding: .875rem 1.25rem; margin-bottom: 1.25rem; display:flex; align-items:center; justify-content:space-between; gap:8px;">
+    <!-- Left: title + name -->
+    <div style="flex:0 0 auto">
+      <h1 style="color:#fff;font-size:22px;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,0.3);">Islamic fasting calendar</h1>
+      <p style="color:#0f5c2e;font-size:14px;font-weight:600;margin-top:2px;">Irfan Bandey</p>
     </div>
-    <i class="ti ti-moon" style="font-size:28px;color:#1D9E75" aria-hidden="true"></i>
-  </div>
-
-  <div style="font-size:12px;color:var(--color-text-secondary);text-align:center;margin-bottom:.75rem;line-height:1.5;padding:0 .5rem">
-    The Prophet ﷺ said: <strong style="color:var(--color-text-primary)">"Deeds are presented on Monday and Thursday, and I love for my deeds to be presented while I am fasting."</strong> — Tirmidhi
+    <!-- Center: countdown (hidden when not fasting) -->
+    <div id="fast-countdown-wrap" style="flex:1;text-align:center"></div>
+    <!-- Right: moon + stars + simulate -->
+    <div style="flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+      <div style="position:relative;width:52px;height:38px;display:flex;align-items:center;justify-content:center">
+        <svg style="position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;pointer-events:none" viewBox="0 0 52 38">
+          <g class="star-twinkle" style="animation-delay:0s">
+            <polygon points="5,0 6.5,3.5 10,3.5 7.2,5.8 8.2,9.5 5,7.2 1.8,9.5 2.8,5.8 0,3.5 3.5,3.5" fill="white" transform="translate(1,1)"/>
+          </g>
+          <g class="star-twinkle" style="animation-delay:0.8s">
+            <polygon points="4,0 5.2,2.8 8,2.8 5.8,4.6 6.6,7.5 4,5.8 1.4,7.5 2.2,4.6 0,2.8 2.8,2.8" fill="white" transform="translate(40,1)"/>
+          </g>
+          <g class="star-twinkle" style="animation-delay:1.4s">
+            <polygon points="3.5,0 4.5,2.5 7,2.5 5,4 5.8,6.5 3.5,5 1.2,6.5 2,4 0,2.5 2.5,2.5" fill="white" transform="translate(2,24)"/>
+          </g>
+        </svg>
+        <svg id="moon-phase-svg" width="30" height="30" viewBox="0 0 28 28" aria-label="Current moon phase" role="img" style="position:relative;z-index:1"></svg>
+      </div>
+      <button onclick="toggleSimulation()" id="sim-btn" style="font-family:var(--font-sans);font-size:9px;padding:2px 8px;border-radius:20px;border:1px solid rgba(255,255,255,0.4);background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.9);cursor:pointer">▶ Simulate</button>
+    </div>
   </div>
 
   <div class="dashboard-box">
-    <!-- Score card -->
+    <!-- Score card — tree-growth tile design -->
     <div class="dashboard-left">
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-        <span style="font-size:15px">🌙</span>
-        <span style="font-size:13px;font-weight:600;opacity:.85">Fasting score</span>
+      <div class="dash-header">
+        <span style="font-size:16px">🌙</span>
+        <span class="dash-header-title">Fasting Tracker</span>
       </div>
-      <div style="display:flex;gap:6px;align-items:flex-end;justify-content:space-evenly">
-        <!-- Month group -->
-        <div style="display:flex;gap:10px;align-items:flex-end">
-          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-            <span style="font-size:12px;visibility:hidden;padding:2px 7px">·</span>
-            <div style="font-size:22px;font-weight:700" id="sc-month-prev-num">0</div>
-            <div style="width:34px;min-height:3px;border-radius:3px 3px 0 0;background:rgba(255,255,255,.35)" id="sc-month-bar-prev"></div>
-            <div style="font-size:12px;opacity:.75" id="sc-month-prev-label">—</div>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-            <span id="sc-month-delta" style="font-size:12px;font-weight:600;background:rgba(255,255,255,.22);border-radius:6px;padding:2px 7px;white-space:nowrap"></span>
-            <div style="font-size:22px;font-weight:700" id="sc-month">0</div>
-            <div style="width:34px;min-height:3px;border-radius:3px 3px 0 0;background:#fff" id="sc-month-bar-cur"></div>
-            <div style="font-size:12px;opacity:.75" id="sc-month-cur-label">Mo</div>
-          </div>
+      <div class="dash-tiles">
+        <!-- Prev month -->
+        <div class="dash-tile">
+          <div class="dash-tile-label" id="sc-month-prev-label">—</div>
+          <div class="dash-tile-tree" id="sc-month-prev-tree"></div>
+          <div class="dash-tile-num" id="sc-month-prev-num">0</div>
+          <div class="dash-tile-delta" id="sc-month-prev-delta" style="visibility:hidden">·</div>
+          <div class="dash-tile-bar-wrap"><div class="dash-tile-bar-fill dash-tile-bar-base" id="sc-month-prev-bar" style="width:0%"></div></div>
         </div>
-        <div style="width:1px;background:rgba(255,255,255,.2);margin:0 2px;align-self:stretch"></div>
-        <!-- Year group -->
-        <div style="display:flex;gap:10px;align-items:flex-end">
-          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-            <span style="font-size:12px;visibility:hidden;padding:2px 7px">·</span>
-            <div style="font-size:22px;font-weight:700" id="sc-year-prev-num">0</div>
-            <div style="width:34px;min-height:3px;border-radius:3px 3px 0 0;background:rgba(255,255,255,.35)" id="sc-year-bar-prev"></div>
-            <div style="font-size:12px;opacity:.75" id="sc-year-prev-label">—</div>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-            <span id="sc-year-delta" style="font-size:12px;font-weight:600;background:rgba(255,255,255,.22);border-radius:6px;padding:2px 7px;white-space:nowrap"></span>
-            <div style="font-size:22px;font-weight:700" id="sc-year">0</div>
-            <div style="width:34px;min-height:3px;border-radius:3px 3px 0 0;background:#fff" id="sc-year-bar-cur"></div>
-            <div style="font-size:12px;opacity:.75" id="sc-year-cur-label">Yr</div>
-          </div>
+        <div class="dash-tile-divider"></div>
+        <!-- Cur month -->
+        <div class="dash-tile">
+          <div class="dash-tile-label" id="sc-month-cur-label">Mo</div>
+          <div class="dash-tile-tree" id="sc-month-cur-tree"><span class="tree-sway"></span></div>
+          <div class="dash-tile-num" id="sc-month">0</div>
+          <div class="dash-tile-delta" id="sc-month-delta"></div>
+          <div class="dash-tile-bar-wrap" id="sc-month-bar-wrap"><div class="dash-tile-bar-fill dash-tile-bar-progress" id="sc-month-bar" style="width:0%"></div></div>
+        </div>
+        <div class="dash-tile-divider"></div>
+        <!-- Prev year -->
+        <div class="dash-tile">
+          <div class="dash-tile-label" id="sc-year-prev-label">—</div>
+          <div class="dash-tile-tree" id="sc-year-prev-tree"></div>
+          <div class="dash-tile-num" id="sc-year-prev-num">0</div>
+          <div class="dash-tile-delta" id="sc-year-prev-delta" style="visibility:hidden">·</div>
+          <div class="dash-tile-bar-wrap"><div class="dash-tile-bar-fill dash-tile-bar-base" id="sc-year-prev-bar" style="width:0%"></div></div>
+        </div>
+        <div class="dash-tile-divider"></div>
+        <!-- Cur year -->
+        <div class="dash-tile">
+          <div class="dash-tile-label" id="sc-year-cur-label">Yr</div>
+          <div class="dash-tile-tree" id="sc-year-cur-tree"><span class="tree-sway"></span></div>
+          <div class="dash-tile-num" id="sc-year">0</div>
+          <div class="dash-tile-delta" id="sc-year-delta"></div>
+          <div class="dash-tile-bar-wrap" id="sc-year-bar-wrap"><div class="dash-tile-bar-fill dash-tile-bar-progress" id="sc-year-bar" style="width:0%"></div></div>
         </div>
       </div>
+
     </div>
     <!-- Prayer card -->
     <div class="dashboard-right" id="prayer-box">
@@ -229,11 +269,22 @@
       <div class="month-title"><span id="month-title"></span><br><span class="month-hijri" id="month-hijri"></span></div>
       <button onclick="nextMonth()" aria-label="Next month"><i class="ti ti-chevron-right" aria-hidden="true"></i></button>
     </div>
+    <!-- Upcoming Islamic day countdown -->
+    <div id="islamic-day-countdown" style="margin-bottom:.75rem"></div>
     <div class="legend">
       <div class="legend-item"><div class="legend-dot" style="background:#E1F5EE;border:1px solid #5DCAA5"></div> Fasting day</div>
       <div class="legend-item"><div class="legend-dot" style="background:#5DCAA5"></div> Today &amp; fasting</div>
       <div class="legend-item"><div class="legend-dot" style="background:var(--color-background-secondary);border:1.5px solid #1D9E75"></div> Today</div>
       <div class="legend-item"><div class="legend-dot" style="background:transparent;border:1px dashed #5DCAA5"></div> Mon &amp; Thu</div>
+    </div>
+    <!-- Islamic days color legend -->
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:.75rem">
+      <div class="legend-item"><div style="width:10px;height:10px;border-radius:50%;background:#E74C3C;flex-shrink:0"></div> Eid</div>
+      <div class="legend-item"><div style="width:10px;height:10px;border-radius:50%;background:#E67E22;flex-shrink:0"></div> Arafah</div>
+      <div class="legend-item"><div style="width:10px;height:10px;border-radius:50%;background:#2E86C1;flex-shrink:0"></div> Ashura</div>
+      <div class="legend-item"><div style="width:10px;height:10px;border-radius:50%;background:#8E44AD;flex-shrink:0"></div> Laylat al-Qadr / New Year</div>
+      <div class="legend-item"><div style="width:10px;height:10px;border-radius:50%;background:#D4AC0D;flex-shrink:0"></div> Mawlid</div>
+      <div class="legend-item"><div style="width:10px;height:10px;border-radius:50%;background:#1D9E75;flex-shrink:0"></div> Isra wal Miraj</div>
     </div>
     <div class="month-grid" id="month-grid"></div>
     <div id="fast-this-month"></div>
@@ -259,12 +310,123 @@
       <div class="tip" style="border-left:3px solid #D85A30"><strong>No fasting on:</strong> Eid al-Fitr (1 Shawwal), Eid al-Adha (10 Dhul Hijjah), Ayyam al-Tashriq (11–13 Dhul Hijjah), or Friday/Saturday alone.</div>
     </div>
   </div>
-</div>
-</div>
+
+  <!-- Hadith footer bar -->
+  <div style="display:flex;align-items:center;gap:10px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:.625rem .875rem;margin-top:.75rem">
+    <span style="font-size:18px;background:#1a5c3a;color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700">"</span>
+    <span style="font-size:12px;color:var(--color-text-secondary);flex:1;line-height:1.5">"Whoever fasts in Ramadan out of faith and seeking reward, his past sins will be forgiven." <em style="color:var(--color-text-tertiary)">[Bukhari &amp; Muslim]</em></span>
+    <button id="notif-btn" onclick="requestNotifPermission()" title="Enable notifications" style="font-family:var(--font-sans);background:none;border:none;cursor:pointer;flex-shrink:0;padding:2px">
+      <i class="ti ti-bell" id="notif-icon" style="font-size:20px;color:var(--color-text-tertiary)"></i>
+    </button>
+  </div>
+
+</div><!-- /app -->
+</div><!-- /container -->
 
 <script>
 const TODAY = new Date();
 TODAY.setHours(0,0,0,0);
+
+// ── Moon phase SVG ──────────────────────────────────────────────
+// Returns 0–1: 0=new, 0.25=first quarter, 0.5=full, 0.75=last quarter
+function getMoonPhase(date) {
+  // Known new moon reference: Jan 6, 2000 18:14 UTC
+  const REF = new Date(Date.UTC(2000, 0, 6, 18, 14, 0));
+  const CYCLE = 29.53058867; // days
+  const elapsed = (date - REF) / (1000 * 60 * 60 * 24);
+  return ((elapsed % CYCLE) + CYCLE) % CYCLE / CYCLE; // 0–1
+}
+
+function renderMoonPhaseSVG(date) {
+  const phase = getMoonPhase(date); // 0=new, 0.5=full
+  const svg = document.getElementById('moon-phase-svg');
+  if (!svg) return;
+
+  const R = 12;      // moon radius
+  const cx = 14, cy = 14;
+  const lit = '#ffffff';
+  const dark = 'rgba(255,255,255,0.15)'; // subtle dark side against golden bg
+  const bg = 'none';
+
+  // Phase to illumination fraction and which side is lit
+  // 0–0.5: waxing (right side lit), 0.5–1: waning (left side lit)
+  const angle = phase * 2 * Math.PI; // 0=new, π=full
+  // Illumination: 0 at new, 1 at full, 0 at new again
+  const illum = (1 - Math.cos(angle)) / 2; // 0→1→0
+
+  // The terminator ellipse x-radius: positive=waxing bulge right, negative=waxing shadow
+  // For waxing (0–0.5): lit on right, terminator curves left
+  // For waning (0.5–1): lit on left, terminator curves right
+  const waxing = phase < 0.5;
+  // terminator x-radius as fraction of R: 1→0→-1 then flip side
+  // ellipseX: 1 at new (fully dark), 0 at quarter, -1 at full (fully lit)
+  // waxing: terminator is on left half; waning: on right half
+  let ex; // x-radius of ellipse terminator (can be negative = bulges other way)
+  if (waxing) {
+    ex = R * (1 - 2 * illum); // 1→-1 as illum goes 0→1
+  } else {
+    ex = R * (2 * illum - 1); // -1→1 as illum goes 1→0 (waning)
+  }
+
+  // Build path:
+  // The lit half is always a semicircle on one side,
+  // joined by an ellipse arc (the terminator) on the other.
+  // Waxing: right semicircle + ellipse terminator
+  // Waning: left semicircle + ellipse terminator
+
+  let path;
+  if (phase < 0.02 || phase > 0.98) {
+    svg.innerHTML = `<circle cx="${cx}" cy="${cy}" r="${R}" fill="rgba(255,255,255,0.2)"/>`;
+    svg.setAttribute('aria-label', 'New moon');
+    return;
+  }
+  if (phase > 0.48 && phase < 0.52) {
+    svg.innerHTML = `<circle cx="${cx}" cy="${cy}" r="${R}" fill="#ffffff"/>`;
+    svg.setAttribute('aria-label', 'Full moon');
+    return;
+  }
+
+  // Draw dark background circle first
+  // Then draw lit region as path
+  // Lit region: one half-circle + ellipse arc terminator
+  // top of circle = cy-R, bottom = cy+R
+  // For waxing: right half lit
+  //   Path: start top (cx, cy-R)
+  //         semicircle arc right to bottom (cx, cy+R)  [right half]
+  //         ellipse arc back to top using ex            [terminator, curves left or right]
+  // For waning: left half lit (mirror)
+
+  const top    = `${cx},${cy - R}`;
+  const bottom = `${cx},${cy + R}`;
+
+  let litPath;
+  if (waxing) {
+    // Right semicircle (large arc, sweep=1 = clockwise)
+    // Then terminator ellipse back up (sweep depends on bulge direction)
+    const tSweep = ex >= 0 ? 0 : 1; // if ex positive, terminator bulges left (sweep CCW)
+    const absEx = Math.abs(ex);
+    litPath = `M ${top} A ${R} ${R} 0 0 1 ${bottom} A ${absEx} ${R} 0 0 ${tSweep} ${top} Z`;
+  } else {
+    // Left semicircle (large arc, sweep=0 = counter-clockwise)
+    const tSweep = ex >= 0 ? 1 : 0;
+    const absEx = Math.abs(ex);
+    litPath = `M ${top} A ${R} ${R} 0 0 0 ${bottom} A ${absEx} ${R} 0 0 ${tSweep} ${top} Z`;
+  }
+
+  // Phase name for accessibility
+  const phaseName = phase < 0.25 ? 'Waxing crescent'
+    : phase < 0.5  ? 'Waxing gibbous'
+    : phase < 0.75 ? 'Waning gibbous'
+    : 'Waning crescent';
+
+  svg.innerHTML = `
+    <circle cx="${cx}" cy="${cy}" r="${R}" fill="${dark}" opacity="0.3"/>
+    <path d="${litPath}" fill="${lit}"/>
+  `;
+  svg.setAttribute('aria-label', phaseName);
+}
+
+renderMoonPhaseSVG(new Date());
 
 const HIJRI_MONTHS = ['Muharram','Safar','Rabi al-Awwal','Rabi al-Thani','Jumada al-Ula','Jumada al-Thani','Rajab','Shaban','Ramadan','Shawwal','Dhul Qidah','Dhul Hijjah'];
 const HIJRI_MONTHS_SHORT = ['Muh','Saf','Rab I','Rab II','Jum I','Jum II','Raj','Sha','Ram','Shaw','Qi','Hij'];
@@ -446,16 +608,22 @@ function countFastsInHijriPeriod(doneDates, hy, hm) {
   }).length;
 }
 
-function setDelta(elId, barCurId, barPrevId, cur, prev) {
-  const diff = cur - prev;
-  const deltaEl = document.getElementById(elId);
-  const maxH = 22;
-  const maxVal = Math.max(cur, prev, 1);
-  document.getElementById(barCurId).style.height = Math.max(3, Math.round((cur/maxVal)*maxH)) + 'px';
-  document.getElementById(barPrevId).style.height = Math.max(3, Math.round((prev/maxVal)*maxH)) + 'px';
-  if(diff > 0){ deltaEl.textContent = '↑ +'+diff; deltaEl.className='score-delta up'; }
-  else if(diff < 0){ deltaEl.textContent = '↓ '+diff; deltaEl.className='score-delta down'; }
-  else { deltaEl.textContent = '= 0'; deltaEl.className='score-delta same'; }
+function treeEmojiMonth(n) {
+  if (n === 0) return '';
+  if (n === 1) return '🌱';
+  if (n <= 3)  return '🌿';
+  if (n <= 8)  return '🌳';
+  if (n <= 20) return '🌴';
+  return '🌴🌴';
+}
+
+function treeEmojiYear(n) {
+  if (n === 0)  return '';
+  if (n <= 4)   return '🌱';
+  if (n <= 14)  return '🌿';
+  if (n <= 39)  return '🌳';
+  if (n <= 79)  return '🌴';
+  return '🌴🌴';
 }
 
 function calcScore() {
@@ -481,53 +649,108 @@ function calcScore() {
   const thisYear  = countFastsInHijriPeriod(doneDates, curHY, null);
   const lastYear  = countFastsInHijriPeriod(doneDates, prevHY, null);
 
-  // Streak
-  const dateSet = new Set(doneDates.map(d => d.toDateString()));
-  let streak = 0, best = 0, tempStreak = 0;
-  const cur2 = new Date(now);
-  while(dateSet.has(cur2.toDateString())){ streak++; cur2.setDate(cur2.getDate()-1); }
-  // Best streak
-  const sorted = doneDates.map(d => d.getTime()).sort((a,b)=>a-b);
-  let prev2 = null;
-  sorted.forEach(t => {
-    if(prev2 && t - prev2 <= 86400000*1.5) tempStreak++;
-    else tempStreak = 1;
-    if(tempStreak > best) best = tempStreak;
-    prev2 = t;
-  });
-
   // Update numbers
   document.getElementById('sc-month').textContent = thisMonth;
-  document.getElementById('sc-year').textContent = thisYear;
+  document.getElementById('sc-year').textContent  = thisYear;
   document.getElementById('sc-month-prev-num').textContent = lastMonth;
-  document.getElementById('sc-year-prev-num').textContent = lastYear;
-  // Bar sub-labels (Qi / Hij style short month names)
-  document.getElementById('sc-month-prev-label').textContent = HIJRI_MONTHS_SHORT[prevHM-1];
-  document.getElementById('sc-month-cur-label').textContent = HIJRI_MONTHS_SHORT[curHM-1];
-  document.getElementById('sc-year-prev-label').textContent = prevHY;
-  document.getElementById('sc-year-cur-label').textContent = curHY;
-  // Year-row badges at bottom of score card
-  const prevYrEl = document.getElementById('sc-year-prev-badge');
-  const curYrEl  = document.getElementById('sc-year-cur-badge');
-  if(prevYrEl) prevYrEl.textContent = prevHY;
-  if(curYrEl)  curYrEl.textContent  = curHY;
-  // Delta badges (↑ +3 style)
-  function renderDelta(elId, diff) {
+  document.getElementById('sc-year-prev-num').textContent  = lastYear;
+
+  // Labels
+  document.getElementById('sc-month-prev-label').textContent = HIJRI_MONTHS_SHORT[prevHM-1] + ' ' + prevHMY;
+  document.getElementById('sc-month-cur-label').textContent  = HIJRI_MONTHS_SHORT[curHM-1]  + ' ' + curHY;
+  document.getElementById('sc-year-prev-label').textContent  = String(prevHY) + ' AH';
+  document.getElementById('sc-year-cur-label').textContent   = String(curHY)  + ' AH';
+
+  // Tree emojis — prev tiles static, cur tiles have swaying span inside
+  document.getElementById('sc-month-prev-tree').textContent = treeEmojiMonth(lastMonth);
+  document.getElementById('sc-year-prev-tree').textContent  = treeEmojiYear(lastYear);
+  const curMonthSpan = document.querySelector('#sc-month-cur-tree .tree-sway');
+  const curYearSpan  = document.querySelector('#sc-year-cur-tree .tree-sway');
+  if (curMonthSpan) curMonthSpan.textContent = treeEmojiMonth(thisMonth);
+  if (curYearSpan)  curYearSpan.textContent  = treeEmojiYear(thisYear);
+
+  // Delta badges — only show when there is something to compare (either side > 0)
+  function renderDelta(elId, diff, cur, prev) {
     const el = document.getElementById(elId);
-    if(!el) return;
-    if(diff > 0) el.textContent = '↑ +' + diff;
-    else if(diff < 0) el.textContent = '↓ ' + diff;
+    if (!el) return;
+    if (cur === 0 && prev === 0) {
+      el.style.visibility = 'hidden';
+      el.textContent = '·';
+      return;
+    }
+    el.style.visibility = 'visible';
+    if (diff > 0) el.textContent = '↑ +' + diff;
+    else if (diff < 0) el.textContent = '↓ ' + diff;
     else el.textContent = '= 0';
   }
-  renderDelta('sc-month-delta', thisMonth - lastMonth);
-  renderDelta('sc-year-delta',  thisYear  - lastYear);
-  // Bar heights
-  const mMax = Math.max(thisMonth, lastMonth, 1);
-  const yMax = Math.max(thisYear, lastYear, 1);
-  document.getElementById('sc-month-bar-cur').style.height  = Math.max(3, Math.min(16, Math.round((thisMonth/mMax)*16))) + 'px';
-  document.getElementById('sc-month-bar-prev').style.height = Math.max(3, Math.min(16, Math.round((lastMonth/mMax)*16))) + 'px';
-  document.getElementById('sc-year-bar-cur').style.height   = Math.max(3, Math.min(16, Math.round((thisYear/yMax)*16)))  + 'px';
-  document.getElementById('sc-year-bar-prev').style.height  = Math.max(3, Math.min(16, Math.round((lastYear/yMax)*16)))  + 'px';
+  renderDelta('sc-month-delta', thisMonth - lastMonth, thisMonth, lastMonth);
+  renderDelta('sc-year-delta',  thisYear  - lastYear,  thisYear,  lastYear);
+
+  // Progress bars — segmented with needle marker
+  function renderSegmentBar(wrapId, cur, prev) {
+    const wrap = document.getElementById(wrapId);
+    if (!wrap) return;
+    const max    = Math.max(cur, prev, 1);
+    const total  = Math.max(cur, prev);   // total segments shown
+    const segs   = Math.max(total, 5);    // minimum 5 segments for visual
+    const curPct = Math.min((cur / segs) * 100, 100);
+    const needlePct = prev > 0 ? Math.min((prev / segs) * 100, 100) : null;
+
+    // Color gradient: red → orange → yellow → green → teal
+    const COLORS = ['#e05a3a','#e0853a','#e0b83a','#a8c840','#5DCAA5','#3ab8a0'];
+    function segColor(i, total) {
+      const t = total <= 1 ? 0 : i / (total - 1);
+      const idx = Math.min(Math.floor(t * (COLORS.length - 1)), COLORS.length - 2);
+      return COLORS[idx];
+    }
+
+    // Build segments
+    let segHTML = '';
+    for (let i = 0; i < segs; i++) {
+      const filled = i < cur;
+      const isExcess = prev > 0 && i >= prev && filled;
+      const color = isExcess ? '#f0c040' : (filled ? segColor(i, segs) : 'rgba(255,255,255,0.12)');
+      segHTML += `<div style="flex:1;height:100%;background:${color};border-radius:2px;margin:0 1px;transition:background 0.3s"></div>`;
+    }
+
+    // Needle at prev position
+    const needleHTML = needlePct !== null ? `
+      <div style="position:absolute;top:-3px;bottom:-3px;width:3px;background:rgba(255,255,255,0.9);border-radius:2px;left:calc(${needlePct}% - 1.5px);box-shadow:0 0 4px rgba(0,0,0,0.4)"></div>` : '';
+
+    // Percentage label
+    const pct = prev > 0 ? Math.round((cur / prev) * 100) : (cur > 0 ? 100 : 0);
+    const pctColor = cur > prev ? '#f0c040' : 'rgba(255,255,255,0.7)';
+    const pctLabel = prev > 0 ? `<div style="font-size:9px;font-weight:700;color:${pctColor};text-align:center;margin-top:3px">${pct}% of prev</div>` : '';
+
+    wrap.innerHTML = `
+      <div style="position:relative;height:10px;border-radius:99px;overflow:visible;background:rgba(255,255,255,0.08);border:2px solid rgba(255,255,255,0.75);box-shadow:0 0 6px rgba(255,255,255,0.25)">
+        <div style="display:flex;width:100%;height:100%;border-radius:99px;overflow:hidden;padding:1px">
+          ${segHTML}
+        </div>
+        ${needleHTML}
+      </div>
+      ${pctLabel}`;
+  }
+
+  // Prev bars — static full muted bar
+  function renderPrevBar(wrapId, val) {
+    const wrap = document.getElementById(wrapId);
+    if (!wrap || val === 0) { if(wrap) wrap.innerHTML=''; return; }
+    wrap.innerHTML = `
+      <div style="height:10px;border-radius:99px;overflow:hidden;background:rgba(255,255,255,0.08);border:2px solid rgba(255,255,255,0.75);box-shadow:0 0 6px rgba(255,255,255,0.25)">
+        <div style="display:flex;width:100%;height:100%;padding:1px;gap:1px">
+          ${Array.from({length:val}, (_,i) => `<div style="flex:1;height:100%;background:rgba(255,255,255,0.35);border-radius:2px"></div>`).join('')}
+        </div>
+      </div>
+      <div style="font-size:9px;color:rgba(255,255,255,0.5);text-align:center;margin-top:3px">${val} fasts</div>`;
+  }
+
+  renderPrevBar('sc-month-prev-bar', lastMonth);
+  renderPrevBar('sc-year-prev-bar',  lastYear);
+  renderSegmentBar('sc-month-bar-wrap', thisMonth, lastMonth);
+  renderSegmentBar('sc-year-bar-wrap',  thisYear,  lastYear);
+
+
 }
 
 function renderUpcoming() {
@@ -585,6 +808,25 @@ function renderCalendar() {
     const d = document.createElement('div'); d.className='day-label'; d.textContent=l; grid.appendChild(d);
   });
   const fastDates = allFastDates();
+  // Important Islamic days lookup
+  function getIslamicDay(hYear, hMonth, hDay) {
+    const key = `${hMonth}-${hDay}`;
+    const days = {
+      '1-1':   { label: 'Islamic New Year', emoji: '🌙', color: '#8E44AD' },
+      '1-10':  { label: 'Ashura',           emoji: '💧', color: '#2E86C1' },
+      '3-12':  { label: 'Mawlid al-Nabi',   emoji: '⭐', color: '#D4AC0D' },
+      '7-27':  { label: 'Isra wal Miraj',   emoji: '🕌', color: '#1D9E75' },
+      '9-27':  { label: 'Laylat al-Qadr',   emoji: '✨', color: '#8E44AD' },
+      '10-1':  { label: 'Eid al-Fitr',      emoji: '🎉', color: '#E74C3C' },
+      '12-9':  { label: 'Day of Arafah',    emoji: '🏔️', color: '#E67E22' },
+      '12-10': { label: 'Eid al-Adha',      emoji: '🎉', color: '#E74C3C' },
+      '12-11': { label: 'Ayyam al-Tashriq', emoji: '📅', color: '#7F8C8D' },
+      '12-12': { label: 'Ayyam al-Tashriq', emoji: '📅', color: '#7F8C8D' },
+      '12-13': { label: 'Ayyam al-Tashriq', emoji: '📅', color: '#7F8C8D' },
+    };
+    return days[key] || null;
+  }
+
   const startDay = new Date(viewYear, viewMonth, 1).getDay();
   for(let i=0;i<startDay;i++){const e=document.createElement('div');e.className='day';grid.appendChild(e);}
   const days = new Date(viewYear, viewMonth+1, 0).getDate();
@@ -599,17 +841,93 @@ function renderCalendar() {
     if(date.toDateString()===TODAY.toDateString()) cls += ' today';
     div.className = cls;
     const h = gToH(date);
-    div.innerHTML = `<span class="greg">${d}</span><span class="hijri-d">${h.day} ${HIJRI_MONTHS_SHORT[h.month-1]}</span>`;
+    const islamicDay = getIslamicDay(h.year, h.month, h.day);
+    const dotHTML = islamicDay
+      ? `<span style="display:block;width:6px;height:6px;border-radius:50%;background:${islamicDay.color};margin:1px auto 0;flex-shrink:0" title="${islamicDay.label}"></span>`
+      : '';
+    div.innerHTML = `<span class="greg">${d}</span><span class="hijri-d">${h.day} ${HIJRI_MONTHS_SHORT[h.month-1]}</span>${dotHTML}`;
+    if (islamicDay) div.title = islamicDay.label;
     grid.appendChild(div);
   }
   const inMonth = FASTS.filter(f => f.dates.some(d => d.getMonth()===viewMonth && d.getFullYear()===viewYear));
   const info = document.getElementById('fast-this-month');
   info.innerHTML = '';
+
+  // Show Islamic days for this month first
+  const daysInMonth = new Date(viewYear, viewMonth+1, 0).getDate();
+  for (let d = 1; d <= daysInMonth; d++) {
+    const h = gToH(new Date(viewYear, viewMonth, d));
+    const islamicDay = getIslamicDay(h.year, h.month, h.day);
+    if (islamicDay) {
+      const t = document.createElement('div');
+      t.style.cssText = `display:flex;align-items:center;background:var(--color-background-secondary);border-radius:var(--border-radius-md);margin-bottom:.5rem;overflow:hidden`;
+      t.innerHTML = `
+        <div style="width:0;height:0;border-top:24px solid transparent;border-bottom:24px solid transparent;border-left:14px solid ${islamicDay.color};flex-shrink:0"></div>
+        <div style="padding:.55rem .875rem;font-size:13px;color:var(--color-text-secondary);line-height:1.5">
+          <strong style="color:var(--color-text-primary)">${islamicDay.emoji} ${islamicDay.label}</strong> — ${h.day} ${HIJRI_MONTHS[h.month-1]} ${h.year}
+        </div>`;
+      info.appendChild(t);
+    }
+  }
+
   inMonth.forEach(f => {
     const t = document.createElement('div'); t.className='tip';
     t.innerHTML = `<strong>${f.name}</strong> — ${f.hijri}`; info.appendChild(t);
   });
-  if(!inMonth.length) info.innerHTML = '<div class="tip">No special fasting days this month.</div>';
+  if(!inMonth.length && !info.children.length) info.innerHTML = '<div class="tip">No special days this month.</div>';
+}
+
+function renderIslamicDayCountdown() {
+  const wrap = document.getElementById('islamic-day-countdown');
+  if (!wrap) return;
+
+  // All Islamic days with Hijri month/day
+  const ISLAMIC_DAYS = [
+    { hm: 1,  hd: 1,  label: 'Islamic New Year', emoji: '🌙', color: '#8E44AD' },
+    { hm: 1,  hd: 9,  label: 'Tasu\'a',           emoji: '💧', color: '#2E86C1' },
+    { hm: 1,  hd: 10, label: 'Ashura',            emoji: '💧', color: '#2E86C1' },
+    { hm: 3,  hd: 12, label: 'Mawlid al-Nabi',    emoji: '⭐', color: '#D4AC0D' },
+    { hm: 7,  hd: 27, label: 'Isra wal Miraj',    emoji: '🕌', color: '#1D9E75' },
+    { hm: 9,  hd: 27, label: 'Laylat al-Qadr',    emoji: '✨', color: '#8E44AD' },
+    { hm: 10, hd: 1,  label: 'Eid al-Fitr',       emoji: '🎉', color: '#E74C3C' },
+    { hm: 12, hd: 9,  label: 'Day of Arafah',     emoji: '🏔️', color: '#E67E22' },
+    { hm: 12, hd: 10, label: 'Eid al-Adha',       emoji: '🎉', color: '#E74C3C' },
+  ];
+
+  const todayH = gToH(TODAY);
+  let next = null;
+  let minDays = Infinity;
+
+  // Check current and next Hijri year
+  for (const hy of [todayH.year, todayH.year + 1]) {
+    for (const day of ISLAMIC_DAYS) {
+      const greg = hToG(hy, day.hm, day.hd);
+      greg.setHours(0,0,0,0);
+      const diff = Math.ceil((greg - TODAY) / 86400000);
+      if (diff >= 0 && diff < minDays) {
+        minDays = diff;
+        next = { ...day, greg, diff };
+      }
+    }
+  }
+
+  if (!next) { wrap.innerHTML = ''; return; }
+
+  const diffText = next.diff === 0 ? 'Today!' : next.diff === 1 ? 'Tomorrow' : `in ${next.diff} days`;
+  const h = gToH(next.greg);
+  const gregStr = next.greg.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+  wrap.innerHTML = `
+    <div style="display:flex;align-items:center;background:var(--color-background-secondary);border-radius:var(--border-radius-md);margin-bottom:.5rem;overflow:hidden">
+      <div style="width:0;height:0;border-top:36px solid transparent;border-bottom:36px solid transparent;border-left:14px solid ${next.color};flex-shrink:0"></div>
+      <div style="padding:.6rem .875rem;flex:1;display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--color-text-primary)">${next.emoji} ${next.label}</div>
+          <div style="font-size:11px;color:var(--color-text-secondary);margin-top:1px">${h.day} ${HIJRI_MONTHS[h.month-1]} ${h.year} · ${gregStr}</div>
+        </div>
+        <div style="font-size:13px;font-weight:700;color:${next.color};white-space:nowrap">${diffText}</div>
+      </div>
+    </div>`;
 }
 
 function prevMonth(){ viewMonth--; if(viewMonth<0){viewMonth=11;viewYear--;} renderCalendar(); }
@@ -622,7 +940,7 @@ function showTab(name) {
   document.querySelectorAll('.tab').forEach((btn,i) => {
     btn.classList.toggle('active', ['upcoming','calendar','guide'][i]===name);
   });
-  if(name==='calendar') renderCalendar();
+  if(name==='calendar') { renderCalendar(); renderIslamicDayCountdown(); }
 }
 
 // Prayer times
@@ -649,6 +967,9 @@ function to12hr(str) {
 }
 
 function renderPrayers(times, city) {
+  // Store globally for countdown banner
+  _prayerTimes = times;
+
   const now = new Date();
   const parsed = PRAYER_KEYS.map((k,i) => ({ name: PRAYER_NAMES[i], time: parseTime(times[k]), str: times[k] }));
   let nextIdx = parsed.findIndex(p => p.time > now);
@@ -698,6 +1019,27 @@ function renderPrayers(times, city) {
     <div style="text-align:center;font-size:11px;color:var(--color-text-tertiary)">
       <i class="ti ti-map-pin" style="font-size:11px;vertical-align:-1px" aria-hidden="true"></i> ${city}
     </div>`;
+
+  // Start Suhoor/Iftar countdown banner
+  updateCountdownBanner();
+  if (_countdownInterval) clearInterval(_countdownInterval);
+  _countdownInterval = setInterval(updateCountdownBanner, 1000);
+
+  // Post to service worker for background notifications
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({
+      type: 'SCHEDULE_NOTIFICATIONS',
+      fajr:         parseTime(times.Fajr).toISOString(),
+      maghrib:      parseTime(times.Maghrib).toISOString(),
+      isFastingDay: isFastingToday()
+    });
+  }
+
+  // Auto-schedule browser notifications if already permitted
+  if (Notification.permission === 'granted') {
+    scheduleNotifications();
+    scheduleEveReminders();
+  }
 }
 
 function loadPrayers(lat, lon, city) {
@@ -789,6 +1131,204 @@ setInterval(() => {
 
 renderUpcoming();
 calcScore();
+
+// ── Suhoor / Iftar countdown banner ─────────────────────────────
+// Store prayer times globally so countdown can access them
+let _prayerTimes = null;
+let _countdownInterval = null;
+
+// ── Simulation mode ──────────────────────────────────────────────
+let _simActive = false;
+
+function toggleSimulation() {
+  _simActive = !_simActive;
+  const btn = document.getElementById('sim-btn');
+  if (_simActive) {
+    btn.textContent = '⏹ Stop';
+    btn.style.color = '#fff';
+    btn.style.borderColor = 'rgba(255,255,255,0.6)';
+    btn.style.background = 'rgba(0,0,0,0.2)';
+    updateCountdownBanner();
+    if (_countdownInterval) clearInterval(_countdownInterval);
+    _countdownInterval = setInterval(updateCountdownBanner, 1000);
+  } else {
+    btn.textContent = '▶ Simulate';
+    btn.style.color = 'rgba(255,255,255,0.85)';
+    btn.style.borderColor = 'rgba(255,255,255,0.4)';
+    btn.style.background = 'rgba(255,255,255,0.15)';
+    updateCountdownBanner();
+  }
+}
+
+function isFastingToday() {
+  if (_simActive) return true;
+  const fastDates = allFastDates();
+  return fastDates.has(TODAY.toDateString());
+}
+
+function updateCountdownBanner() {
+  const wrap = document.getElementById('fast-countdown-wrap');
+  if (!wrap || !_prayerTimes) return;
+  if (!isFastingToday()) { wrap.innerHTML = ''; return; }
+
+  const now     = new Date();
+  const fajr    = parseTime(_prayerTimes.Fajr);
+  const maghrib = parseTime(_prayerTimes.Maghrib);
+
+  let ms, icon, label;
+  if (now < fajr) {
+    ms    = fajr - now;
+    icon  = '🌅';
+    label = 'Suhoor';
+  } else if (now < maghrib) {
+    ms    = maghrib - now;
+    icon  = '🌙';
+    label = 'Iftar';
+  } else {
+    wrap.innerHTML = `<div style="margin-top:3px;font-size:12px;color:rgba(255,255,255,0.9);font-weight:600">✅ Alhamdulillah — fast complete</div>`;
+    return;
+  }
+
+  const h  = Math.floor(ms / 3600000);
+  const m  = Math.floor((ms % 3600000) / 60000);
+  const s  = Math.floor((ms % 60000) / 1000);
+  const hh = String(h).padStart(2,'0');
+  const mm = String(m).padStart(2,'0');
+  const ss = String(s).padStart(2,'0');
+
+  wrap.innerHTML = `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1px">
+    <div style="display:flex;align-items:center;gap:5px">
+      <span style="font-size:14px">${icon}</span>
+      <span style="font-size:10px;font-weight:600;color:#0a3d1f;text-transform:uppercase;letter-spacing:.07em">${label} in</span>
+    </div>
+    <span style="font-size:22px;font-weight:700;color:#0f5c2e;font-variant-numeric:tabular-nums;line-height:1">${hh}:${mm}:${ss}</span>
+  </div>`;
+}
+
+// ── PWA Service Worker registration ─────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js')
+      .then(reg => {
+        console.log('SW registered:', reg.scope);
+        updateNotifIcon();
+      })
+      .catch(err => console.warn('SW registration failed:', err));
+  });
+}
+
+// ── Notification permission ──────────────────────────────────────
+function updateNotifIcon() {
+  const icon = document.getElementById('notif-icon');
+  if (!icon) return;
+  if (!('Notification' in window)) { icon.style.display = 'none'; return; }
+  if (Notification.permission === 'granted') {
+    icon.className = 'ti ti-bell-ringing';
+    icon.style.color = '#1D9E75';
+    icon.title = 'Notifications enabled';
+  } else if (Notification.permission === 'denied') {
+    icon.className = 'ti ti-bell-off';
+    icon.style.color = '#D85A30';
+    icon.title = 'Notifications blocked — enable in browser settings';
+  } else {
+    icon.className = 'ti ti-bell';
+    icon.style.color = 'var(--color-text-tertiary)';
+    icon.title = 'Tap to enable Suhoor & Iftar notifications';
+  }
+}
+
+async function requestNotifPermission() {
+  if (!('Notification' in window)) {
+    alert('Notifications are not supported in this browser.');
+    return;
+  }
+  if (Notification.permission === 'denied') {
+    alert('Notifications are blocked. Please enable them in your browser settings for this site.');
+    return;
+  }
+  const perm = await Notification.requestPermission();
+  updateNotifIcon();
+  if (perm === 'granted') {
+    scheduleNotifications();
+    scheduleEveReminders();
+    navigator.serviceWorker.ready.then(reg => {
+      reg.showNotification('Islamic Fasting Calendar', {
+        body: 'Notifications enabled!',
+        icon: 'icon-192.png'
+      });
+    }).catch(() => {
+      alert('Notifications enabled! You will receive prayer reminders.');
+    });
+  }
+}
+
+function scheduleNotifications() {
+  if (!_prayerTimes || Notification.permission !== 'granted') return;
+  if (!isFastingToday()) return;
+
+  const now = new Date();
+  const fajr    = parseTime(_prayerTimes.Fajr);
+  const maghrib = parseTime(_prayerTimes.Maghrib);
+
+  // Suhoor reminder — 20 min before Fajr
+  const suhoorAlert = new Date(fajr.getTime() - 20 * 60000);
+  if (suhoorAlert > now) {
+    setTimeout(() => {
+      navigator.serviceWorker.ready.then(reg => reg.showNotification('🌅 Suhoor reminder', {
+        body: `Fajr in 20 minutes at ${to12hr(_prayerTimes.Fajr)}. Make your intention and finish eating.`,
+        icon: 'icon-192.png', badge: 'icon-192.png'
+      }));
+    }, suhoorAlert - now);
+  }
+
+  // Fajr notification — fast begins
+  if (fajr > now) {
+    setTimeout(() => {
+      navigator.serviceWorker.ready.then(reg => reg.showNotification('🌄 Fast has begun', {
+        body: 'Fajr time. Your fast is now in effect. May Allah accept it.',
+        icon: 'icon-192.png', badge: 'icon-192.png'
+      }));
+    }, fajr - now);
+  }
+
+  // Iftar notification — Maghrib
+  if (maghrib > now) {
+    setTimeout(() => {
+      navigator.serviceWorker.ready.then(reg => reg.showNotification('🌙 Iftar time!', {
+        body: `Maghrib at ${to12hr(_prayerTimes.Maghrib)}. Break your fast. Allahu Akbar!`,
+        icon: 'icon-192.png', badge: 'icon-192.png'
+      }));
+    }, maghrib - now);
+  }
+}
+
+function scheduleEveReminders() {
+  // Check if tomorrow is a special fasting day, notify at 9 PM tonight
+  if (Notification.permission !== 'granted') return;
+  const tomorrow = new Date(TODAY);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toDateString();
+  const fastDates = allFastDates();
+  if (!fastDates.has(tomorrowStr)) return;
+
+  // Find which fast it is
+  const match = FASTS.find(f => f.dates.some(d => d.toDateString() === tomorrowStr));
+  const fastName = match ? match.name : 'a sunnah fast';
+
+  const ninepm = new Date(TODAY);
+  ninepm.setHours(21, 0, 0, 0);
+  const now = new Date();
+  if (ninepm > now) {
+    setTimeout(() => {
+      navigator.serviceWorker.ready.then(reg => reg.showNotification('🌙 Fast tomorrow', {
+        body: `Tomorrow is ${fastName}. Make your intention tonight. May Allah give you strength.`,
+        icon: 'icon-192.png', badge: 'icon-192.png'
+      }));
+    }, ninepm - now);
+  }
+}
+
+updateNotifIcon();
 </script>
 </body>
 </html>
