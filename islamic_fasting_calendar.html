@@ -1251,9 +1251,12 @@ async function requestNotifPermission() {
   if (perm === 'granted') {
     scheduleNotifications();
     scheduleEveReminders();
-    new Notification('Islamic Fasting Calendar', {
-      body: 'Notifications enabled! You\'ll receive Suhoor, Iftar & eve-of-fast reminders.',
-      icon: 'icon-192.png'
+    navigator.serviceWorker.ready.then(reg => {
+      reg.showNotification('🕌 Islamic Fasting Calendar', {
+        body: 'Notifications enabled! You will receive Suhoor, Iftar & prayer reminders.',
+        icon: 'icon-192.png',
+        badge: 'icon-192.png'
+      });
     });
   }
 }
@@ -1270,31 +1273,30 @@ function scheduleNotifications() {
   const suhoorAlert = new Date(fajr.getTime() - 20 * 60000);
   if (suhoorAlert > now) {
     setTimeout(() => {
-      new Notification('🌅 Suhoor reminder', {
+      navigator.serviceWorker.ready.then(reg => reg.showNotification('🌅 Suhoor reminder', {
         body: `Fajr in 20 minutes at ${to12hr(_prayerTimes.Fajr)}. Make your intention and finish eating.`,
-        icon: 'icon-192.png',
-        badge: 'icon-192.png'
-      });
+        icon: 'icon-192.png', badge: 'icon-192.png'
+      }));
     }, suhoorAlert - now);
   }
 
   // Fajr notification — fast begins
   if (fajr > now) {
     setTimeout(() => {
-      new Notification('🌄 Fast has begun', {
-        body: `Fajr time. Your fast is now in effect. May Allah accept it.`,
-        icon: 'icon-192.png'
-      });
+      navigator.serviceWorker.ready.then(reg => reg.showNotification('🌄 Fast has begun', {
+        body: 'Fajr time. Your fast is now in effect. May Allah accept it.',
+        icon: 'icon-192.png', badge: 'icon-192.png'
+      }));
     }, fajr - now);
   }
 
   // Iftar notification — Maghrib
   if (maghrib > now) {
     setTimeout(() => {
-      new Notification('🌙 Iftar time!', {
+      navigator.serviceWorker.ready.then(reg => reg.showNotification('🌙 Iftar time!', {
         body: `Maghrib at ${to12hr(_prayerTimes.Maghrib)}. Break your fast. Allahu Akbar!`,
-        icon: 'icon-192.png'
-      });
+        icon: 'icon-192.png', badge: 'icon-192.png'
+      }));
     }, maghrib - now);
   }
 }
@@ -1317,10 +1319,10 @@ function scheduleEveReminders() {
   const now = new Date();
   if (ninepm > now) {
     setTimeout(() => {
-      new Notification('🌙 Fast tomorrow', {
+      navigator.serviceWorker.ready.then(reg => reg.showNotification('🌙 Fast tomorrow', {
         body: `Tomorrow is ${fastName}. Make your intention tonight. May Allah give you strength.`,
-        icon: 'icon-192.png'
-      });
+        icon: 'icon-192.png', badge: 'icon-192.png'
+      }));
     }, ninepm - now);
   }
 }
