@@ -1341,10 +1341,19 @@ async function requestNotifPermission() {
   if (perm === 'granted') {
     scheduleNotifications();
     scheduleEveReminders();
-    new Notification('Islamic Fasting Calendar', {
-      body: 'Notifications enabled! You\'ll receive Suhoor, Iftar & eve-of-fast reminders.',
-      icon: 'icon-192.png'
-    });
+    // Use service worker to show notification (required on iOS)
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({
+        type: 'SHOW_NOTIFICATION',
+        title: 'Islamic Fasting Calendar',
+        body: 'Notifications enabled! You\'ll receive Suhoor, Iftar & prayer reminders.'
+      });
+    } else {
+      new Notification('Islamic Fasting Calendar', {
+        body: 'Notifications enabled! You\'ll receive Suhoor, Iftar & prayer reminders.',
+        icon: 'icon-192.png'
+      });
+    }
   }
 }
 

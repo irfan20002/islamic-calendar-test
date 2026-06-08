@@ -1,4 +1,4 @@
-const CACHE_NAME = 'islamic-calendar-v1';
+const CACHE_NAME = 'islamic-calendar-v2';
 const ASSETS = ['islamic_fasting_calendar.html', 'manifest.json'];
 
 self.addEventListener('install', e => {
@@ -21,6 +21,20 @@ self.addEventListener('fetch', e => {
   e.respondWith(
     fetch(e.request).catch(() => caches.match(e.request))
   );
+});
+
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SHOW_NOTIFICATION') {
+    self.registration.showNotification(e.data.title || 'Islamic Fasting Calendar', {
+      body: e.data.body || '',
+      icon: 'icon-192.png',
+      badge: 'icon-192.png',
+      vibrate: [200, 100, 200]
+    });
+  }
+  if (e.data && e.data.type === 'SCHEDULE_NOTIFICATIONS') {
+    // Handle scheduled notifications from page
+  }
 });
 
 self.addEventListener('push', e => {
