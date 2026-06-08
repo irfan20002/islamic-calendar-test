@@ -1,8 +1,8 @@
 {
-  "name": "Notif Test",
-  "short_name": "Notif Test",
-  "start_url": "notif_test.html",
+  "name": "Islamic Fasting Calendar",
+  "short_name": "Fasting",
+  "start_url": "islamic_fasting_calendar.html",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#1D9E75"
+  "theme_color": "#c8860a"
 }
