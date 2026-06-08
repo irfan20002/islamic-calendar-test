@@ -109,10 +109,14 @@
   .fast-card.today-fast .fast-icon,
   .fast-card.today-fast .fast-info,
   .fast-card.today-fast .countdown { position: relative; z-index: 1; }
-  .today-reminder-inline {
-    font-size: 10px; color: #0e9e8a;
+  .today-reminder-row {
+    position: absolute; top: 0; left: 44%; right: 85px; bottom: 0;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center;
+    font-size: 13px; color: #0e9e8a;
     font-style: italic; font-weight: 700;
-    white-space: nowrap;
+    pointer-events: none; z-index: 2;
+    text-shadow: 0 0 10px rgba(255,255,255,0.95), 0 0 4px rgba(255,255,255,1);
     animation: reminderFade 4s ease-in-out infinite;
   }
   @keyframes reminderFade {
@@ -886,32 +890,32 @@ function renderUpcoming() {
     const isTodayFast = (diff === 0 && !afterMag) || (diff === 1 && inTomorrowWindow);
     if (isTodayFast) card.classList.add('today-fast');
     const REMINDERS = [
-      '✨ May Allah accept your fasting',
-      '📿 Make more Adhkar',
-      '🙏 Pray more voluntary Salah',
-      '💛 Give more in charity',
-      '🌿 Do more good deeds'
+      '🤲 May Allah accept it',
+      '📿 More Dhikr today',
+      '🙏 Extra Salah today',
+      '💛 Give charity today',
+      '🌿 More good deeds',
+      '📖 Read more Quran',
+      '🤍 Seek Allah\'s mercy',
+      '🌙 Blessed fasting day',
+      '☀️ Make today count'
     ];
     card.innerHTML = `
       ${isTodayFast ? '<canvas class="sparkle-canvas"></canvas>' : ''}
       <div class="fast-check ${isDone ? 'checked' : ''} ${isFuture ? 'future' : ''}" ${isFuture ? '' : `onclick="toggleFast(this,'${key}')"`}></div>
       <div class="fast-icon" style="background:${iconBg}"><i class="ti ${f.icon}" style="color:${iconColor}" aria-hidden="true"></i></div>
-      <div class="fast-info" style="flex:1;min-width:0;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
-          <div class="fast-name">${f.name}</div>
-          ${isTodayFast ? `<div class="today-reminder-inline" id="fast-reminder-text">${REMINDERS[0]}</div>` : ''}
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;margin-top:2px;">
-          <div class="fast-date" style="flex:1;">${dateStr}</div>
-          ${countText ? `<span class="countdown ${cdClass}" style="flex-shrink:0;">${countText}</span>` : ''}
-        </div>
+      <div class="fast-info">
+        <div class="fast-name">${f.name}</div>
+        <div class="fast-date">${dateStr}</div>
         <div class="fast-hijri">${f.hijri} · ${f.note}</div>
       </div>
+      ${countText ? `<span class="countdown ${cdClass}" style="flex-shrink:0;align-self:center;">${countText}</span>` : ''}
 `;
+    if (isTodayFast) { const rr = document.createElement('div'); rr.className='today-reminder-row'; rr.id='fast-reminder-text'; rr.textContent=REMINDERS[0]; card.appendChild(rr); }
     list.appendChild(card);
     if (isTodayFast) {
       let _ri = 0;
-      const _el = card.querySelector('.today-reminder-inline');
+      const _el = card.querySelector('#fast-reminder-text');
       if (_el) setInterval(() => {
         _ri = (_ri + 1) % REMINDERS.length;
         _el.style.animation = 'none'; void _el.offsetWidth;
