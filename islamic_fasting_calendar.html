@@ -1270,8 +1270,8 @@ function updateCountdownBanner() {
   let ms, icon, label;
   if (now < fajr) {
     ms    = fajr - now;
-    icon  = '🌅';
-    label = 'Suhoor';
+    icon  = '⏳';
+    label = 'Suhoor ends';
   } else if (now < maghrib) {
     ms    = maghrib - now;
     icon  = '🌙';
@@ -1288,10 +1288,12 @@ function updateCountdownBanner() {
   const mm = String(m).padStart(2,'0');
   const ss = String(s).padStart(2,'0');
 
-  wrap.innerHTML = `<div style="display:flex;align-items:center;gap:5px;margin-top:3px">
+  const isUrgent = ms <= 30 * 60000;
+  const flashStyle = isUrgent ? 'animation:flash-alert 0.8s ease-in-out infinite;' : '';
+  wrap.innerHTML = `<div style="display:flex;align-items:center;gap:5px;margin-top:3px;${flashStyle}">
     <span style="font-size:12px">${icon}</span>
     <span style="font-size:10px;font-weight:600;color:#0a3d1f;text-transform:uppercase;letter-spacing:.05em">${label} in</span>
-    <span style="font-size:16px;font-weight:700;color:#0f5c2e;font-variant-numeric:tabular-nums;line-height:1">${hh}:${mm}:${ss}</span>
+    <span style="font-size:16px;font-weight:700;color:${isUrgent ? '#cc0000' : '#0f5c2e'};font-variant-numeric:tabular-nums;line-height:1">${hh}:${mm}:${ss}</span>
   </div>`;
 }
 
