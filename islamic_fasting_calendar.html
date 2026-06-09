@@ -263,7 +263,7 @@
   <div id="tab-upcoming">
     <div class="section">
       <div class="section-title">Next fasts</div>
-      <div id="fast-list"></div>
+      <div style="max-height:420px;overflow-y:auto;scroll-behavior:smooth" id="fast-list-scroll"><div id="fast-list"></div></div>
     </div>
     <div class="section">
       <div class="section-title">Weekly sunnah</div>
@@ -326,6 +326,13 @@
   <div style="display:flex;align-items:center;gap:10px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:.625rem .875rem;margin-top:.75rem">
     <span style="font-size:18px;background:#1a5c3a;color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700">"</span>
     <span style="font-size:12px;color:var(--color-text-secondary);flex:1;line-height:1.5">"Whoever fasts in Ramadan out of faith and seeking reward, his past sins will be forgiven." <em style="color:var(--color-text-tertiary)">[Bukhari &amp; Muslim]</em></span>
+    <button onclick="exportFastingData()" title="Export fasting data" style="font-family:var(--font-sans);background:none;border:none;cursor:pointer;flex-shrink:0;padding:2px">
+      <i class="ti ti-download" style="font-size:20px;color:var(--color-text-tertiary)"></i>
+    </button>
+    <label title="Import fasting data" style="cursor:pointer;flex-shrink:0;padding:2px;margin:0">
+      <i class="ti ti-upload" style="font-size:20px;color:var(--color-text-tertiary)"></i>
+      <input type="file" accept=".json" onchange="importFastingData(event)" style="display:none">
+    </label>
     <button id="notif-btn" onclick="requestNotifPermission()" title="Enable notifications" style="font-family:var(--font-sans);background:none;border:none;cursor:pointer;flex-shrink:0;padding:2px">
       <i class="ti ti-bell" id="notif-icon" style="font-size:20px;color:var(--color-text-tertiary)"></i>
     </button>
@@ -547,11 +554,12 @@ function adjustHijri(delta) {
   hijriOffset = Math.max(-2, Math.min(2, hijriOffset + delta));
   localStorage.setItem('hijri_offset', hijriOffset);
   updateHijriHeader();
-  const dl = document.getElementById('prayer-date-line');
-  if (dl) {
-    const h    = getAdjustedHijri(getToday());
-    const greg = getToday().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-    dl.textContent = `${h.day} ${HIJRI_MONTHS[h.month - 1]} ${h.year} · ${greg}`;
+  const dlH2 = document.getElementById('prayer-date-hijri');
+  const dlG2 = document.getElementById('prayer-date-greg');
+  if (dlH2 || dlG2) {
+    const h = getAdjustedHijri(getToday());
+    if (dlH2) dlH2.textContent = `${h.day} ${HIJRI_MONTHS[h.month - 1]} ${h.year}`;
+    if (dlG2) dlG2.textContent = getToday().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
   }
 }
 
@@ -749,6 +757,27 @@ function renderUpcoming() {
   const list = document.getElementById('fast-list');
   list.innerHTML = '';
 
+  // Past weekly fasts — last 52 weeks
+  const pastWeekly = [];
+  const pw = new Date(getToday());
+  pw.setDate(pw.getDate() - 1);
+  const oneYearAgo = new Date(getToday());
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+  while (pw >= oneYearAgo) {
+    const dow = pw.getDay();
+    if (dow === 1 || dow === 4) {
+      pastWeekly.push({
+        name: dow === 1 ? 'Monday fast' : 'Thursday fast',
+        dates: [new Date(pw)],
+        hijri: 'Weekly sunnah',
+        icon: 'ti-repeat',
+        note: dow === 1 ? 'Monday' : 'Thursday',
+        weekly: true
+      });
+    }
+    pw.setDate(pw.getDate() - 1);
+  }
+
   const weekly = getNextWeeklyDays(8);
   const todayDow = getToday().getDay();
   const todayWeekly = (todayDow === 1 || todayDow === 4)
@@ -756,14 +785,15 @@ function renderUpcoming() {
     : [];
 
   const todayH         = gToH(getToday());
+  const startDate      = new Date(getToday()); startDate.setFullYear(startDate.getFullYear() - 1);
   const endOfHijriYear = hToG(todayH.year + 1, 12, 29);
-  const all = [...FASTS, ...todayWeekly, ...weekly].sort((a, b) => firstDate(a) - firstDate(b));
+  const all = [...FASTS, ...pastWeekly, ...todayWeekly, ...weekly].sort((a, b) => firstDate(a) - firstDate(b));
 
   let firstUpcoming = true;
   all.forEach(f => {
     const last  = lastDate(f);
     const first = firstDate(f);
-    if (last < getToday())            return;
+    if (last < startDate)        return;  // older than 1 year ago
     if (first > endOfHijriYear)  return;
 
     const diff  = Math.ceil((first - getToday()) / 86400000);
@@ -800,6 +830,18 @@ function renderUpcoming() {
       ${countText ? `<span class="countdown ${cdClass}">${countText}</span>` : ''}`;
     list.appendChild(card);
   });
+
+  // Scroll to the first upcoming (today or future) fast
+  // Scroll container so today's fast is at the top
+  const nextCard = list.querySelector('.fast-card.next');
+  const scrollContainer = document.getElementById('fast-list-scroll');
+  if (nextCard && scrollContainer) {
+    setTimeout(() => {
+      const containerTop = scrollContainer.getBoundingClientRect().top;
+      const cardTop = nextCard.getBoundingClientRect().top;
+      scrollContainer.scrollTop += (cardTop - containerTop) - 8;
+    }, 200);
+  }
 }
 
 // ── Calendar view ───────────────────────────────────────────────────────
@@ -1028,30 +1070,34 @@ function renderPrayers(times, city) {
 
   const box = document.getElementById('prayer-box');
   box.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
-      <div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;gap:8px">
+      <div style="flex:1;min-width:0">
         <div style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1px">Now</div>
         <div style="font-size:32px;font-weight:700;color:var(--color-text-primary);line-height:1.05;letter-spacing:-0.5px" id="current-time">--:-- --</div>
-        <div style="font-size:13px;color:var(--color-text-secondary);margin-top:3px;display:flex;align-items:center;gap:6px">
-          <span id="prayer-date-line">—</span>
-          <span style="display:flex;align-items:center;gap:3px">
-            <button onclick="adjustHijri(-1)" style="font-family:var(--font-sans);font-size:11px;padding:1px 6px;border-radius:20px;border:1px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-secondary);cursor:pointer">◀</button>
-            <span id="hijri-offset-label" style="font-size:10px;color:#1D9E75;min-width:24px;text-align:center;font-weight:600"></span>
-            <button onclick="adjustHijri(1)" style="font-family:var(--font-sans);font-size:11px;padding:1px 6px;border-radius:20px;border:1px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-secondary);cursor:pointer">▶</button>
-          </span>
+        <div style="margin-top:4px">
+          <span id="prayer-date-hijri" style="background:linear-gradient(135deg,#f5c200,#f0b800);color:#3d1f00;font-weight:600;padding:2px 10px;border-radius:20px;font-size:12px;white-space:nowrap;display:inline-block">—</span>
         </div>
+        <span id="prayer-date-greg" style="background:linear-gradient(135deg,#f5c200,#f0b800);color:#3d1f00;font-weight:600;padding:2px 10px;border-radius:20px;font-size:12px;white-space:nowrap;display:inline-block;margin-top:4px">—</span>
       </div>
-      <div style="text-align:right" id="next-prayer-box">
-        <div style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1px" id="next-prayer-label">Next prayer</div>
-        <div style="font-size:17px;font-weight:700;color:var(--color-text-primary);line-height:1.1;white-space:nowrap" id="next-prayer-name">${next.name} <span style="font-weight:400;color:var(--color-text-secondary)">${to12hr(next.str).replace(/(AM|PM)$/, '<span style="font-size:11px;font-weight:400">$1</span>')}</span></div>
-        <div style="font-size:14px;color:#1D9E75;font-weight:600;margin-top:2px" id="next-prayer-countdown">in ${countdown}</div>
+      <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        <div id="next-prayer-box" style="background:#8B3FA8;border-radius:10px;padding:8px 10px;text-align:right">
+          <div style="font-size:13px;color:#E1F5EE;margin-bottom:1px" id="next-prayer-label">Next prayer</div>
+          <div style="font-size:17px;font-weight:700;color:#ffffff;line-height:1.1;white-space:nowrap" id="next-prayer-name">${next.name} <span style="font-weight:400;color:#E1F5EE">${to12hr(next.str).replace(/(AM|PM)$/, '<span style="font-size:11px;font-weight:400">$1</span>')}</span></div>
+          <div style="font-size:14px;color:#E1F5EE;font-weight:600;margin-top:2px" id="next-prayer-countdown">in ${countdown}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:3px">
+          <button onclick="adjustHijri(-1)" style="font-family:var(--font-sans);font-size:11px;padding:1px 6px;border-radius:20px;border:1px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-secondary);cursor:pointer">◀</button>
+          <span id="hijri-offset-label" style="font-size:10px;color:#1D9E75;min-width:24px;text-align:center;font-weight:600"></span>
+          <button onclick="adjustHijri(1)" style="font-family:var(--font-sans);font-size:11px;padding:1px 6px;border-radius:20px;border:1px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-secondary);cursor:pointer">▶</button>
+        </div>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:2px;margin-bottom:6px" id="prayer-grid">
       ${parsed.map((p, i) => {
-        // Highlight the most recently passed prayer
+        // Highlight the most recently passed prayer (skip Sunrise unless in Ishraq window)
         const activeIdx = nextIdx === 0 ? -1 : nextIdx - 1;
-        const active = i === activeIdx;
+        const isSunrise = p.name === 'Sunrise';
+        const active = i === activeIdx && !isSunrise;
         return `<div data-pidx="${i}" style="text-align:center;padding:6px 2px;border-radius:8px;${active ? 'background:#1D9E75;' : ''}">
           <div style="font-size:11px;margin-bottom:2px;${active ? 'color:#E1F5EE;' : 'color:var(--color-text-secondary);'}">${p.name}</div>
           <div style="font-size:12px;font-weight:600;${active ? 'color:#ffffff;' : 'color:var(--color-text-primary);'}">${to12hr(p.str)}</div>
@@ -1139,11 +1185,11 @@ function renderPrayers(times, city) {
     // ── Standard: restore labels if coming out of Ishraq window ──────────
     if (elLbl && elLbl.textContent.includes('Ishraq')) {
       elLbl.textContent = 'Next prayer';
-      elLbl.style.color = '';
+      elLbl.style.color = '#E1F5EE';
       elLbl.classList.remove('flash-alert');
-      if (elName) elName.classList.remove('flash-alert');
+      if (elName) { elName.style.color = '#ffffff'; elName.classList.remove('flash-alert'); }
       const _boxR = document.getElementById('next-prayer-box');
-      if (_boxR) { _boxR.style.background = ''; _boxR.style.borderRadius = ''; _boxR.style.padding = ''; }
+      if (_boxR) { _boxR.style.background = '#8B3FA8'; _boxR.style.borderRadius = '10px'; _boxR.style.padding = '8px 10px'; }
     }
 
     // ── Standard 15-min flash ─────────────────────────────────────────────
@@ -1152,6 +1198,7 @@ function renderPrayers(times, city) {
     if (ni === -1) ni = 0;
     const ms      = parsed3[ni] - now3;
     const isClose = ms > 0 && ms <= 15 * 60000;
+    if (elCd) elCd.style.color = '#E1F5EE';
     elCd.classList.toggle('flash-alert',  isClose);
     if (elLbl) elLbl.classList.toggle('flash-alert', isClose);
   }, 1000);
@@ -1308,12 +1355,13 @@ function updateClock() {
   h          = h % 12 || 12;
   el.textContent = `${h}:${m} ${ampm}`;
 
-  // Date line: Hijri + Gregorian
-  const dl = document.getElementById('prayer-date-line');
-  if (dl) {
-    const hd   = getAdjustedHijri(now);
-    const greg = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-    dl.textContent = `${hd.day} ${HIJRI_MONTHS[hd.month - 1]} ${hd.year} · ${greg}`;
+  // Date lines: Hijri + Gregorian split
+  const dlH = document.getElementById('prayer-date-hijri');
+  const dlG = document.getElementById('prayer-date-greg');
+  if (dlH || dlG) {
+    const hd = getAdjustedHijri(now);
+    if (dlH) dlH.textContent = `${hd.day} ${HIJRI_MONTHS[hd.month - 1]} ${hd.year}`;
+    if (dlG) dlG.textContent = now.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
   }
 
   // Update next-prayer countdown text in real time
@@ -1362,12 +1410,13 @@ setInterval(updateClock, 1000);
 })();
 
 // ── Re-render prayer box when the active prayer slot changes ─────────────
-// FIX: check window._cachedLat !== undefined (was checking !== null — never true before geoloc callback)
 setInterval(() => {
   if (!_prayerTimes) return;
-  const now    = new Date();
+  const _n = new Date();
+  // Don't re-render during Ishraq window — flash interval manages display
+  if (window._ishraqStart && window._ishraqEnd && _n >= window._ishraqStart && _n < window._ishraqEnd) return;
   const parsed = PRAYER_KEYS.map(k => parseTime(_prayerTimes[k]));
-  let ni = parsed.findIndex(p => p > now);
+  let ni = parsed.findIndex(p => p > _n);
   if (ni === -1) ni = 0;
   if (ni !== _lastNextPrayerIdx) {
     _lastNextPrayerIdx = ni;
@@ -1417,6 +1466,45 @@ function updateCountdownBanner() {
     <span style="font-size:10px;font-weight:600;color:#0a3d1f;text-transform:uppercase;letter-spacing:.05em">${label} in</span>
     <span style="font-size:16px;font-weight:700;color:${timeColor};font-variant-numeric:tabular-nums;line-height:1">${hh}:${mm}:${ss}</span>
   </div>`;
+}
+
+// ── Export / Import fasting data ────────────────────────────────────────
+function exportFastingData() {
+  const data = {};
+  Object.keys(localStorage).forEach(k => {
+    if (k.startsWith('fast_') || k === 'hijri_offset') data[k] = localStorage.getItem(k);
+  });
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'fasting_data_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importFastingData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      let count = 0;
+      Object.keys(data).forEach(k => {
+        if (k.startsWith('fast_') || k === 'hijri_offset') {
+          localStorage.setItem(k, data[k]);
+          count++;
+        }
+      });
+      calcScore();
+      renderUpcoming();
+      alert('Imported ' + count + ' entries successfully.');
+    } catch(err) {
+      alert('Invalid file. Please use a file exported from this app.');
+    }
+  };
+  reader.readAsText(file);
 }
 
 // ── PWA Service Worker ───────────────────────────────────────────────────
