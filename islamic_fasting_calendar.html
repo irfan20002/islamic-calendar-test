@@ -1076,7 +1076,9 @@ function renderPrayers(times, city) {
     navigator.serviceWorker.controller.postMessage({
       type: 'SCHEDULE_NOTIFICATIONS',
       fajr:         parseTime(times.Fajr).toISOString(),
+      sunrise:      parseTime(times.Sunrise).toISOString(),
       maghrib:      parseTime(times.Maghrib).toISOString(),
+      isha:         parseTime(times.Isha).toISOString(),
       isFastingDay: isFastingToday()
     });
   }
@@ -1375,6 +1377,7 @@ function scheduleNotifications() {
   const fajr    = parseTime(_prayerTimes.Fajr);
   const sunrise = parseTime(_prayerTimes.Sunrise);
   const maghrib = parseTime(_prayerTimes.Maghrib);
+  const isha    = parseTime(_prayerTimes.Isha);
   const fasting = isFastingToday();
 
   function schedule(ms, title, body) {
@@ -1390,6 +1393,8 @@ function scheduleNotifications() {
   }
   // Ishraq — 25 min after sunrise, every day
   schedule(sunrise - now + 25 * 60000, '🌅 Time to pray Ishraq', '25 minutes have passed since sunrise. Pray 2 rakats of Ishraq.');
+  // Isha — every day
+  schedule(isha - now, '🌙 Isha prayer time', `Isha is at ${to12hr(_prayerTimes.Isha)}.`);
 }
 
 function scheduleEveReminders() {
