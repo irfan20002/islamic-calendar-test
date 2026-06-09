@@ -841,6 +841,23 @@ function renderUpcoming() {
       const cardTop = nextCard.getBoundingClientRect().top;
       scrollContainer.scrollTop += (cardTop - containerTop) - 8;
     }, 200);
+
+    // Auto-snap back to today after 2.5s of scroll inactivity
+    let _snapTimer = null;
+    scrollContainer.addEventListener('scroll', () => {
+      if (_snapTimer) clearTimeout(_snapTimer);
+      _snapTimer = setTimeout(() => scrollToToday(), 2500);
+    });
+  }
+}
+
+function scrollToToday() {
+  const scrollContainer = document.getElementById('fast-list-scroll');
+  const nextCard = document.querySelector('#fast-list .fast-card.next');
+  if (nextCard && scrollContainer) {
+    const containerTop = scrollContainer.getBoundingClientRect().top;
+    const cardTop = nextCard.getBoundingClientRect().top;
+    scrollContainer.scrollTop += (cardTop - containerTop) - 8;
   }
 }
 
