@@ -79,6 +79,7 @@
   .fast-card.done .fast-name { text-decoration: line-through; }
   .fast-check { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #1D9E75; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all 0.2s; }
   .fast-check.checked { background: #1D9E75; border-color: #1D9E75; }
+  .fast-check.future { border-color: var(--color-border-tertiary); opacity: 0.35; cursor: not-allowed; }
   .fast-check.checked::after { content: '✓'; color: white; font-size: 13px; font-weight: bold; }
   .fast-icon { width: 36px; height: 36px; border-radius: var(--border-radius-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .fast-icon i { font-size: 18px; }
@@ -99,6 +100,7 @@
   .day .greg { font-size: 12px; line-height: 1; }
   .day .hijri-d { font-size: 9px; line-height: 1; opacity: 0.65; }
   .day.fast { background: #E1F5EE; color: #085041; }
+  .day.fasted { background: #1a7a52; color: #ffffff; font-weight: 500; }
   .day.fast-today { background: #5DCAA5; color: #04342C; font-weight: 500; }
   .day.weekly { border: 1px dashed #5DCAA5; }
   .day.today { background: var(--color-background-secondary); border: 1.5px solid #1D9E75; color: var(--color-text-primary); font-weight: 500; }
@@ -406,7 +408,7 @@ renderMoonPhaseSVG(new Date());
 
 // ── Hijri calendar math ─────────────────────────────────────────────────
 const HIJRI_MONTHS       = ['Muharram','Safar','Rabi al-Awwal','Rabi al-Thani','Jumada al-Ula','Jumada al-Thani','Rajab','Shaban','Ramadan','Shawwal','Dhul Qidah','Dhul Hijjah'];
-const HIJRI_MONTHS_SHORT = ['Muh','Saf','Rab I','Rab II','Jum I','Jum II','Raj','Sha','Ram','Shaw','Qi','Hij'];
+const HIJRI_MONTHS_SHORT = ['Muh','Saf','Rab I','Rab II','Jum I','Jum II','Raj','Sha','Ram','Shaw','D.Qid','D.Hij'];
 const GREG_MONTHS        = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
 function toJD(y, m, d) {
@@ -538,7 +540,7 @@ function getAdjustedHijri(date) {
 function updateHijriHeader() {
   // Update offset label in the prayer box (if rendered)
   const lbl = document.getElementById('hijri-offset-label');
-  if (lbl) lbl.textContent = hijriOffset === 0 ? '' : (hijriOffset > 0 ? `+${hijriOffset}` : `${hijriOffset}`);
+  if (lbl) lbl.textContent = hijriOffset === 0 ? '0' : (hijriOffset > 0 ? `+${hijriOffset}` : `${hijriOffset}`);
 }
 
 function adjustHijri(delta) {
@@ -786,8 +788,9 @@ function renderUpcoming() {
     const isDone = localStorage.getItem(key) === '1';
     if (isDone) card.classList.add('done');
 
+    const isFuture = diff > 0;
     card.innerHTML = `
-      <div class="fast-check ${isDone ? 'checked' : ''}" onclick="toggleFast(this,'${key}')"></div>
+      <div class="fast-check ${isDone ? 'checked' : ''} ${isFuture ? 'future' : ''}" ${isFuture ? '' : `onclick="toggleFast(this,'${key}')"`}></div>
       <div class="fast-icon" style="background:${iconBg}"><i class="ti ${f.icon}" style="color:${iconColor}" aria-hidden="true"></i></div>
       <div class="fast-info">
         <div class="fast-name">${f.name}</div>
@@ -821,13 +824,13 @@ function getIslamicDay(hMonth, hDay) {
 }
 
 function renderCalendar() {
-  const hStart = gToH(new Date(viewYear, viewMonth, 1));
-  const hEnd   = gToH(new Date(viewYear, viewMonth + 1, 0));
+  const hStart = getAdjustedHijri(new Date(viewYear, viewMonth, 1));
+  const hEnd   = getAdjustedHijri(new Date(viewYear, viewMonth + 1, 0));
 
   document.getElementById('month-title').textContent = `${GREG_MONTHS[viewMonth]} ${viewYear}`;
   const hijriRange = hStart.month === hEnd.month
-    ? `${HIJRI_MONTHS[hStart.month - 1]} ${hStart.year}`
-    : `${HIJRI_MONTHS_SHORT[hStart.month - 1]}–${HIJRI_MONTHS_SHORT[hEnd.month - 1]} ${hStart.year}${hEnd.year !== hStart.year ? ' / ' + hEnd.year : ''}`;
+    ? `${HIJRI_MONTHS[hStart.month - 1]} ${hStart.year} AH`
+    : `${HIJRI_MONTHS[hStart.month - 1]}–${HIJRI_MONTHS[hEnd.month - 1]} ${hStart.year}${hEnd.year !== hStart.year ? '/' + hEnd.year : ''} AH`;
   document.getElementById('month-hijri').textContent = hijriRange;
 
   const grid = document.getElementById('month-grid');
@@ -837,6 +840,20 @@ function renderCalendar() {
   });
 
   const fastDates = allFastDates();
+  // Build set of dates user actually confirmed as fasted (checked in localStorage)
+  const fastedDates = new Set(
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('fast_') && localStorage.getItem(k) === '1')
+      .map(k => {
+        const parts = k.split('_');
+        for (let i = parts.length - 1; i >= 1; i--) {
+          const d = new Date(parts.slice(i).join('_'));
+          if (!isNaN(d.getTime())) return d.toDateString();
+        }
+        return null;
+      })
+      .filter(Boolean)
+  );
   const startDay  = new Date(viewYear, viewMonth, 1).getDay();
   for (let i = 0; i < startDay; i++) { const e = document.createElement('div'); e.className = 'day'; grid.appendChild(e); }
 
@@ -845,12 +862,18 @@ function renderCalendar() {
     const date = new Date(viewYear, viewMonth, d);
     const div  = document.createElement('div');
     let cls    = 'day';
-    if (fastDates.has(date.toDateString())) cls += date.toDateString() === getToday().toDateString() ? ' fast-today' : ' fast';
+    const isToday   = date.toDateString() === getToday().toDateString();
+    const isPast    = date < getToday();
+    const isFasted  = fastedDates.has(date.toDateString());
+    const isFastDay = fastDates.has(date.toDateString());
+    if (isFasted && isPast)       cls += ' fasted';
+    else if (isFastDay && isToday) cls += ' fast-today';
+    else if (isFastDay)            cls += ' fast';
     const dow = date.getDay();
     if (dow === 1 || dow === 4) cls += ' weekly';
-    if (date.toDateString() === getToday().toDateString()) cls += ' today';
+    if (isToday) cls += ' today';
     div.className = cls;
-    const h = gToH(date);
+    const h = getAdjustedHijri(date);
     const islamicDay = getIslamicDay(h.month, h.day);
     const dotHTML = islamicDay
       ? `<span style="display:block;width:6px;height:6px;border-radius:50%;background:${islamicDay.color};margin:1px auto 0;flex-shrink:0" title="${islamicDay.label}"></span>`
@@ -865,7 +888,7 @@ function renderCalendar() {
   info.innerHTML = '';
 
   for (let d = 1; d <= days; d++) {
-    const h = gToH(new Date(viewYear, viewMonth, d));
+    const h = getAdjustedHijri(new Date(viewYear, viewMonth, d));
     const islamicDay = getIslamicDay(h.month, h.day);
     if (islamicDay) {
       const t = document.createElement('div');
@@ -984,8 +1007,7 @@ function renderPrayers(times, city) {
 
   const now    = new Date();
   const parsed = PRAYER_KEYS.map(k => ({ name: k, time: parseTime(times[k]), str: times[k] }));
-  // Skip Sunrise — it's not a salah time (no adhan, reference point only)
-  let nextIdx  = parsed.findIndex((p, i) => p.time > now && PRAYER_KEYS[i] !== 'Sunrise');
+  let nextIdx  = parsed.findIndex(p => p.time > now);
   if (nextIdx === -1) {
     // Past last prayer (Isha) — set Fajr to tomorrow
     parsed[0].time = parseTomorrow(times[PRAYER_KEYS[0]]);
@@ -997,6 +1019,13 @@ function renderPrayers(times, city) {
   const diffM   = Math.floor((diffMs % 3600000) / 60000);
   const countdown = diffH > 0 ? `${diffH}h ${diffM}m` : `${diffM}m`;
 
+  // ── Ishraq state (computed once at render, kept live via updateClock) ──
+  const _sunriseTime  = parseTime(times.Sunrise);
+  const _ishraqStart  = new Date(_sunriseTime.getTime() + 25 * 60000);  // 25 min after sunrise
+  const _ishraqEnd    = new Date(_sunriseTime.getTime() + 85 * 60000);  // 60 min window
+  window._ishraqStart = _ishraqStart;
+  window._ishraqEnd   = _ishraqEnd;
+
   const box = document.getElementById('prayer-box');
   box.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
@@ -1006,22 +1035,24 @@ function renderPrayers(times, city) {
         <div style="font-size:13px;color:var(--color-text-secondary);margin-top:3px;display:flex;align-items:center;gap:6px">
           <span id="prayer-date-line">—</span>
           <span style="display:flex;align-items:center;gap:3px">
-            <button onclick="adjustHijri(-1)" style="font-family:var(--font-sans);font-size:11px;padding:1px 7px;border-radius:20px;border:1px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-secondary);cursor:pointer">−1</button>
-            <span id="hijri-offset-label" style="font-size:11px;color:#1D9E75;min-width:16px;text-align:center"></span>
-            <button onclick="adjustHijri(1)" style="font-family:var(--font-sans);font-size:11px;padding:1px 7px;border-radius:20px;border:1px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-secondary);cursor:pointer">+1</button>
+            <button onclick="adjustHijri(-1)" style="font-family:var(--font-sans);font-size:11px;padding:1px 6px;border-radius:20px;border:1px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-secondary);cursor:pointer">◀</button>
+            <span id="hijri-offset-label" style="font-size:10px;color:#1D9E75;min-width:24px;text-align:center;font-weight:600"></span>
+            <button onclick="adjustHijri(1)" style="font-family:var(--font-sans);font-size:11px;padding:1px 6px;border-radius:20px;border:1px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-secondary);cursor:pointer">▶</button>
           </span>
         </div>
       </div>
-      <div style="text-align:right">
+      <div style="text-align:right" id="next-prayer-box">
         <div style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1px" id="next-prayer-label">Next prayer</div>
-        <div style="font-size:17px;font-weight:700;color:var(--color-text-primary);line-height:1.1;white-space:nowrap">${next.name} <span style="font-weight:400;color:var(--color-text-secondary)">${to12hr(next.str).replace(/(AM|PM)$/, '<span style="font-size:11px;font-weight:400">$1</span>')}</span></div>
+        <div style="font-size:17px;font-weight:700;color:var(--color-text-primary);line-height:1.1;white-space:nowrap" id="next-prayer-name">${next.name} <span style="font-weight:400;color:var(--color-text-secondary)">${to12hr(next.str).replace(/(AM|PM)$/, '<span style="font-size:11px;font-weight:400">$1</span>')}</span></div>
         <div style="font-size:14px;color:#1D9E75;font-weight:600;margin-top:2px" id="next-prayer-countdown">in ${countdown}</div>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:2px;margin-bottom:6px">
+    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:2px;margin-bottom:6px" id="prayer-grid">
       ${parsed.map((p, i) => {
-        const active = i === nextIdx;
-        return `<div style="text-align:center;padding:6px 2px;border-radius:8px;${active ? 'background:#1D9E75;' : ''}">
+        // Highlight the most recently passed prayer
+        const activeIdx = nextIdx === 0 ? -1 : nextIdx - 1;
+        const active = i === activeIdx;
+        return `<div data-pidx="${i}" style="text-align:center;padding:6px 2px;border-radius:8px;${active ? 'background:#1D9E75;' : ''}">
           <div style="font-size:11px;margin-bottom:2px;${active ? 'color:#E1F5EE;' : 'color:var(--color-text-secondary);'}">${p.name}</div>
           <div style="font-size:12px;font-weight:600;${active ? 'color:#ffffff;' : 'color:var(--color-text-primary);'}">${to12hr(p.str)}</div>
         </div>`;
@@ -1050,15 +1081,74 @@ function renderPrayers(times, city) {
     if (afterMaghrib) document.querySelectorAll('.cd-today').forEach(el => { el.style.display = 'none'; });
   }, 100);
 
-  // Flash next-prayer countdown label when ≤ 15 min away (stored so it can be cleared on re-render)
+  // Flash interval — handles standard 15-min prayer warning AND Ishraq state
   if (_flashInterval) clearInterval(_flashInterval);
   _flashInterval = setInterval(() => {
-    const elCd  = document.getElementById('next-prayer-countdown');
-    const elLbl = document.getElementById('next-prayer-label');
+    const elCd   = document.getElementById('next-prayer-countdown');
+    const elLbl  = document.getElementById('next-prayer-label');
+    const elName = document.getElementById('next-prayer-name');
     if (!elCd) return;
-    const now3   = new Date();
+    const now3 = new Date();
+
+    // ── Ishraq window handling ──────────────────────────────────────────
+    const ishraqStart = window._ishraqStart;
+    const ishraqEnd   = window._ishraqEnd;
+    const sunriseTime = _parsedPrayerTimes ? _parsedPrayerTimes[PRAYER_KEYS.indexOf('Sunrise')] : null;
+
+    if (sunriseTime && now3 >= sunriseTime && now3 < ishraqEnd) {
+      if (now3 < ishraqStart) {
+        // Between Sunrise and Ishraq — countdown to Ishraq
+        const msToIshraq = ishraqStart - now3;
+        const im = Math.floor(msToIshraq / 60000);
+        const is = Math.floor((msToIshraq % 60000) / 1000);
+        if (elLbl)  { elLbl.textContent = '🌅 Ishraq'; elLbl.classList.remove('flash-alert'); elLbl.style.color = 'var(--color-text-secondary)'; }
+        if (elName) { elName.innerHTML  = `<span style="font-size:15px;font-weight:600">in ${im}m ${is}s</span>`; }
+        if (elCd)   { elCd.textContent  = ''; elCd.classList.remove('flash-alert'); }
+        const _boxB = document.getElementById('next-prayer-box');
+        if (_boxB)  { _boxB.style.background = ''; _boxB.style.borderRadius = ''; _boxB.style.padding = ''; }
+      } else {
+        // Ishraq window is open — flash "pray now"
+        if (elLbl)  { elLbl.textContent = '🌅 Ishraq'; elLbl.classList.add('flash-alert'); elLbl.style.color = '#ffffff'; }
+        if (elName) { elName.innerHTML  = `<span style="font-size:15px;font-weight:700;color:#ffffff">Pray now!</span>`; elName.classList.add('flash-alert'); }
+        if (elCd)   { elCd.textContent  = ''; elCd.classList.remove('flash-alert'); }
+        const _boxA = document.getElementById('next-prayer-box');
+        if (_boxA)  { _boxA.style.background = '#8B3FA8'; _boxA.style.borderRadius = '10px'; _boxA.style.padding = '8px 10px'; }
+      }
+      // Update grid highlight before returning
+      const _grid = document.getElementById('prayer-grid');
+      if (_grid) {
+        const _sunriseIdx = PRAYER_KEYS.indexOf('Sunrise');
+        _grid.querySelectorAll('[data-pidx]').forEach(cell => {
+          const idx    = parseInt(cell.dataset.pidx);
+          const nameEl = cell.querySelector('div:first-child');
+          const timeEl = cell.querySelector('div:last-child');
+          if (idx === _sunriseIdx) {
+            cell.style.background = (now3 >= ishraqStart) ? '#c8860a' : '#1D9E75';
+            if (nameEl) nameEl.style.color = '#fff8e0';
+            if (timeEl) timeEl.style.color = '#ffffff';
+          } else {
+            cell.style.background = '';
+            if (nameEl) nameEl.style.color = 'var(--color-text-secondary)';
+            if (timeEl) timeEl.style.color = 'var(--color-text-primary)';
+          }
+        });
+      }
+      return; // handled — skip normal prayer countdown
+    }
+
+    // ── Standard: restore labels if coming out of Ishraq window ──────────
+    if (elLbl && elLbl.textContent.includes('Ishraq')) {
+      elLbl.textContent = 'Next prayer';
+      elLbl.style.color = '';
+      elLbl.classList.remove('flash-alert');
+      if (elName) elName.classList.remove('flash-alert');
+      const _boxR = document.getElementById('next-prayer-box');
+      if (_boxR) { _boxR.style.background = ''; _boxR.style.borderRadius = ''; _boxR.style.padding = ''; }
+    }
+
+    // ── Standard 15-min flash ─────────────────────────────────────────────
     const parsed3 = PRAYER_KEYS.map(k => parseTime(times[k]));
-    let ni = parsed3.findIndex((p, i) => p > now3 && PRAYER_KEYS[i] !== 'Sunrise');
+    let ni = parsed3.findIndex(p => p > now3);
     if (ni === -1) ni = 0;
     const ms      = parsed3[ni] - now3;
     const isClose = ms > 0 && ms <= 15 * 60000;
@@ -1226,11 +1316,18 @@ function updateClock() {
     dl.textContent = `${hd.day} ${HIJRI_MONTHS[hd.month - 1]} ${hd.year} · ${greg}`;
   }
 
-  // Update next-prayer countdown text in real time (uses cached parsed times)
+  // Update next-prayer countdown text in real time
   if (_prayerTimes && _parsedPrayerTimes) {
     const cdEl = document.getElementById('next-prayer-countdown');
     if (cdEl) {
-      let ni = _parsedPrayerTimes.findIndex((p, i) => p > now && PRAYER_KEYS[i] !== 'Sunrise');
+      // Skip during Ishraq window — the flash interval handles that display
+      const ishraqStart = window._ishraqStart;
+      const ishraqEnd   = window._ishraqEnd;
+      const sunriseIdx  = PRAYER_KEYS.indexOf('Sunrise');
+      const sunriseTime = _parsedPrayerTimes[sunriseIdx];
+      if (sunriseTime && now >= sunriseTime && ishraqEnd && now < ishraqEnd) return;
+
+      let ni = _parsedPrayerTimes.findIndex(p => p > now);
       let targetTime;
       if (ni === -1) {
         targetTime = parseTomorrow(_prayerTimes[PRAYER_KEYS[0]]);
@@ -1270,7 +1367,7 @@ setInterval(() => {
   if (!_prayerTimes) return;
   const now    = new Date();
   const parsed = PRAYER_KEYS.map(k => parseTime(_prayerTimes[k]));
-  let ni = parsed.findIndex((p, i) => p > now && PRAYER_KEYS[i] !== 'Sunrise');
+  let ni = parsed.findIndex(p => p > now);
   if (ni === -1) ni = 0;
   if (ni !== _lastNextPrayerIdx) {
     _lastNextPrayerIdx = ni;
