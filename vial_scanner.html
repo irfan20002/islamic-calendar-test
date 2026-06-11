@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Vial Scanner">
+<title>Cryo Vial Scanner</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f2f2f7; color: #1c1c1e; min-height: 100vh; }
+  .header { background: #fff; padding: 16px 20px 12px; border-bottom: 0.5px solid rgba(0,0,0,0.12); position: sticky; top: 0; z-index: 10; }
+  .header h1 { font-size: 22px; font-weight: 600; }
+  .header p { font-size: 13px; color: #6e6e73; margin-top: 2px; }
+  .content { padding: 16px; max-width: 600px; margin: 0 auto; }
+  .card { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .card-title { font-size: 13px; font-weight: 600; color: #6e6e73; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 14px; }
+  .field { margin-bottom: 12px; }
+  .field label { font-size: 13px; color: #6e6e73; display: block; margin-bottom: 4px; }
+  .field input { width: 100%; padding: 10px 12px; border: 1px solid rgba(0,0,0,0.15); border-radius: 8px; font-size: 15px; color: #1c1c1e; background: #fff; -webkit-appearance: none; }
+  .field input:focus { outline: none; border-color: #007aff; box-shadow: 0 0 0 3px rgba(0,122,255,0.15); }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .preview-wrap { display: none; border-radius: 10px; overflow: hidden; margin-bottom: 12px; background: #f2f2f7; max-height: 200px; }
+  .preview-wrap img { width: 100%; max-height: 200px; object-fit: contain; display: block; }
+  .ocr-status { font-size: 13px; min-height: 20px; margin-bottom: 10px; color: #6e6e73; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 11px 20px; border-radius: 10px; font-size: 15px; font-weight: 500; border: none; cursor: pointer; width: 100%; transition: opacity 0.15s; }
+  .btn:active { opacity: 0.7; }
+  .btn-blue { background: #007aff; color: #fff; }
+  .btn-green { background: #34c759; color: #fff; }
+  .btn-gray { background: #f2f2f7; color: #1c1c1e; border: 1px solid rgba(0,0,0,0.12); }
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+  .btn-export { background: #5856d6; color: #fff; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+  .badge-green { background: #d1f2da; color: #1a7a35; }
+  .badge-orange { background: #fff0d6; color: #a05a00; }
+  .entry-list { display: flex; flex-direction: column; gap: 10px; }
+  .entry-card { background: #f9f9f9; border-radius: 10px; padding: 12px 14px; border: 0.5px solid rgba(0,0,0,0.08); }
+  .entry-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .entry-id { font-size: 15px; font-weight: 600; color: #007aff; }
+  .entry-meta { font-size: 12px; color: #6e6e73; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .meta-pill { background: #f2f2f7; padding: 2px 8px; border-radius: 6px; }
+  .delete-btn { background: #ff3b30; color: #fff; border: none; border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+  .empty { text-align: center; padding: 30px; color: #6e6e73; font-size: 14px; }
+  .count { font-size: 13px; color: #6e6e73; margin-bottom: 12px; }
+  #camera-input { display: none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🧊 Vial Scanner</h1>
+  <p>Scan cryo vial labels and export to CSV</p>
+</div>
+
+<div class="content">
+
+  <!-- Scan Section -->
+  <div class="card">
+    <div class="card-title">📷 Scan Label</div>
+    <div class="preview-wrap" id="preview-wrap">
+      <img id="preview-img" alt="label preview" />
+    </div>
+    <div class="ocr-status" id="ocr-status"></div>
+    <input type="file" id="camera-input" accept="image/*" capture="environment" />
+    <button class="btn btn-blue" onclick="document.getElementById('camera-input').click()">
+      📷 Take Photo of Vial Label
+    </button>
+  </div>
+
+  <!-- Fields Section -->
+  <div class="card">
+    <div class="card-title">🧪 Vial Details</div>
+    <div class="grid-2">
+      <div class="field">
+        <label>Sample ID *</label>
+        <input type="text" id="f-id" placeholder="ABPS-001" />
+      </div>
+      <div class="field">
+        <label>Tumor type</label>
+        <input type="text" id="f-tumor" placeholder="CRC" />
+      </div>
+      <div class="field">
+        <label>Passage number</label>
+        <input type="text" id="f-passage" placeholder="P3" />
+      </div>
+      <div class="field">
+        <label>Date frozen</label>
+        <input type="date" id="f-date" />
+      </div>
+      <div class="field">
+        <label>Storage box</label>
+        <input type="text" id="f-box" placeholder="Box-A2" />
+      </div>
+      <div class="field">
+        <label>Storage location</label>
+        <input type="text" id="f-location" placeholder="-80C Freezer 2" />
+      </div>
+    </div>
+    <div class="field">
+      <label>Notes</label>
+      <input type="text" id="f-notes" placeholder="Optional notes" />
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-green" onclick="addEntry()">＋ Add Entry</button>
+      <button class="btn btn-gray" onclick="clearFields()">↺ Clear</button>
+    </div>
+  </div>
+
+  <!-- Entries Section -->
+  <div class="card">
+    <div class="card-title">📋 Saved Entries</div>
+    <div class="count" id="count">0 vials saved</div>
+    <div class="entry-list" id="entry-list">
+      <div class="empty">No entries yet — scan a vial label to start</div>
+    </div>
+    <div style="margin-top: 14px;">
+      <button class="btn btn-export" onclick="exportCSV()" id="export-btn" disabled>
+        ⬇ Export as CSV (open in Excel)
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script>
+let entries = [];
+
+document.getElementById('camera-input').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  const img = document.getElementById('preview-img');
+  const wrap = document.getElementById('preview-wrap');
+  img.src = url;
+  wrap.style.display = 'block';
+  const status = document.getElementById('ocr-status');
+  status.innerHTML = '<span class="badge badge-orange">Reading label...</span>';
+  Tesseract.recognize(url, 'eng', {})
+    .then(({ data: { text } }) => {
+      status.innerHTML = '<span class="badge badge-green">✓ Text extracted — review fields below</span>';
+      parseOCR(text.trim());
+    })
+    .catch(() => {
+      status.innerHTML = '<span class="badge badge-orange">Could not read label — fill in manually</span>';
+    });
+  this.value = '';
+});
+
+function parseOCR(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const full = lines.join(' ');
+  const idMatch = full.match(/([A-Z]{2,6}[-_]?\d{3,6})/);
+  if (idMatch) document.getElementById('f-id').value = idMatch[1];
+  const pMatch = full.match(/[Pp][\s]?(\d+)/);
+  if (pMatch) document.getElementById('f-passage').value = 'P' + pMatch[1];
+  const dateMatch = full.match(/(\d{4}[-\/]\d{2}[-\/]\d{2}|\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/);
+  if (dateMatch) {
+    const d = new Date(dateMatch[1].replace(/\//g, '-'));
+    if (!isNaN(d)) document.getElementById('f-date').value = d.toISOString().split('T')[0];
+  }
+  const tumorTerms = ['CRC','ABPS','PDX','HCT116','SW480','DLD','HCC','PANC','MCF7','A549'];
+  for (const t of tumorTerms) {
+    if (full.toUpperCase().includes(t)) {
+      document.getElementById('f-tumor').value = t;
+      break;
+    }
+  }
+}
+
+function addEntry() {
+  const id = document.getElementById('f-id').value.trim();
+  if (!id) { alert('Sample ID is required'); return; }
+  entries.push({
+    id,
+    tumor: document.getElementById('f-tumor').value.trim(),
+    passage: document.getElementById('f-passage').value.trim(),
+    date: document.getElementById('f-date').value,
+    box: document.getElementById('f-box').value.trim(),
+    location: document.getElementById('f-location').value.trim(),
+    notes: document.getElementById('f-notes').value.trim(),
+    added: new Date().toLocaleTimeString()
+  });
+  renderEntries();
+  clearFields();
+  document.getElementById('preview-wrap').style.display = 'none';
+  document.getElementById('ocr-status').innerHTML = '';
+}
+
+function renderEntries() {
+  const list = document.getElementById('entry-list');
+  document.getElementById('count').textContent = entries.length + ' vial' + (entries.length !== 1 ? 's' : '') + ' saved';
+  document.getElementById('export-btn').disabled = entries.length === 0;
+  if (entries.length === 0) {
+    list.innerHTML = '<div class="empty">No entries yet — scan a vial label to start</div>';
+    return;
+  }
+  list.innerHTML = entries.map((e, i) => `
+    <div class="entry-card">
+      <div class="entry-header">
+        <span class="entry-id">${e.id}</span>
+        <button class="delete-btn" onclick="deleteEntry(${i})">Delete</button>
+      </div>
+      <div class="entry-meta">
+        ${e.tumor ? '<span class="meta-pill">🔬 ' + e.tumor + '</span>' : ''}
+        ${e.passage ? '<span class="meta-pill">📍 ' + e.passage + '</span>' : ''}
+        ${e.date ? '<span class="meta-pill">📅 ' + e.date + '</span>' : ''}
+        ${e.box ? '<span class="meta-pill">📦 ' + e.box + '</span>' : ''}
+        ${e.location ? '<span class="meta-pill">❄️ ' + e.location + '</span>' : ''}
+        ${e.notes ? '<span class="meta-pill">📝 ' + e.notes + '</span>' : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function deleteEntry(i) {
+  if (confirm('Delete this entry?')) {
+    entries.splice(i, 1);
+    renderEntries();
+  }
+}
+
+function clearFields() {
+  ['f-id','f-tumor','f-passage','f-date','f-box','f-location','f-notes'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+}
+
+function exportCSV() {
+  const headers = ['Sample ID','Tumor type','Passage','Date frozen','Box','Location','Notes'];
+  const rows = entries.map(e =>
+    [e.id, e.tumor, e.passage, e.date, e.box, e.location, e.notes]
+    .map(v => '"' + (v||'').replace(/"/g,'""') + '"').join(',')
+  );
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'cryo_vials_' + new Date().toISOString().split('T')[0] + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
