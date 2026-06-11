@@ -1066,11 +1066,18 @@ function renderPrayers(times, city) {
 
   const now    = new Date();
   const parsed = PRAYER_KEYS.map(k => ({ name: k, time: parseTime(times[k]), str: times[k] }));
-  let nextIdx  = parsed.findIndex(p => p.time > now);
-  if (nextIdx === -1) {
-    // Past last prayer (Isha) — set Fajr to tomorrow
-    parsed[0].time = parseTomorrow(times[PRAYER_KEYS[0]]);
-    nextIdx = 0;
+  const _fajrT    = parseTime(times.Fajr);
+  const _sunriseT = parseTime(times.Sunrise);
+  const _inFajrWin = now >= _fajrT && now < _sunriseT;
+  let nextIdx;
+  if (_inFajrWin) {
+    nextIdx = PRAYER_KEYS.indexOf('Fajr');
+  } else {
+    nextIdx = parsed.findIndex(p => p.time > now && p.name !== 'Sunrise');
+    if (nextIdx === -1) {
+      parsed[0].time = parseTomorrow(times[PRAYER_KEYS[0]]);
+      nextIdx = 0;
+    }
   }
   const next    = parsed[nextIdx];
   const diffMs  = next.time - now;
@@ -1082,8 +1089,19 @@ function renderPrayers(times, city) {
   const _sunriseTime  = parseTime(times.Sunrise);
   const _ishraqStart  = new Date(_sunriseTime.getTime() + 25 * 60000);  // 25 min after sunrise
   const _ishraqEnd    = new Date(_sunriseTime.getTime() + 85 * 60000);  // 60 min window
-  window._ishraqStart = _ishraqStart;
-  window._ishraqEnd   = _ishraqEnd;
+  window._ishraqStart   = _ishraqStart;
+  window._ishraqEnd     = _ishraqEnd;
+  window._forbiddenStart = _sunriseTime;
+  window._sunriseTime    = _sunriseTime;
+  window._fajrTime       = parseTime(times.Fajr);
+  window._dhuhrTime      = parseTime(times.Dhuhr);
+  window._zawalStart     = new Date(parseTime(times.Dhuhr).getTime() - 10 * 60000);
+  window._asrTime        = parseTime(times.Asr);
+  window._asrWarnStart   = new Date(parseTime(times.Asr).getTime() - 15 * 60000);
+  window._maghribTime    = parseTime(times.Maghrib);
+  window._maghribWarnStart = new Date(parseTime(times.Maghrib).getTime() - 15 * 60000);
+  window._ishaTime       = parseTime(times.Isha);
+  window._ishaWarnStart  = new Date(parseTime(times.Isha).getTime() - 15 * 60000);
 
   const box = document.getElementById('prayer-box');
   box.innerHTML = `
@@ -1111,8 +1129,10 @@ function renderPrayers(times, city) {
     </div>
     <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:2px;margin-bottom:6px" id="prayer-grid">
       ${parsed.map((p, i) => {
-        // Highlight the most recently passed prayer (skip Sunrise unless in Ishraq window)
-        const activeIdx = nextIdx === 0 ? -1 : nextIdx - 1;
+        // Highlight the most recently passed prayer (skip Sunrise)
+        let activeIdx = nextIdx === 0 ? -1 : nextIdx - 1;
+        // If activeIdx lands on Sunrise, go one further back
+        if (activeIdx >= 0 && PRAYER_KEYS[activeIdx] === 'Sunrise') activeIdx--;
         const isSunrise = p.name === 'Sunrise';
         const active = i === activeIdx && !isSunrise;
         return `<div data-pidx="${i}" style="text-align:center;padding:6px 2px;border-radius:8px;${active ? 'background:#1D9E75;' : ''}">
@@ -1153,42 +1173,70 @@ function renderPrayers(times, city) {
     if (!elCd) return;
     const now3 = new Date();
 
-    // ── Ishraq window handling ──────────────────────────────────────────
-    const ishraqStart = window._ishraqStart;
-    const ishraqEnd   = window._ishraqEnd;
-    const sunriseTime = _parsedPrayerTimes ? _parsedPrayerTimes[PRAYER_KEYS.indexOf('Sunrise')] : null;
+    // ── Window calculations ────────────────────────────────────────────────
+    const ishraqStart    = window._ishraqStart;
+    const ishraqEnd      = window._ishraqEnd;
+    const forbiddenStart = window._forbiddenStart;
+    const fajrTimeW      = window._fajrTime;
+    const sunriseTimeW   = window._sunriseTime;
+    const dhuhrTimeW     = window._dhuhrTime;
+    const zawalStart     = window._zawalStart;
+    const _box           = document.getElementById('next-prayer-box');
+    const _grid          = document.getElementById('prayer-grid');
 
-    if (sunriseTime && now3 >= sunriseTime && now3 < ishraqEnd) {
-      if (now3 < ishraqStart) {
-        // Between Sunrise and Ishraq — countdown to Ishraq
-        const msToIshraq = ishraqStart - now3;
-        const im = Math.floor(msToIshraq / 60000);
-        const is = Math.floor((msToIshraq % 60000) / 1000);
-        if (elLbl)  { elLbl.textContent = '🌅 Ishraq'; elLbl.classList.remove('flash-alert'); elLbl.style.color = 'var(--color-text-secondary)'; }
-        if (elName) { elName.innerHTML  = `<span style="font-size:15px;font-weight:600">in ${im}m ${is}s</span>`; }
-        if (elCd)   { elCd.textContent  = ''; elCd.classList.remove('flash-alert'); }
-        const _boxB = document.getElementById('next-prayer-box');
-        if (_boxB)  { _boxB.style.background = ''; _boxB.style.borderRadius = ''; _boxB.style.padding = ''; }
-      } else {
-        // Ishraq window is open — flash "pray now"
-        if (elLbl)  { elLbl.textContent = '🌅 Ishraq'; elLbl.classList.add('flash-alert'); elLbl.style.color = '#ffffff'; }
-        if (elName) { elName.innerHTML  = `<span style="font-size:15px;font-weight:700;color:#ffffff">Pray now!</span>`; elName.classList.add('flash-alert'); }
-        if (elCd)   { elCd.textContent  = ''; elCd.classList.remove('flash-alert'); }
-        const _boxA = document.getElementById('next-prayer-box');
-        if (_boxA)  { _boxA.style.background = '#8B3FA8'; _boxA.style.borderRadius = '10px'; _boxA.style.padding = '8px 10px'; }
-      }
-      // Update grid highlight before returning
-      const _grid = document.getElementById('prayer-grid');
+    const inFajrWindow = fajrTimeW && forbiddenStart && now3 >= fajrTimeW && now3 < forbiddenStart;
+    const inForbidden  = forbiddenStart && ishraqStart && now3 >= forbiddenStart && now3 < ishraqStart;
+    const inIshraq     = ishraqStart && ishraqEnd && now3 >= ishraqStart && now3 < ishraqEnd;
+    const inZawal      = zawalStart && dhuhrTimeW && now3 >= zawalStart && now3 < dhuhrTimeW;
+
+    function resetGrid(highlightIdx) {
+      if (!_grid) return;
+      const sunriseIdx = PRAYER_KEYS.indexOf('Sunrise');
+      _grid.querySelectorAll('[data-pidx]').forEach(cell => {
+        const idx = parseInt(cell.dataset.pidx);
+        const nameEl = cell.querySelector('div:first-child');
+        const timeEl = cell.querySelector('div:last-child');
+        const active = idx === highlightIdx;
+        cell.style.background = active ? '#1D9E75' : '';
+        if (nameEl) { nameEl.style.color = active ? '#E1F5EE' : 'var(--color-text-secondary)'; if (idx === sunriseIdx) nameEl.textContent = 'Sunrise'; }
+        if (timeEl) timeEl.style.color = active ? '#ffffff' : 'var(--color-text-primary)';
+      });
+    }
+
+    // ── Fajr window ─────────────────────────────────────────────────────────
+    if (inFajrWindow) {
+      const msToSunrise = sunriseTimeW - now3;
+      const fm = Math.floor(msToSunrise / 60000);
+      const fs = Math.floor((msToSunrise % 60000) / 1000);
+      const fCountdown = String(fm).padStart(2,'0') + ':' + String(fs).padStart(2,'0');
+      if (_box) { _box.style.background = '#8B3FA8'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'right'; }
+      if (elLbl)  { elLbl.textContent = 'Fajr ends in'; elLbl.style.color = '#E1F5EE'; elLbl.style.fontSize = '15px'; elLbl.style.fontWeight = '600'; elLbl.classList.add('flash-alert'); }
+      if (elName) { elName.textContent = fCountdown; elName.style.fontSize = '22px'; elName.style.fontWeight = '700'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
+      if (elCd)   { elCd.textContent = 'Pray before sunrise'; elCd.style.color = '#E1F5EE'; elCd.style.fontSize = '13px'; elCd.style.fontWeight = '400'; elCd.classList.remove('flash-alert'); }
+      resetGrid(PRAYER_KEYS.indexOf('Fajr'));
+      return;
+    }
+
+    // ── Forbidden window ─────────────────────────────────────────────────────
+    if (inForbidden) {
+      const msToIshraq = ishraqStart - now3;
+      const im = Math.floor(msToIshraq / 60000);
+      const is = Math.floor((msToIshraq % 60000) / 1000);
+      const countdown = String(im).padStart(2,'0') + ':' + String(is).padStart(2,'0');
+      if (_box) { _box.style.background = 'linear-gradient(135deg,#c8860a,#f5c200)'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'center'; }
+      if (elLbl)  { elLbl.innerHTML = '<svg width="48" height="29" viewBox="0 0 80 48" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0 auto 2px"><g stroke="#3d1f00" stroke-width="2.5" stroke-linecap="round" opacity="0.7"><line x1="40" y1="6" x2="40" y2="0"/><line x1="56" y1="10" x2="60" y2="5"/><line x1="66" y1="22" x2="72" y2="20"/><line x1="24" y1="10" x2="20" y2="5"/><line x1="14" y1="22" x2="8" y2="20"/><line x1="63" y1="33" x2="70" y2="34"/><line x1="17" y1="33" x2="10" y2="34"/></g><path d="M16,38 A24,24 0 0,1 64,38 Z" fill="rgba(61,31,0,0.7)"/><path d="M4,40 Q40,34 76,40" fill="none" stroke="rgba(61,31,0,0.7)" stroke-width="2.5" stroke-linecap="round"/></svg>'; elLbl.style.color = '#3d1f00'; elLbl.classList.remove('flash-alert'); }
+      if (elName) { elName.textContent = '🚫 Forbidden prayer time'; elName.style.fontSize = '13px'; elName.style.fontWeight = '700'; elName.style.color = '#3d1f00'; elName.style.whiteSpace = 'normal'; elName.classList.add('flash-alert'); }
+      if (elCd)   { elCd.textContent = 'Ishraq in ' + countdown; elCd.style.color = '#3d1f00'; elCd.style.fontSize = '14px'; elCd.style.fontWeight = '700'; elCd.classList.remove('flash-alert'); }
       if (_grid) {
         const _sunriseIdx = PRAYER_KEYS.indexOf('Sunrise');
         _grid.querySelectorAll('[data-pidx]').forEach(cell => {
-          const idx    = parseInt(cell.dataset.pidx);
+          const idx = parseInt(cell.dataset.pidx);
           const nameEl = cell.querySelector('div:first-child');
           const timeEl = cell.querySelector('div:last-child');
           if (idx === _sunriseIdx) {
-            cell.style.background = (now3 >= ishraqStart) ? '#c8860a' : '#1D9E75';
-            if (nameEl) nameEl.style.color = '#fff8e0';
-            if (timeEl) timeEl.style.color = '#ffffff';
+            cell.style.background = 'linear-gradient(135deg,#c8860a,#f5c200)';
+            if (nameEl) { nameEl.style.color = '#3d1f00'; nameEl.textContent = 'Sunrise 🚫'; }
+            if (timeEl) timeEl.style.color = '#3d1f00';
           } else {
             cell.style.background = '';
             if (nameEl) nameEl.style.color = 'var(--color-text-secondary)';
@@ -1196,28 +1244,107 @@ function renderPrayers(times, city) {
           }
         });
       }
-      return; // handled — skip normal prayer countdown
+      return;
     }
 
-    // ── Standard: restore labels if coming out of Ishraq window ──────────
-    if (elLbl && elLbl.textContent.includes('Ishraq')) {
-      elLbl.textContent = 'Next prayer';
-      elLbl.style.color = '#E1F5EE';
-      elLbl.classList.remove('flash-alert');
-      if (elName) { elName.style.color = '#ffffff'; elName.classList.remove('flash-alert'); }
-      const _boxR = document.getElementById('next-prayer-box');
-      if (_boxR) { _boxR.style.background = '#8B3FA8'; _boxR.style.borderRadius = '10px'; _boxR.style.padding = '8px 10px'; }
+    // ── Ishraq window ────────────────────────────────────────────────────────
+    if (inIshraq) {
+      if (_box) { _box.style.background = '#8B3FA8'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'right'; }
+      if (elLbl)  { elLbl.innerHTML = ''; elLbl.textContent = '🌅 Ishraq'; elLbl.style.color = '#E1F5EE'; elLbl.style.fontSize = '15px'; elLbl.style.fontWeight = '600'; elLbl.classList.add('flash-alert'); }
+      if (elName) { elName.textContent = 'Pray now!'; elName.style.fontSize = '17px'; elName.style.fontWeight = '700'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
+      if (elCd)   { elCd.textContent = ''; elCd.classList.remove('flash-alert'); }
+      resetGrid(-1); // clears all highlights including Sunrise 🚫
+      return;
     }
 
-    // ── Standard 15-min flash ─────────────────────────────────────────────
-    const parsed3 = PRAYER_KEYS.map(k => parseTime(times[k]));
-    let ni = parsed3.findIndex(p => p > now3);
-    if (ni === -1) ni = 0;
-    const ms      = parsed3[ni] - now3;
-    const isClose = ms > 0 && ms <= 15 * 60000;
-    if (elCd) elCd.style.color = '#E1F5EE';
-    elCd.classList.toggle('flash-alert',  isClose);
-    if (elLbl) elLbl.classList.toggle('flash-alert', isClose);
+    // ── Zawal window ─────────────────────────────────────────────────────────
+    if (inZawal) {
+      const msToDhuhr = dhuhrTimeW - now3;
+      const zm = Math.floor(msToDhuhr / 60000);
+      const zs = Math.floor((msToDhuhr % 60000) / 1000);
+      const zCountdown = String(zm).padStart(2,'0') + ':' + String(zs).padStart(2,'0');
+      if (_box) { _box.style.background = 'linear-gradient(135deg,#c8860a,#f5c200)'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'center'; }
+      if (elLbl)  { elLbl.innerHTML = ''; elLbl.textContent = 'Zawal time 🚫 No prayers'; elLbl.style.color = '#3d1f00'; elLbl.style.fontSize = '14px'; elLbl.style.fontWeight = '700'; elLbl.classList.remove('flash-alert'); }
+      if (elName) { elName.textContent = 'Next prayer Zuhr'; elName.style.fontSize = '13px'; elName.style.fontWeight = '600'; elName.style.color = '#3d1f00'; elName.style.whiteSpace = 'normal'; elName.classList.remove('flash-alert'); }
+      if (elCd)   { elCd.textContent = 'Zuhr begins in ' + zCountdown; elCd.style.color = '#3d1f00'; elCd.style.fontSize = '14px'; elCd.style.fontWeight = '700'; elCd.classList.remove('flash-alert'); }
+      if (_grid) {
+        const _dhuhrIdx = PRAYER_KEYS.indexOf('Dhuhr');
+        _grid.querySelectorAll('[data-pidx]').forEach(cell => {
+          const idx = parseInt(cell.dataset.pidx);
+          const nameEl = cell.querySelector('div:first-child');
+          const timeEl = cell.querySelector('div:last-child');
+          if (idx === _dhuhrIdx) {
+            cell.style.background = 'linear-gradient(135deg,#c8860a,#f5c200)';
+            if (nameEl) nameEl.style.color = '#3d1f00';
+            if (timeEl) timeEl.style.color = '#3d1f00';
+          } else {
+            cell.style.background = '';
+            if (nameEl) nameEl.style.color = 'var(--color-text-secondary)';
+            if (timeEl) timeEl.style.color = 'var(--color-text-primary)';
+          }
+        });
+      }
+      return;
+    }
+
+    // ── Prayer warning windows (15 min before each prayer) ─────────────────
+    const asrTimeW        = window._asrTime;
+    const asrWarnStart    = window._asrWarnStart;
+    const maghribTimeW    = window._maghribTime;
+    const maghribWarnStart = window._maghribWarnStart;
+    const ishaTimeW       = window._ishaTime;
+    const ishaWarnStart   = window._ishaWarnStart;
+
+    const inAsrWarn     = asrWarnStart && asrTimeW && now3 >= asrWarnStart && now3 < asrTimeW;
+    const inMaghribWarn = maghribWarnStart && maghribTimeW && now3 >= maghribWarnStart && now3 < maghribTimeW;
+    const inIshaWarn    = ishaWarnStart && ishaTimeW && now3 >= ishaWarnStart && now3 < ishaTimeW;
+
+    function showPrayerWarn(label, prayerTime) {
+      const ms2 = prayerTime - now3;
+      const wm = Math.floor(ms2 / 60000);
+      const ws = Math.floor((ms2 % 60000) / 1000);
+      const wCountdown = String(wm).padStart(2,'0') + ':' + String(ws).padStart(2,'0');
+      if (_box) { _box.style.background = '#8B3FA8'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'right'; }
+      if (elLbl)  { elLbl.innerHTML = ''; elLbl.textContent = label + ' begins in'; elLbl.style.color = '#E1F5EE'; elLbl.style.fontSize = '13px'; elLbl.style.fontWeight = '600'; elLbl.classList.add('flash-alert'); }
+      if (elName) { elName.textContent = wCountdown; elName.style.fontSize = '22px'; elName.style.fontWeight = '700'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
+      if (elCd)   { elCd.textContent = ''; elCd.classList.remove('flash-alert'); }
+    }
+
+    if (inAsrWarn) {
+      showPrayerWarn('Asr', asrTimeW);
+      resetGrid(PRAYER_KEYS.indexOf('Asr'));
+      return;
+    }
+
+    if (inMaghribWarn) {
+      const isFasting = isFastingToday();
+      const label = isFasting ? 'Iftar' : 'Maghrib';
+      showPrayerWarn(label, maghribTimeW);
+      resetGrid(PRAYER_KEYS.indexOf('Maghrib'));
+      return;
+    }
+
+    if (inIshaWarn) {
+      showPrayerWarn('Isha', ishaTimeW);
+      resetGrid(PRAYER_KEYS.indexOf('Isha'));
+      return;
+    }
+
+    // ── Restore after all special windows ────────────────────────────────────
+    if (_grid) {
+      [PRAYER_KEYS.indexOf('Sunrise'), PRAYER_KEYS.indexOf('Dhuhr')].forEach(sIdx => {
+        const sCell = _grid.querySelector(`[data-pidx="${sIdx}"]`);
+        if (sCell) {
+          const sName = sCell.querySelector('div:first-child');
+          if (sName && sName.textContent.includes('🚫')) sName.textContent = PRAYER_KEYS[sIdx];
+          sCell.style.background = '';
+        }
+      });
+    }
+    if (_box)   { _box.style.background = '#8B3FA8'; _box.style.textAlign = 'right'; }
+    if (elLbl)  { elLbl.innerHTML = ''; elLbl.textContent = 'Next prayer'; elLbl.style.color = '#E1F5EE'; elLbl.style.fontSize = '13px'; elLbl.style.fontWeight = '400'; elLbl.classList.remove('flash-alert'); }
+    if (elName) { elName.style.fontSize = '17px'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
+    if (elCd)   { elCd.style.color = '#E1F5EE'; elCd.style.fontSize = '14px'; elCd.style.fontWeight = '600'; elCd.classList.remove('flash-alert'); }
   }, 1000);
 
   // Start Suhoor/Iftar countdown banner
@@ -1385,14 +1512,19 @@ function updateClock() {
   if (_prayerTimes && _parsedPrayerTimes) {
     const cdEl = document.getElementById('next-prayer-countdown');
     if (cdEl) {
-      // Skip during Ishraq window — the flash interval handles that display
-      const ishraqStart = window._ishraqStart;
-      const ishraqEnd   = window._ishraqEnd;
-      const sunriseIdx  = PRAYER_KEYS.indexOf('Sunrise');
-      const sunriseTime = _parsedPrayerTimes[sunriseIdx];
-      if (sunriseTime && now >= sunriseTime && ishraqEnd && now < ishraqEnd) return;
+      // Skip during all special windows — flash interval handles those
+      const _fT = window._fajrTime, _iE = window._ishraqEnd;
+      const _zS = window._zawalStart, _dT = window._dhuhrTime;
+      const _aW = window._asrWarnStart, _aT = window._asrTime;
+      const _mW = window._maghribWarnStart, _mT = window._maghribTime;
+      const _iW = window._ishaWarnStart, _iT = window._ishaTime;
+      if ((_fT && _iE && now >= _fT && now < _iE) ||
+          (_zS && _dT && now >= _zS && now < _dT) ||
+          (_aW && _aT && now >= _aW && now < _aT) ||
+          (_mW && _mT && now >= _mW && now < _mT) ||
+          (_iW && _iT && now >= _iW && now < _iT)) return;
 
-      let ni = _parsedPrayerTimes.findIndex(p => p > now);
+      let ni = _parsedPrayerTimes.findIndex((p, i) => p > now && PRAYER_KEYS[i] !== 'Sunrise');
       let targetTime;
       if (ni === -1) {
         targetTime = parseTomorrow(_prayerTimes[PRAYER_KEYS[0]]);
@@ -1430,10 +1562,18 @@ setInterval(updateClock, 1000);
 setInterval(() => {
   if (!_prayerTimes) return;
   const _n = new Date();
-  // Don't re-render during Ishraq window — flash interval manages display
-  if (window._ishraqStart && window._ishraqEnd && _n >= window._ishraqStart && _n < window._ishraqEnd) return;
+  // Don't re-render during special windows — flash interval manages display
+  const _zS2 = window._zawalStart, _dT2 = window._dhuhrTime;
+  const _aW2 = window._asrWarnStart, _aT2 = window._asrTime;
+  const _mW2 = window._maghribWarnStart, _mT2 = window._maghribTime;
+  const _iW2 = window._ishaWarnStart, _iT2 = window._ishaTime;
+  if ((window._fajrTime && window._ishraqEnd && _n >= window._fajrTime && _n < window._ishraqEnd) ||
+      (_zS2 && _dT2 && _n >= _zS2 && _n < _dT2) ||
+      (_aW2 && _aT2 && _n >= _aW2 && _n < _aT2) ||
+      (_mW2 && _mT2 && _n >= _mW2 && _n < _mT2) ||
+      (_iW2 && _iT2 && _n >= _iW2 && _n < _iT2)) return;
   const parsed = PRAYER_KEYS.map(k => parseTime(_prayerTimes[k]));
-  let ni = parsed.findIndex(p => p > _n);
+  let ni = parsed.findIndex((p, i) => p > _n && PRAYER_KEYS[i] !== 'Sunrise');
   if (ni === -1) ni = 0;
   if (ni !== _lastNextPrayerIdx) {
     _lastNextPrayerIdx = ni;
