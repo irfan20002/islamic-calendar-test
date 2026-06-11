@@ -155,9 +155,18 @@ function parseOCR(text) {
   if (idMatch) document.getElementById('f-id').value = idMatch[1];
   const pMatch = full.match(/[Pp][\s]?(\d+)/);
   if (pMatch) document.getElementById('f-passage').value = 'P' + pMatch[1];
-  const dateMatch = full.match(/(\d{4}[-\/]\d{2}[-\/]\d{2}|\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/);
+  const dateMatch = full.match(/(\d{4}[-\/]\d{2}[-\/]\d{2}|\d{1,2}[-\/.\s]\d{1,2}[-\/.\s]\d{2,4})/);
   if (dateMatch) {
-    const d = new Date(dateMatch[1].replace(/\//g, '-'));
+    const raw = dateMatch[1].replace(/[\/.\s]/g, '-');
+    const parts = raw.split('-');
+    let d;
+    if (parts[2] && parts[2].length === 2) {
+      d = new Date('20' + parts[2] + '-' + parts[0].padStart(2,'0') + '-' + parts[1].padStart(2,'0'));
+    } else if (parts[0].length === 4) {
+      d = new Date(raw);
+    } else {
+      d = new Date(parts[2] + '-' + parts[0].padStart(2,'0') + '-' + parts[1].padStart(2,'0'));
+    }
     if (!isNaN(d)) document.getElementById('f-date').value = d.toISOString().split('T')[0];
   }
   const tumorTerms = ['CRC','ABPS','PDX','HCT116','SW480','DLD','HCC','PANC','MCF7','A549'];
