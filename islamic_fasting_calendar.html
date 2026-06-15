@@ -1636,12 +1636,12 @@ function updateClock() {
     if (dlG) dlG.textContent = now.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
 
     const HOLY = {
-      1:  ['Muharram', 'Sacred month & Islamic New Year.', 'Fast Ashura (10th), increase dhikr & tawbah.'],
+      1:  ['Muharram', 'Sacred month & Islamic New Year.', 'Fast 9th (Tasua) + 10th (Ashura), 11th optional. Increase dhikr & tawbah.'],
       7:  ['Rajab', 'Sacred month; Isra wal Miraj (27th).', 'Avoid sin, fast voluntarily, seek forgiveness.'],
       8:  ['Shaban', 'Beloved month of the Prophet ﷺ.', 'Increase fasting & Quran; fast the 15th.'],
       9:  ['Ramadan', 'Holiest month — Quran was revealed.', 'Fast daily, pray Tarawih, seek Laylat al-Qadr.'],
       11: ['Dhul Qidah', 'Sacred month of Hajj preparation.', 'Avoid sin, increase worship & dhikr.'],
-      12: ['Dhul Hijjah', 'Best 10 days of the year.', 'Fast Arafah (9th), make Takbir, give Udhiyah.']
+      12: ['Dhul Hijjah', 'Best 10 days of the year.', 'Fast 1st–9th, Arafah (9th) most emphasized. Make Takbir, give Udhiyah.']
     };
     const banner = document.getElementById('holy-month-banner');
     const holy = HOLY[hd.month];
