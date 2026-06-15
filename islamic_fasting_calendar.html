@@ -1756,12 +1756,8 @@ function updateCountdownBanner() {
   const flashStyle  = blinkLabel ? 'animation:flash-alert 1s ease-in-out infinite;' : '';
   const timeColor   = (isIftar ? ms <= 10 * 60000 : ms <= 30 * 60000) ? '#8b0000' : '#0f5c2e';
 
-  wrap.innerHTML = '';
-  _setCountdownRight(`
-    <div style="text-align:center;">
-      <div style="font-size:13px;font-weight:700;color:#0a3d1f;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;${flashStyle}">${icon} ${label} in</div>
-      <div style="font-size:20px;font-weight:800;color:${timeColor};font-variant-numeric:tabular-nums;line-height:1.2;white-space:nowrap">${hh}:${mm}:${ss}</div>
-    </div>`);
+  _setCountdownRight(null);
+  wrap.innerHTML = `<div style="text-align:center;white-space:nowrap;${flashStyle}"><span style="font-size:13px;font-weight:700;color:#0a3d1f;text-transform:uppercase;letter-spacing:.05em;">${icon} ${label} in </span><span style="font-size:16px;font-weight:800;color:${timeColor};font-variant-numeric:tabular-nums;">${hh}:${mm}:${ss}</span></div>`;
 }
 
 // Centered countdown — same mechanism for both Iftar and Suhoor
