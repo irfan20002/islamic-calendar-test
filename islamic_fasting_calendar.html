@@ -543,6 +543,12 @@ const FASTS = generateFasts(_initTodayH.year - 1, _initTodayH.year + 2);
 let hijriOffset = parseInt(localStorage.getItem('hijri_offset') || '0');
 
 function getAdjustedHijri(date) {
+  // For today's date, use API Hijri if available (correct moon sighting)
+  const d = new Date(date); d.setHours(0,0,0,0);
+  const today = getToday();
+  if (window._apiHijriDay && d.getTime() === today.getTime() && hijriOffset === 0) {
+    return { day: window._apiHijriDay, month: window._apiHijriMonth, year: window._apiHijriYear };
+  }
   const adjusted = new Date(date);
   adjusted.setDate(adjusted.getDate() + hijriOffset);
   return gToH(adjusted);
@@ -989,20 +995,26 @@ function renderIslamicDayCountdown() {
     { hm: 12, hd: 10, label: 'Eid al-Adha',       emoji: '🎉', color: '#E74C3C' },
   ];
 
-  const todayH = gToH(getToday());
+  // Use API Hijri date if available
+  const todayH = (window._apiHijriDay && hijriOffset === 0)
+    ? { year: window._apiHijriYear, month: window._apiHijriMonth, day: window._apiHijriDay }
+    : gToH(getToday());
+
   let next = null, minDays = Infinity;
   for (const hy of [todayH.year, todayH.year + 1]) {
     for (const day of DAYS) {
       const greg = hToG(hy, day.hm, day.hd);
       greg.setHours(0, 0, 0, 0);
-      const diff = Math.ceil((greg - getToday()) / 86400000);
-      if (diff >= 0 && diff < minDays) { minDays = diff; next = { ...day, greg, diff }; }
+      // If today's Hijri matches this event exactly, diff = 0 (Today!)
+      const isToday = (todayH.year === hy && todayH.month === day.hm && todayH.day === day.hd);
+      const diff = isToday ? 0 : Math.ceil((greg - getToday()) / 86400000);
+      if (diff >= 0 && diff < minDays) { minDays = diff; next = { ...day, greg, diff, hy }; }
     }
   }
   if (!next) { wrap.innerHTML = ''; return; }
 
   const diffText = next.diff === 0 ? 'Today!' : next.diff === 1 ? 'Tomorrow' : `in ${next.diff} days`;
-  const h        = gToH(next.greg);
+  const h        = { year: next.hy, month: next.hm, day: next.hd };
   const gregStr  = next.greg.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   wrap.innerHTML = `
     <div style="display:flex;align-items:center;background:var(--color-background-secondary);border-radius:var(--border-radius-md);margin-bottom:.5rem;overflow:hidden">
@@ -1575,7 +1587,24 @@ function loadPrayers(lat, lon, city) {
   const yyyy  = today.getFullYear();
   fetch(`https://api.aladhan.com/v1/timings/${dd}-${mm}-${yyyy}?latitude=${lat}&longitude=${lon}&method=2`)
     .then(r => r.json())
-    .then(data => { if (data.code === 200) renderPrayers(data.data.timings, city); })
+    .then(data => {
+      if (data.code === 200) {
+        renderPrayers(data.data.timings, city);
+        // Use API Hijri date — correct for location and moon sighting
+        const hijri = data.data.date.hijri;
+        if (hijri) {
+          window._apiHijriDay   = parseInt(hijri.day);
+          window._apiHijriMonth = parseInt(hijri.month.number);
+          window._apiHijriYear  = parseInt(hijri.year);
+          window._apiHijriMonthName = hijri.month.en;
+          // Update the date display immediately
+          const dlH = document.getElementById('prayer-date-hijri');
+          const dlG = document.getElementById('prayer-date-greg');
+          if (dlH) dlH.textContent = `${hijri.day} ${hijri.month.en} ${hijri.year}`;
+          if (dlG) dlG.textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+        }
+      }
+    })
     .catch(() => {}); // local times already shown — silently ignore network failures
 }
 
