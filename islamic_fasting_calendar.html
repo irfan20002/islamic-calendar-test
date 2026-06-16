@@ -253,10 +253,18 @@
 
   <div style="height:1.5rem"></div>
 
-  <div class="tabs">
-    <button class="tab active" data-tab="upcoming" onclick="showTab('upcoming')">Upcoming fasts</button>
-    <button class="tab" data-tab="calendar" onclick="showTab('calendar')">Calendar</button>
-    <button class="tab" data-tab="guide" onclick="showTab('guide')">Guide</button>
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+    <div class="tabs">
+      <button class="tab active" data-tab="upcoming" onclick="showTab('upcoming')">Upcoming fasts</button>
+      <button class="tab" data-tab="calendar" onclick="showTab('calendar')">Calendar</button>
+      <button class="tab" data-tab="guide" onclick="showTab('guide')">Guide</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:3px;flex-shrink:0">
+      <span style="font-size:10px;color:var(--color-text-secondary);margin-right:2px">Hijri</span>
+      <button onclick="adjustHijri(-1)" style="font-family:var(--font-sans);font-size:11px;padding:1px 6px;border-radius:20px;border:1px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-secondary);cursor:pointer">◀</button>
+      <span id="hijri-offset-label" style="font-size:10px;color:#1D9E75;min-width:24px;text-align:center;font-weight:600"></span>
+      <button onclick="adjustHijri(1)" style="font-family:var(--font-sans);font-size:11px;padding:1px 6px;border-radius:20px;border:1px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-secondary);cursor:pointer">▶</button>
+    </div>
   </div>
 
   <div id="tab-upcoming">
@@ -1132,15 +1140,10 @@ function renderPrayers(times, city) {
           <div style="font-size:17px;font-weight:700;color:#ffffff;line-height:1.1;white-space:nowrap" id="next-prayer-name">${boxName}</div>
           <div style="font-size:14px;color:#E1F5EE;font-weight:600;margin-top:2px" id="next-prayer-countdown">${boxCd}</div>
         </div>
-        <div style="display:flex;align-items:center;gap:3px">
-          <button onclick="adjustHijri(-1)" style="font-family:var(--font-sans);font-size:11px;padding:1px 6px;border-radius:20px;border:1px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-secondary);cursor:pointer">◀</button>
-          <span id="hijri-offset-label" style="font-size:10px;color:#1D9E75;min-width:24px;text-align:center;font-weight:600"></span>
-          <button onclick="adjustHijri(1)" style="font-family:var(--font-sans);font-size:11px;padding:1px 6px;border-radius:20px;border:1px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-secondary);cursor:pointer">▶</button>
-        </div>
       </div>
     </div>
     <div id="prayer-extra-text" style="font-size:25px;line-height:1;min-height:0;margin:6px 0 2px;text-align:center;"></div>
-    <div id="holy-month-banner" style="display:none;font-size:10.5px;color:#0a3d1f;line-height:1.35;margin:0 0 4px 0;padding:3px 8px;background:#e8f5ee;border-left:3px solid #1a7a4a;border-radius:4px"></div>
+    <div id="holy-month-banner" style="display:none;font-size:11px;color:#0a3d1f;line-height:1.4;margin:0 0 4px 0;padding:4px 8px;background:#e8f5ee;border-left:3px solid #1a7a4a;border-radius:4px"></div>
     <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:2px;margin-bottom:6px" id="prayer-grid">
       ${parsed.map((p, i) => {
         // Highlight the most recently passed prayer (skip Sunrise)
