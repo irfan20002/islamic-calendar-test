@@ -1004,12 +1004,26 @@ function renderIslamicDayCountdown() {
     ? { year: window._apiHijriYear, month: window._apiHijriMonth, day: window._apiHijriDay }
     : gToH(getToday());
 
+  // API offset: difference in days between API Hijri day and algorithmic Hijri day
+  // e.g. API says day=2, algo says day=1 → offset = -(2-1) = -1 (events shift back 1 day)
+  const _apiOffsetDays = (window._apiHijriDay && hijriOffset === 0) ? (() => {
+    const algoH = gToH(getToday());
+    // If same month/year, simple day difference
+    if (algoH.month === window._apiHijriMonth && algoH.year === window._apiHijriYear) {
+      return -(window._apiHijriDay - algoH.day);
+    }
+    // Different month: use Gregorian difference
+    const algoGreg = hToG(algoH.year, algoH.month, algoH.day);
+    const apiGreg  = hToG(window._apiHijriYear, window._apiHijriMonth, window._apiHijriDay);
+    return Math.round((algoGreg - apiGreg) / 86400000);
+  })() : 0;
+
   let next = null, minDays = Infinity;
   for (const hy of [todayH.year, todayH.year + 1]) {
     for (const day of DAYS) {
       const greg = hToG(hy, day.hm, day.hd);
+      greg.setDate(greg.getDate() + _apiOffsetDays);
       greg.setHours(0, 0, 0, 0);
-      // If today's Hijri matches this event exactly, diff = 0 (Today!)
       const isToday = (todayH.year === hy && todayH.month === day.hm && todayH.day === day.hd);
       const diff = isToday ? 0 : Math.ceil((greg - getToday()) / 86400000);
       if (diff >= 0 && diff < minDays) { minDays = diff; next = { ...day, greg, diff, hy }; }
@@ -1122,7 +1136,7 @@ function renderPrayers(times, city) {
   const boxCd = _inGreenWin ? '' : (_nearNext ? `in ${countdown}` : '');
   const _sunriseTime  = parseTime(times.Sunrise);
   const _ishraqStart  = new Date(_sunriseTime.getTime() + 25 * 60000);  // 25 min after sunrise
-  const _ishraqEnd    = new Date(_sunriseTime.getTime() + 85 * 60000);  // 60 min window
+  const _ishraqEnd    = new Date(parseTime(times.Dhuhr).getTime() - 10 * 60000);  // 10 min before Dhuhr
   window._ishraqStart   = _ishraqStart;
   window._ishraqEnd     = _ishraqEnd;
   window._forbiddenStart = _sunriseTime;
@@ -1265,7 +1279,7 @@ function renderPrayers(times, city) {
       if (_box) { _box.style.background = 'linear-gradient(135deg,#c8860a,#f5c200)'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'center'; }
       if (elLbl)  { elLbl.innerHTML = '<svg width="48" height="29" viewBox="0 0 80 48" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0 auto 2px"><g stroke="#3d1f00" stroke-width="2.5" stroke-linecap="round" opacity="0.7"><line x1="40" y1="6" x2="40" y2="0"/><line x1="56" y1="10" x2="60" y2="5"/><line x1="66" y1="22" x2="72" y2="20"/><line x1="24" y1="10" x2="20" y2="5"/><line x1="14" y1="22" x2="8" y2="20"/><line x1="63" y1="33" x2="70" y2="34"/><line x1="17" y1="33" x2="10" y2="34"/></g><path d="M16,38 A24,24 0 0,1 64,38 Z" fill="rgba(61,31,0,0.7)"/><path d="M4,40 Q40,34 76,40" fill="none" stroke="rgba(61,31,0,0.7)" stroke-width="2.5" stroke-linecap="round"/></svg>'; elLbl.style.color = '#3d1f00'; elLbl.classList.remove('flash-alert'); }
       if (elName) { elName.textContent = 'NO PRAYER'; elName.style.color = '#cc0000'; elName.style.fontSize = '13px'; elName.style.fontWeight = '700'; elName.style.color = '#3d1f00'; elName.style.whiteSpace = 'normal'; elName.classList.add('flash-alert'); }
-      if (elCd)   { elCd.textContent = 'Ishraq in ' + countdown; elCd.style.color = '#3d1f00'; elCd.style.fontSize = '14px'; elCd.style.fontWeight = '700'; elCd.classList.remove('flash-alert'); }
+      if (elCd)   { elCd.textContent = 'Ishraq/Duha in ' + countdown; elCd.style.color = '#3d1f00'; elCd.style.fontSize = '14px'; elCd.style.fontWeight = '700'; elCd.classList.remove('flash-alert'); }
       if (_grid) {
         const _sunriseIdx = PRAYER_KEYS.indexOf('Sunrise');
         _grid.querySelectorAll('[data-pidx]').forEach(cell => {
@@ -1289,7 +1303,7 @@ function renderPrayers(times, city) {
     // ── Ishraq window ────────────────────────────────────────────────────────
     if (inIshraq) {
       if (_box) { _box.style.background = '#8B3FA8'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'right'; }
-      if (elLbl)  { elLbl.innerHTML = ''; elLbl.textContent = '🌅 Ishraq'; elLbl.style.color = '#E1F5EE'; elLbl.style.fontSize = '15px'; elLbl.style.fontWeight = '600'; elLbl.classList.add('flash-alert'); }
+      if (elLbl)  { elLbl.innerHTML = ''; elLbl.textContent = '🌅 Ishraq/Duha'; elLbl.style.color = '#E1F5EE'; elLbl.style.fontSize = '15px'; elLbl.style.fontWeight = '600'; elLbl.classList.add('flash-alert'); }
       if (elName) { elName.textContent = 'Pray now!'; elName.style.fontSize = '17px'; elName.style.fontWeight = '700'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
       if (elCd)   { elCd.textContent = ''; elCd.classList.remove('flash-alert'); }
       resetGrid(-1); // clears all highlights including Sunrise 🚫
