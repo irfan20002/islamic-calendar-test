@@ -351,6 +351,8 @@ let _prayerTimes = null;
 let _parsedPrayerTimes = null;
 let _countdownInterval = null;
 let _flashInterval = null;
+let _fajrWarnToggle = false;
+let _fajrWarnInterval = null;
 let _lastNextPrayerIdx = -1;
 
 // Dynamic today — always returns midnight of the current day
@@ -1438,44 +1440,103 @@ function renderPrayers(times, city) {
       return;
     }
 
-    // ── Isha active window ────────────────────────────────────────────────────
-    const inIshaActive = ishaTimeW && now3 >= ishaTimeW;
-    if (inIshaActive) {
-      const fajrTomorrow  = parseTomorrow(_prayerTimes.Fajr);
-      const midnight      = new Date(now3); midnight.setHours(24, 0, 0, 0); // next midnight
-      // Last third = midpoint between midnight and tomorrow's Fajr
-      const lastThirdStart = new Date((midnight.getTime() + fajrTomorrow.getTime()) / 2);
-      const afterMidnight  = now3 >= midnight;
-      const inLastThird    = now3 >= lastThirdStart && now3 < fajrTomorrow;
+    // ── Isha/night window (Isha → midnight → last third → Fajr) ─────────────
+    const _isNight = (ishaTimeW && now3 >= ishaTimeW) ||
+                     (now3.getHours() < 12 && window._fajrTime && now3 < window._fajrTime);
+    if (_isNight) {
+      const _afterMid = now3.getHours() < 12;
+      const _fajr = _afterMid ? parseTime(_prayerTimes.Fajr) : parseTomorrow(_prayerTimes.Fajr);
+      const _mid  = new Date(now3);
+      if (!_afterMid) _mid.setDate(_mid.getDate() + 1);
+      _mid.setHours(0, 0, 0, 0);
+      const _lastThird  = new Date((_mid.getTime() + _fajr.getTime()) / 2);
+      const _fajrWarnStart = new Date(_fajr.getTime() - 15 * 60000);
+      const _inFajrWarn  = _afterMid && now3 >= _fajrWarnStart && now3 < _fajr;
+      const _inTahajjud  = _afterMid && now3 >= new Date(_lastThird.getTime() - 60000) && now3 < _fajr;
 
-      if (inLastThird) {
-        // Last third of night — show green "Last third / Pray now!"
-        if (_box) { _box.style.background = '#1D9E75'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'right'; }
-        if (elLbl)  { elLbl.innerHTML = ''; elLbl.textContent = 'Last third of night'; elLbl.style.color = '#E1F5EE'; elLbl.style.fontSize = '11px'; elLbl.style.fontWeight = '600'; elLbl.classList.remove('flash-alert'); }
-        if (elName) { elName.textContent = 'Pray now!'; elName.style.fontSize = '17px'; elName.style.fontWeight = '700'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
-        if (elCd)   { elCd.textContent = ''; elCd.classList.remove('flash-alert'); }
-      } else if (afterMidnight) {
-        // After midnight, before last third — show countdown to last third
-        const diffMs = lastThirdStart - now3;
-        const diffH  = Math.floor(diffMs / 3600000);
-        const diffM  = Math.floor((diffMs % 3600000) / 60000);
-        const cdText = diffH > 0 ? `in ${diffH}h ${diffM}m` : `in ${diffM}m`;
-        if (_box) { _box.style.background = '#8B3FA8'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'right'; }
-        if (elLbl)  { elLbl.innerHTML = ''; elLbl.textContent = 'Last third of night'; elLbl.style.color = '#E1F5EE'; elLbl.style.fontSize = '11px'; elLbl.style.fontWeight = '600'; elLbl.classList.remove('flash-alert'); }
-        if (elName) { elName.textContent = cdText; elName.style.fontSize = '17px'; elName.style.fontWeight = '700'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
-        if (elCd)   { elCd.textContent = ''; elCd.classList.remove('flash-alert'); }
+      if (_inFajrWarn) {
+        // Last 15 min — start dedicated 2s toggle if not running
+        if (!_fajrWarnInterval) {
+          _fajrWarnInterval = setInterval(() => { _fajrWarnToggle = !_fajrWarnToggle; }, 2000);
+        }
+        const _fms = _fajr - now3;
+        const _fm  = Math.floor(_fms / 60000);
+        if (_fm < 1) {
+          // Under 1 min — just show Pray Tahajjud, no countdown
+          if (_box)  { _box.style.background = '#8B3FA8'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'right'; }
+          if (elLbl) { elLbl.innerHTML = ''; elLbl.textContent = ''; elLbl.classList.remove('flash-alert'); }
+          if (elName){ elName.textContent = 'Pray Tahajjud'; elName.style.fontSize = '17px'; elName.style.fontWeight = '700'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
+          if (elCd)  { elCd.textContent = ''; elCd.classList.remove('flash-alert'); }
+        } else if (_fajrWarnToggle) {
+          // Green — Fajr in Xm
+          if (_box)  { _box.style.background = '#1D9E75'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'right'; }
+          if (elLbl) { elLbl.innerHTML = ''; elLbl.textContent = ''; elLbl.classList.remove('flash-alert'); }
+          if (elName){ elName.textContent = `Fajr in ${_fm}m`; elName.style.fontSize = '17px'; elName.style.fontWeight = '700'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
+          if (elCd)  { elCd.textContent = ''; elCd.classList.remove('flash-alert'); }
+        } else {
+          // Purple — Pray Tahajjud
+          if (_box)  { _box.style.background = '#8B3FA8'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'right'; }
+          if (elLbl) { elLbl.innerHTML = ''; elLbl.textContent = ''; elLbl.classList.remove('flash-alert'); }
+          if (elName){ elName.textContent = 'Pray Tahajjud'; elName.style.fontSize = '17px'; elName.style.fontWeight = '700'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
+          if (elCd)  { elCd.textContent = ''; elCd.classList.remove('flash-alert'); }
+        }
       } else {
-        // Isha time until midnight — show "Isha / ends in Xm"
-        const diffMs = midnight - now3;
-        const diffH  = Math.floor(diffMs / 3600000);
-        const diffM  = Math.floor((diffMs % 3600000) / 60000);
-        const cdText = diffH > 0 ? `ends in ${diffH}h ${diffM}m` : `ends in ${diffM}m`;
-        if (_box) { _box.style.background = '#1D9E75'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'right'; }
-        if (elLbl)  { elLbl.innerHTML = ''; elLbl.textContent = 'Isha'; elLbl.style.color = '#E1F5EE'; elLbl.style.fontSize = '15px'; elLbl.style.fontWeight = '600'; elLbl.classList.remove('flash-alert'); }
-        if (elName) { elName.textContent = cdText; elName.style.fontSize = '15px'; elName.style.fontWeight = '700'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
-        if (elCd)   { elCd.textContent = ''; elCd.classList.remove('flash-alert'); }
+        // Not in Fajr warn — clear toggle interval
+        if (_fajrWarnInterval) { clearInterval(_fajrWarnInterval); _fajrWarnInterval = null; _fajrWarnToggle = false; }
+        if (_inTahajjud) {
+          // Purple — Pray Tahajjud
+          if (_box)  { _box.style.background = '#8B3FA8'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'right'; }
+          if (elLbl) { elLbl.innerHTML = ''; elLbl.textContent = ''; elLbl.classList.remove('flash-alert'); }
+          if (elName){ elName.textContent = 'Pray Tahajjud'; elName.style.fontSize = '17px'; elName.style.fontWeight = '700'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
+          if (elCd)  { elCd.textContent = ''; elCd.classList.remove('flash-alert'); }
+        } else if (_afterMid) {
+          const _ms = _lastThird - now3;
+          const _h  = Math.floor(_ms / 3600000);
+          const _m  = Math.floor((_ms % 3600000) / 60000);
+          const _cd = _h > 0 ? `Tahajjud in ${_h}h ${_m}m` : `Tahajjud in ${_m}m`;
+          if (_box)  { _box.style.background = '#8B3FA8'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'right'; }
+          if (elLbl) { elLbl.innerHTML = ''; elLbl.textContent = ''; elLbl.classList.remove('flash-alert'); }
+          if (elName){ elName.textContent = _cd; elName.style.fontSize = '17px'; elName.style.fontWeight = '700'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
+          if (elCd)  { elCd.textContent = ''; elCd.classList.remove('flash-alert'); }
+        } else {
+          // Green — Pray Isha
+          if (_box)  { _box.style.background = '#1D9E75'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'right'; }
+          if (elLbl) { elLbl.innerHTML = ''; elLbl.textContent = ''; elLbl.classList.remove('flash-alert'); }
+          if (elName){ elName.textContent = 'Pray Isha'; elName.style.fontSize = '17px'; elName.style.fontWeight = '700'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
+          if (elCd)  { elCd.textContent = ''; elCd.classList.remove('flash-alert'); }
+        }
       }
-      resetGrid(PRAYER_KEYS.indexOf('Isha'));
+      // Grid: highlight Fajr purple during entire night window
+      const _fajrIdx = PRAYER_KEYS.indexOf('Fajr');
+      const _ishaIdx = PRAYER_KEYS.indexOf('Isha');
+      if (_grid) {
+        PRAYER_KEYS.forEach((k, i) => {
+          const cell = _grid.querySelector(`[data-pidx="${i}"]`);
+          if (!cell) return;
+          const nm = cell.querySelector('div:first-child');
+          const tm = cell.querySelector('div:last-child');
+          if (_afterMid && _inFajrWarn && i === _fajrIdx) {
+            // Last 15 min before Fajr — Fajr cell purple
+            cell.style.background = '#8B3FA8';
+            if (nm) nm.style.color = '#E1F5EE';
+            if (tm) tm.style.color = '#ffffff';
+          } else if (_afterMid && i === _ishaIdx) {
+            // After midnight — Isha cell light green (can still pray)
+            cell.style.background = '#fff8d6';
+            if (nm) nm.style.color = '#7a6000';
+            if (tm) tm.style.color = '#7a6000';
+          } else if (!_afterMid && i === _ishaIdx) {
+            // Before midnight — Isha cell full green
+            cell.style.background = '#1D9E75';
+            if (nm) nm.style.color = '#E1F5EE';
+            if (tm) tm.style.color = '#ffffff';
+          } else if (i === _fajrIdx || i === _ishaIdx) {
+            cell.style.background = '';
+            if (nm) nm.style.color = 'var(--color-text-secondary)';
+            if (tm) tm.style.color = 'var(--color-text-primary)';
+          }
+        });
+      }
       return;
     }
 
@@ -1483,7 +1544,8 @@ function renderPrayers(times, city) {
     if (dhuhrTimeW && _asrWarnStartW && now3 >= dhuhrTimeW && now3 < _asrWarnStartW) return;
     if (window._asrTime && window._maghribWarnStart && now3 >= window._asrTime && now3 < window._maghribWarnStart) return;
     if (window._maghribTime && window._ishaWarnStart && now3 >= window._maghribTime && now3 < window._ishaWarnStart) return;
-    if (window._ishaTime && now3 >= window._ishaTime) return;
+    if ((window._ishaTime && now3 >= window._ishaTime) ||
+        (now3.getHours() < 12 && window._fajrTime && now3 < window._fajrTime)) return;
     if (_grid) {
       [PRAYER_KEYS.indexOf('Sunrise'), PRAYER_KEYS.indexOf('Dhuhr')].forEach(sIdx => {
         const sCell = _grid.querySelector(`[data-pidx="${sIdx}"]`);
@@ -1735,7 +1797,8 @@ function updateClock() {
           (_mW && _mT && now >= _mW && now < _mT) ||
           (_mT && _iW && now >= _mT && now < _iW) ||
           (_iW && _iT && now >= _iW && now < _iT) ||
-          (_iT && now >= _iT));
+          (_iT && now >= _iT) ||
+          (now.getHours() < 12 && window._fajrTime && now < window._fajrTime));
       if (!_skipCd) {
         let ni = _parsedPrayerTimes.findIndex((p, i) => p > now && PRAYER_KEYS[i] !== 'Sunrise');
         let targetTime;
