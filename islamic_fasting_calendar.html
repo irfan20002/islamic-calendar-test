@@ -621,12 +621,12 @@ function treeEmojiMonth(n) {
 
 function treeEmojiYear(n) {
   if (n === 0) return '';
-  return '🌴<div style="width:32px;height:7px;background:linear-gradient(180deg,#c8a05a,#a07040);border-radius:50%;margin:-4px auto 0;opacity:0.85"></div>';
+  return '<div style="display:flex;flex-direction:column;align-items:center;line-height:1">🌴<div style="width:32px;height:7px;background:linear-gradient(180deg,#c8a05a,#a07040);border-radius:50%;margin:-4px auto 0;opacity:0.85"></div></div>';
 }
 
 function calcScore() {
   const now = getToday();
-  const todayH = gToH(now);
+  const todayH = getAdjustedHijri(now);
   const curHY  = todayH.year;
   const curHM  = todayH.month;
   const prevHM = curHM === 1 ? 12 : curHM - 1;
@@ -719,7 +719,7 @@ function renderSegmentBar(wrapId, cur, prev) {
       : '';
     wrap.innerHTML = `
       <div style="position:relative;height:10px;border-radius:99px;overflow:visible;background:#ffffff;border:2px solid rgba(80,40,0,0.35);box-shadow:0 0 4px rgba(80,40,0,0.15)">
-        <div style="display:flex;width:100%;height:100%;border-radius:99px;overflow:hidden;padding:1px">${segHTML}</div>
+        <div style="display:flex;width:100%;height:100%;border-radius:99px;overflow:hidden">${segHTML}</div>
         ${needleHTML}
       </div>
       ${pctLabel}`;
@@ -1183,15 +1183,18 @@ function renderPrayers(times, city) {
 
   // FIX: flash logic — after Maghrib, compare now vs TOMORROW's Fajr
   setTimeout(() => {
-    const maghrib     = parseTime(times.Maghrib);
+    const maghrib      = parseTime(times.Maghrib);
+    const fajr         = parseTime(times.Fajr);
     const tomorrowFajr = parseTomorrow(times.Fajr);
-    const now2        = new Date();
-    const afterMaghrib  = now2 > maghrib;
+    const now2         = new Date();
+    const afterMaghrib = now2 > maghrib;
+    const afterMidnightBeforeFajr = now2 < fajr; // 12:01 AM to Fajr
     // Flash "Tomorrow" badges between Maghrib and tomorrow's Fajr
     const flashTomorrow = afterMaghrib && now2 < tomorrowFajr;
     document.querySelectorAll('.cd-tomorrow').forEach(el => el.classList.toggle('flash-alert', flashTomorrow));
-    // Flash "Today" badges the same window
-    document.querySelectorAll('.cd-today').forEach(el => el.classList.toggle('flash-alert', flashTomorrow));
+    // Flash "Today" badges: after Maghrib OR after midnight (before Fajr)
+    const flashToday = flashTomorrow || afterMidnightBeforeFajr;
+    document.querySelectorAll('.cd-today').forEach(el => el.classList.toggle('flash-alert', flashToday));
     // Hide stale "Today" badges after Maghrib
     if (afterMaghrib) document.querySelectorAll('.cd-today').forEach(el => { el.style.display = 'none'; });
   }, 100);
@@ -1438,10 +1441,40 @@ function renderPrayers(times, city) {
     // ── Isha active window ────────────────────────────────────────────────────
     const inIshaActive = ishaTimeW && now3 >= ishaTimeW;
     if (inIshaActive) {
-      if (_box) { _box.style.background = '#1D9E75'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'right'; }
-      if (elLbl)  { elLbl.innerHTML = ''; elLbl.textContent = 'Isha'; elLbl.style.color = '#E1F5EE'; elLbl.style.fontSize = '15px'; elLbl.style.fontWeight = '600'; elLbl.classList.remove('flash-alert'); }
-      if (elName) { elName.textContent = 'Pray now!'; elName.style.fontSize = '17px'; elName.style.fontWeight = '700'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
-      if (elCd)   { elCd.textContent = ''; elCd.classList.remove('flash-alert'); }
+      const fajrTomorrow  = parseTomorrow(_prayerTimes.Fajr);
+      const midnight      = new Date(now3); midnight.setHours(24, 0, 0, 0); // next midnight
+      // Last third = midpoint between midnight and tomorrow's Fajr
+      const lastThirdStart = new Date((midnight.getTime() + fajrTomorrow.getTime()) / 2);
+      const afterMidnight  = now3 >= midnight;
+      const inLastThird    = now3 >= lastThirdStart && now3 < fajrTomorrow;
+
+      if (inLastThird) {
+        // Last third of night — show green "Last third / Pray now!"
+        if (_box) { _box.style.background = '#1D9E75'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'right'; }
+        if (elLbl)  { elLbl.innerHTML = ''; elLbl.textContent = 'Last third of night'; elLbl.style.color = '#E1F5EE'; elLbl.style.fontSize = '11px'; elLbl.style.fontWeight = '600'; elLbl.classList.remove('flash-alert'); }
+        if (elName) { elName.textContent = 'Pray now!'; elName.style.fontSize = '17px'; elName.style.fontWeight = '700'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
+        if (elCd)   { elCd.textContent = ''; elCd.classList.remove('flash-alert'); }
+      } else if (afterMidnight) {
+        // After midnight, before last third — show countdown to last third
+        const diffMs = lastThirdStart - now3;
+        const diffH  = Math.floor(diffMs / 3600000);
+        const diffM  = Math.floor((diffMs % 3600000) / 60000);
+        const cdText = diffH > 0 ? `in ${diffH}h ${diffM}m` : `in ${diffM}m`;
+        if (_box) { _box.style.background = '#8B3FA8'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'right'; }
+        if (elLbl)  { elLbl.innerHTML = ''; elLbl.textContent = 'Last third of night'; elLbl.style.color = '#E1F5EE'; elLbl.style.fontSize = '11px'; elLbl.style.fontWeight = '600'; elLbl.classList.remove('flash-alert'); }
+        if (elName) { elName.textContent = cdText; elName.style.fontSize = '17px'; elName.style.fontWeight = '700'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
+        if (elCd)   { elCd.textContent = ''; elCd.classList.remove('flash-alert'); }
+      } else {
+        // Isha time until midnight — show "Isha / ends in Xm"
+        const diffMs = midnight - now3;
+        const diffH  = Math.floor(diffMs / 3600000);
+        const diffM  = Math.floor((diffMs % 3600000) / 60000);
+        const cdText = diffH > 0 ? `ends in ${diffH}h ${diffM}m` : `ends in ${diffM}m`;
+        if (_box) { _box.style.background = '#1D9E75'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'right'; }
+        if (elLbl)  { elLbl.innerHTML = ''; elLbl.textContent = 'Isha'; elLbl.style.color = '#E1F5EE'; elLbl.style.fontSize = '15px'; elLbl.style.fontWeight = '600'; elLbl.classList.remove('flash-alert'); }
+        if (elName) { elName.textContent = cdText; elName.style.fontSize = '15px'; elName.style.fontWeight = '700'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
+        if (elCd)   { elCd.textContent = ''; elCd.classList.remove('flash-alert'); }
+      }
       resetGrid(PRAYER_KEYS.indexOf('Isha'));
       return;
     }
@@ -1602,6 +1635,8 @@ function loadPrayers(lat, lon, city) {
           const dlG = document.getElementById('prayer-date-greg');
           if (dlH) dlH.textContent = `${hijri.day} ${hijri.month.en} ${hijri.year}`;
           if (dlG) dlG.textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+          // Re-render fasting tracker now that API Hijri date is available
+          calcScore();
         }
       }
     })
