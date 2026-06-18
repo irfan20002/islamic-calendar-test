@@ -2018,6 +2018,42 @@ function importFastingData(event) {
 }
 
 // ── PWA Service Worker ───────────────────────────────────────────────────
+// ── Push server URL ──────────────────────────────────────────────────────
+const PUSH_SERVER = 'https://islamic-fasting-push-server.onrender.com';
+const VAPID_PUBLIC_KEY = 'BOAaqCPlyrXIiDpWE55EWQFbao6e5jEAmDKeB91s8TUMKAXMpASUj59cIwFqGa25QSb3Q9wsed819mVkmR0Uqlw';
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
+async function registerPushSubscription() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+    }
+    // Send subscription + location + prayer times to server
+    const lat = window._cachedLat || 29.7604;
+    const lon = window._cachedLon || -95.3698;
+    await fetch(`${PUSH_SERVER}/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscription: sub, lat, lon })
+    });
+    console.log('Push subscription registered with server ✓');
+  } catch (err) {
+    console.warn('Push subscription failed:', err);
+  }
+}
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('service-worker.js')
@@ -2055,6 +2091,7 @@ async function requestNotifPermission() {
   if (perm === 'granted') {
     scheduleNotifications();
     scheduleEveReminders();
+    registerPushSubscription();
     new Notification('Islamic Fasting Calendar', {
       body: 'Notifications enabled! You will receive Suhoor, Iftar & eve-of-fast reminders.',
       icon: 'icon-192.png'
