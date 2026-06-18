@@ -2194,7 +2194,7 @@ function _cycleAllahName() {
   const el = document.getElementById('allah-name-display');
   if (!el) return;
   const [arabic, translit, english] = ALLAH_NAMES[_allahIdx % ALLAH_NAMES.length];
-  el.innerHTML = `<span style="font-family:serif;font-size:30px">${arabic}</span> · ${translit} · ${english}`;
+  el.innerHTML = `<span style="font-family:serif;font-size:30px">${arabic}</span> · ${english}`;
   _allahIdx++;
 }
 _cycleAllahName();
