@@ -74,7 +74,9 @@
   .tab[data-tab="guide"].active { background: #8E44AD; border-bottom-color: #8E44AD; }
   .tab:hover:not(.active) { color: var(--color-text-primary); background: var(--color-background-secondary); }
   .section { margin-bottom: 1.5rem; }
-  .section-title { font-size: 13px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .75rem; }
+  .section-title { font-size: 15px; font-weight: 700; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .75rem; }
+  .section-title-rainbow { animation: rainbow 5s linear infinite; }
+  .allah-name { font-size: 24px; font-weight: 600; animation: rainbow 5s linear infinite; text-align: right; flex: 1; }
   .fast-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: .875rem 1rem; margin-bottom: .5rem; display: flex; align-items: center; gap: 12px; }
   .fast-card.next { border-left: 3px solid #1D9E75; }
   .fast-card.done { opacity: 0.5; }
@@ -268,7 +270,10 @@
 
   <div id="tab-upcoming">
     <div class="section">
-      <div class="section-title">Next fasts</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+        <div class="section-title section-title-rainbow" style="margin-bottom:0">Next fasts</div>
+        <div id="allah-name-display" class="allah-name"></div>
+      </div>
       <div style="max-height:420px;overflow-y:auto;scroll-behavior:smooth" id="fast-list-scroll"><div id="fast-list"></div></div>
     </div>
     <div class="section">
@@ -2147,6 +2152,54 @@ function scheduleEveReminders() {
   }
   setInterval(createSparkle, 180);
 })();
+
+const ALLAH_NAMES = [
+  ['الله','Allah','Allah'],['الرحمن','Ar-Rahman','The Most Gracious'],['الرحيم','Ar-Rahim','The Most Merciful'],
+  ['الملك','Al-Malik','The King'],['القدوس','Al-Quddus','The Most Holy'],['السلام','As-Salam','The Source of Peace'],
+  ['المؤمن','Al-Mumin','The Guardian of Faith'],['المهيمن','Al-Muhaymin','The Protector'],['العزيز','Al-Aziz','The Almighty'],
+  ['الجبار','Al-Jabbar','The Compeller'],['المتكبر','Al-Mutakabbir','The Supreme'],['الخالق','Al-Khaliq','The Creator'],
+  ['البارئ','Al-Bari','The Originator'],['المصور','Al-Musawwir','The Fashioner'],['الغفار','Al-Ghaffar','The Forgiving'],
+  ['القهار','Al-Qahhar','The Subduer'],['الوهاب','Al-Wahhab','The Bestower'],['الرزاق','Ar-Razzaq','The Provider'],
+  ['الفتاح','Al-Fattah','The Opener'],['العليم','Al-Alim','The All-Knowing'],['القابض','Al-Qabid','The Withholder'],
+  ['الباسط','Al-Basit','The Expander'],['الخافض','Al-Khafid','The Abaser'],['الرافع','Ar-Rafi','The Exalter'],
+  ['المعز','Al-Muizz','The Honourer'],['المذل','Al-Mudhill','The Humiliator'],['السميع','As-Sami','The All-Hearing'],
+  ['البصير','Al-Basir','The All-Seeing'],['الحكم','Al-Hakam','The Judge'],['العدل','Al-Adl','The Just'],
+  ['اللطيف','Al-Latif','The Subtle'],['الخبير','Al-Khabir','The All-Aware'],['الحليم','Al-Halim','The Forbearing'],
+  ['العظيم','Al-Azim','The Magnificent'],['الغفور','Al-Ghafur','The Forgiving'],['الشكور','Ash-Shakur','The Appreciative'],
+  ['العلي','Al-Ali','The Most High'],['الكبير','Al-Kabir','The Greatest'],['الحفيظ','Al-Hafiz','The Preserver'],
+  ['المقيت','Al-Muqit','The Nourisher'],['الحسيب','Al-Hasib','The Reckoner'],['الجليل','Al-Jalil','The Majestic'],
+  ['الكريم','Al-Karim','The Generous'],['الرقيب','Ar-Raqib','The Watchful'],['المجيب','Al-Mujib','The Responsive'],
+  ['الواسع','Al-Wasi','The All-Encompassing'],['الحكيم','Al-Hakim','The Wise'],['الودود','Al-Wadud','The Loving'],
+  ['المجيد','Al-Majid','The Most Glorious'],['الباعث','Al-Baith','The Resurrector'],['الشهيد','Ash-Shahid','The Witness'],
+  ['الحق','Al-Haqq','The Truth'],['الوكيل','Al-Wakil','The Trustee'],['القوي','Al-Qawi','The Strong'],
+  ['المتين','Al-Matin','The Firm'],['الولي','Al-Wali','The Protector'],['الحميد','Al-Hamid','The Praiseworthy'],
+  ['المحصي','Al-Muhsi','The Counter'],['المبدئ','Al-Mubdi','The Originator'],['المعيد','Al-Muid','The Restorer'],
+  ['المحيي','Al-Muhyi','The Giver of Life'],['المميت','Al-Mumit','The Taker of Life'],['الحي','Al-Hayy','The Ever-Living'],
+  ['القيوم','Al-Qayyum','The Self-Subsisting'],['الواجد','Al-Wajid','The Finder'],['الماجد','Al-Majid','The Noble'],
+  ['الواحد','Al-Wahid','The One'],['الأحد','Al-Ahad','The Unique'],['الصمد','As-Samad','The Eternal'],
+  ['القادر','Al-Qadir','The Capable'],['المقتدر','Al-Muqtadir','The All-Powerful'],['المقدم','Al-Muqaddim','The Expediter'],
+  ['المؤخر','Al-Muakhkhir','The Delayer'],['الأول','Al-Awwal','The First'],['الآخر','Al-Akhir','The Last'],
+  ['الظاهر','Az-Zahir','The Manifest'],['الباطن','Al-Batin','The Hidden'],['الوالي','Al-Wali','The Governor'],
+  ['المتعالي','Al-Mutaali','The Most Exalted'],['البر','Al-Barr','The Source of Goodness'],['التواب','At-Tawwab','The Acceptor of Repentance'],
+  ['المنتقم','Al-Muntaqim','The Avenger'],['العفو','Al-Afuw','The Pardoner'],['الرؤوف','Ar-Rauf','The Compassionate'],
+  ['مالك الملك','Malik-ul-Mulk','Owner of All'],['ذو الجلال','Dhul-Jalal','Lord of Majesty'],['المقسط','Al-Muqsit','The Equitable'],
+  ['الجامع','Al-Jami','The Gatherer'],['الغني','Al-Ghani','The Self-Sufficient'],['المغني','Al-Mughni','The Enricher'],
+  ['المانع','Al-Mani','The Preventer'],['الضار','Ad-Darr','The Distresser'],['النافع','An-Nafi','The Benefiter'],
+  ['النور','An-Nur','The Light'],['الهادي','Al-Hadi','The Guide'],['البديع','Al-Badi','The Incomparable'],
+  ['الباقي','Al-Baqi','The Everlasting'],['الوارث','Al-Warith','The Inheritor'],['الرشيد','Ar-Rashid','The Guide to Right'],
+  ['الصبور','As-Sabur','The Patient']
+];
+let _allahIdx = 0;
+function _cycleAllahName() {
+  const el = document.getElementById('allah-name-display');
+  if (!el) return;
+  const [arabic, translit, english] = ALLAH_NAMES[_allahIdx % ALLAH_NAMES.length];
+  el.innerHTML = `<span style="font-family:serif;font-size:30px">${arabic}</span> · ${translit} · ${english}`;
+  _allahIdx++;
+}
+_cycleAllahName();
+setInterval(_cycleAllahName, 2000);
+
 </script>
 </body>
 </html>
