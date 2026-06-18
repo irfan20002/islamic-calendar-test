@@ -76,7 +76,7 @@
   .section { margin-bottom: 1.5rem; }
   .section-title { font-size: 15px; font-weight: 700; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .75rem; }
   .section-title-rainbow { animation: rainbow 5s linear infinite; }
-  .allah-name { font-size: 24px; font-weight: 600; animation: rainbow 5s linear infinite; text-align: right; flex: 1; }
+  .allah-name { font-size: 14px; font-weight: 600; animation: rainbow 5s linear infinite; text-align: right; flex: 1; }
   .fast-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: .875rem 1rem; margin-bottom: .5rem; display: flex; align-items: center; gap: 12px; }
   .fast-card.next { border-left: 3px solid #1D9E75; }
   .fast-card.done { opacity: 0.5; }
@@ -2194,7 +2194,7 @@ function _cycleAllahName() {
   const el = document.getElementById('allah-name-display');
   if (!el) return;
   const [arabic, translit, english] = ALLAH_NAMES[_allahIdx % ALLAH_NAMES.length];
-  el.innerHTML = `<span style="font-family:serif;font-size:30px">${arabic}</span> · ${english}`;
+  el.innerHTML = `<span style="font-family:serif;font-size:17px">${arabic}</span> · ${english}`;
   _allahIdx++;
 }
 _cycleAllahName();
