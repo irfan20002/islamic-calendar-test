@@ -2057,7 +2057,14 @@ async function registerPushSubscription() {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('service-worker.js')
-      .then(reg => { console.log('SW registered:', reg.scope); updateNotifIcon(); })
+      .then(reg => {
+        console.log('SW registered:', reg.scope);
+        updateNotifIcon();
+        // Auto-register with push server if permission already granted
+        if (Notification.permission === 'granted') {
+          registerPushSubscription();
+        }
+      })
       .catch(err => console.warn('SW registration failed:', err));
   });
 }
