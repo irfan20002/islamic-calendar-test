@@ -33,7 +33,7 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: var(--font-sans); background: var(--color-background-secondary); color: var(--color-text-primary); min-height: 100vh; display: flex; justify-content: center; padding: .5rem .5rem; }
   .container { width: 100%; max-width: 640px; }
-  .app { padding: 1rem; background: var(--color-background-primary); border-radius: var(--border-radius-lg); border: 0.5px solid var(--color-border-tertiary); }
+  .app { padding: 0.6rem; background: var(--color-background-primary); border-radius: var(--border-radius-lg); border: 0.5px solid var(--color-border-tertiary); }
   .header h1 + p { margin-top: 2px; } /* layout is inline on the element */
   .header h1 { font-size: 17px; font-weight: 500; white-space: nowrap; } /* used for sr-only h2 sibling */
   @keyframes flash-alert {
@@ -67,7 +67,7 @@
     animation: sparkle linear infinite;
   }
   .header p { font-size: 13px; color: var(--color-text-secondary); margin-top: 2px; }
-  .tabs { display: flex; gap: 8px; margin-bottom: 1.5rem; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .tabs { display: flex; gap: 8px; margin-bottom: 0.75rem; border-bottom: 0.5px solid var(--color-border-tertiary); }
   .tab { font-size: 15px; font-weight: 500; padding: 7px 16px; border: none; background: none; color: var(--color-text-secondary); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -0.5px; font-family: var(--font-sans); border-radius: 8px 8px 0 0; transition: all 0.15s; }
   .tab.active { color: #fff; background: #1D9E75; border-bottom: 2px solid #1D9E75; }
   .tab[data-tab="calendar"].active { background: #2E86C1; border-bottom-color: #2E86C1; }
@@ -132,7 +132,7 @@
   }
   .tree-sway { display: inline-block; animation: sway 3s ease-in-out infinite; transform-origin: bottom center; }
   /* ── Dashboard / score+prayer widget ── */
-  .dashboard-box { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: .75rem; position: relative; overflow: hidden; border-radius: var(--border-radius-lg); }
+  .dashboard-box { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: .4rem; position: relative; overflow: hidden; border-radius: var(--border-radius-lg); }
   @keyframes shoot-ltr {
     0%   { transform: translateX(-150px); opacity: 1; }
     100% { transform: translateX(120vw); opacity: 0; }
@@ -177,7 +177,7 @@
 <div class="container">
 <div class="app">
   <h2 class="sr-only">Islamic fasting calendar — auto-updating</h2>
-  <div class="header" style="background: linear-gradient(135deg, #f5c200 0%, #ffe033 50%, #f0b800 100%); border-radius: var(--border-radius-lg); padding: .5rem 1rem .6rem; margin-bottom: 1rem; display:flex; align-items:flex-start; justify-content:space-between; gap:8px; overflow:hidden;">
+  <div class="header" style="background: linear-gradient(135deg, #f5c200 0%, #ffe033 50%, #f0b800 100%); border-radius: var(--border-radius-lg); padding: .5rem 1rem .6rem; margin-bottom: 0.4rem; display:flex; align-items:flex-start; justify-content:space-between; gap:8px; overflow:hidden;">
     <!-- Left: title + name + countdown -->
     <div style="flex:1;min-width:0">
       <div class="glitter-wrap" id="glitter-wrap">
