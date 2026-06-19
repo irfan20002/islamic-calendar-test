@@ -1,6 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- Google Analytics -->
+<script>
+  // Use correct GA ID based on which repo is running
+  var GA_ID = window.location.hostname.includes('islamic-calendar-test') || window.location.pathname.includes('islamic-calendar-test')
+    ? 'G-NGPYYG4T9D'   // Test
+    : 'G-7TEVD3ET2Z';  // Live
+  var s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+  document.head.appendChild(s);
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', GA_ID);
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#c8860a">
@@ -80,6 +95,34 @@
   .allah-name { font-size: 14px; font-weight: 600; animation: rainbow 5s linear infinite; text-align: right; flex: 1; }
   .fast-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: .875rem 1rem; margin-bottom: .5rem; display: flex; align-items: center; gap: 12px; }
   .fast-card.next { border-left: 3px solid #1D9E75; }
+  .fast-card.today-fast {
+    position: relative; overflow: hidden;
+    border: 2px solid #D4AF37 !important;
+  }
+  .fast-card.today-fast .fast-name { color: #7a5c00; font-weight: 700; }
+  .sparkle-canvas {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none; z-index: 0;
+  }
+  .fast-card.today-fast .fast-check,
+  .fast-card.today-fast .fast-icon,
+  .fast-card.today-fast .fast-info,
+  .fast-card.today-fast .countdown { position: relative; z-index: 1; }
+  .today-reminder-row {
+    position: absolute; top: 0; left: 44%; right: 85px; bottom: 0;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center;
+    font-size: 13px; color: #0e9e8a;
+    font-style: italic; font-weight: 700;
+    pointer-events: none; z-index: 2;
+    text-shadow: 0 0 10px rgba(255,255,255,0.95), 0 0 4px rgba(255,255,255,1);
+    animation: reminderFade 4s ease-in-out infinite;
+  }
+  @keyframes reminderFade {
+    0%,100% { opacity: 0; }
+    15%,80%  { opacity: 1; }
+  }
   .fast-card.done { opacity: 0.5; }
   .fast-card.done .fast-name { text-decoration: line-through; }
   .fast-check { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #1D9E75; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all 0.2s; }
@@ -827,7 +870,11 @@ function renderUpcoming() {
     const iconColor = isWeekly ? '#185FA5' : '#0F6E56';
 
     // FIX: use stored _prayerTimes via global reference (consistent naming)
-    const afterMag = _prayerTimes && new Date() > parseTime(_prayerTimes.Maghrib);
+    const now0 = new Date();
+    const afterMag = _prayerTimes && now0 > parseTime(_prayerTimes.Maghrib);
+    // "Tomorrow" blinking window: after Maghrib today until tomorrow's Fajr
+    const tomorrowFajrT = _prayerTimes ? parseTomorrow(_prayerTimes.Fajr) : null;
+    const inTomorrowWindow = afterMag && tomorrowFajrT && now0 < tomorrowFajrT;
     let cdClass    = diff === 0 ? (afterMag ? '' : 'cd-today') : diff === 1 ? 'cd-tomorrow' : diff <= 7 ? 'cd-soon' : diff < 0 ? '' : 'cd-future';
     let countText  = diff < 0 ? '' : diff === 0 ? (afterMag ? '' : 'Today') : diff === 1 ? 'Tomorrow' : `In ${diff} days`;
 
@@ -839,7 +886,18 @@ function renderUpcoming() {
     if (isDone) card.classList.add('done');
 
     const isFuture = diff > 0;
+    // Show decoration: during today's fast OR during tomorrow's eve window
+    const isTodayFast = (diff === 0 && !afterMag) || (diff === 1 && inTomorrowWindow);
+    if (isTodayFast) card.classList.add('today-fast');
+    const REMINDERS = [
+      '✨ May Allah accept your fasting',
+      '📿 Make more Adhkar',
+      '🙏 Pray more voluntary Salah',
+      '💛 Give more in charity',
+      '🌿 Do more good deeds'
+    ];
     card.innerHTML = `
+      ${isTodayFast ? '<canvas class="sparkle-canvas"></canvas>' : ''}
       <div class="fast-check ${isDone ? 'checked' : ''} ${isFuture ? 'future' : ''}" ${isFuture ? '' : `onclick="toggleFast(this,'${key}')"`}></div>
       <div class="fast-icon" style="background:${iconBg}"><i class="ti ${f.icon}" style="color:${iconColor}" aria-hidden="true"></i></div>
       <div class="fast-info">
@@ -847,8 +905,71 @@ function renderUpcoming() {
         <div class="fast-date">${dateStr}</div>
         <div class="fast-hijri">${f.hijri} · ${f.note}</div>
       </div>
-      ${countText ? `<span class="countdown ${cdClass}">${countText}</span>` : ''}`;
+      ${countText ? `<span class="countdown ${cdClass}" style="flex-shrink:0;align-self:center;">${countText}</span>` : ''}
+`;
+    if (isTodayFast) { const rr = document.createElement('div'); rr.className='today-reminder-row'; rr.id='fast-reminder-text'; rr.textContent=REMINDERS[0]; card.appendChild(rr); }
     list.appendChild(card);
+    if (isTodayFast) {
+      let _ri = 0;
+      const _el = card.querySelector('#fast-reminder-text');
+      if (_el) setInterval(() => {
+        _ri = (_ri + 1) % REMINDERS.length;
+        _el.style.animation = 'none'; void _el.offsetWidth;
+        _el.style.animation = 'reminderFade 4s ease-in-out infinite';
+        _el.textContent = REMINDERS[_ri];
+      }, 4000);
+      const cv = card.querySelector('.sparkle-canvas');
+      if (cv) {
+        const ctx = cv.getContext('2d');
+        cv._active = true;
+        cv.width = card.offsetWidth || 350;
+        cv.height = card.offsetHeight || 72;
+        let pts = [], frame = 0;
+        const W = cv.width, H = cv.height;
+        const spawn = () => {
+          // spawn multiple particles per call for denser trail
+          for (let i = 0; i < 3; i++) {
+            pts.push({
+              x: 0,
+              y: H * (0.05 + Math.random() * 0.9),
+              vx: W / 130 + Math.random() * W / 90,
+              vy: (Math.random() - 0.5) * 2,
+              ay: (Math.random() - 0.5) * 0.06,
+              life: 1,
+              decay: 0.003 + Math.random() * 0.003,
+              r: 2 + Math.random() * 4
+            });
+          }
+        };
+        const draw = () => {
+          ctx.clearRect(0, 0, W, H);
+          if (++frame % 2 === 0) spawn();
+          pts = pts.filter(p => {
+            p.x += p.vx; p.y += p.vy; p.vy += p.ay; p.life -= p.decay;
+            if (p.life <= 0 || p.x > W + 2 || p.y < 0 || p.y > H) return false;
+            const a = Math.max(0, p.life);
+            const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 2.5);
+            g.addColorStop(0, `rgba(255,220,0,${a})`);
+            g.addColorStop(0.5, `rgba(255,170,0,${a*0.6})`);
+            g.addColorStop(1, 'rgba(255,120,0,0)');
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.r * a, 0, Math.PI*2);
+            ctx.fillStyle = g; ctx.fill();
+            if (p.r > 3) {
+              ctx.strokeStyle = `rgba(255,240,150,${a*0.9})`; ctx.lineWidth = 0.8;
+              const s = p.r * 1.4;
+              ctx.beginPath();
+              ctx.moveTo(p.x-s,p.y); ctx.lineTo(p.x+s,p.y);
+              ctx.moveTo(p.x,p.y-s); ctx.lineTo(p.x,p.y+s);
+              ctx.stroke();
+            }
+            return true;
+          });
+          if (cv._active !== false) requestAnimationFrame(draw);
+          else ctx.clearRect(0, 0, W, H);
+        };
+        draw();
+      }
+    }
   });
 
   // Scroll to the first upcoming (today or future) fast
@@ -1134,21 +1255,21 @@ function renderPrayers(times, city) {
   const _inGreenWin = _inDhuhrWin || _inAsrWin;
   const _greenLabel = _inAsrWin ? 'Asr' : 'Dhuhr';
 
-  // Determine initial box content
-  const _nearNext = diffMs <= 15 * 60000;
-  const boxBg = _inGreenWin ? '#1D9E75' : (_nearNext ? '#8B3FA8' : 'transparent');
-  const boxLabel = _inGreenWin ? _greenLabel : (_nearNext ? 'Next prayer' : '');
-  const boxName = _inGreenWin ? 'Pray now!' : (_nearNext ? next.name : '');
-  const boxCd = _inGreenWin ? '' : (_nearNext ? `in ${countdown}` : '');
+  // Box content controlled entirely by flash interval — start empty
+  const boxBg = 'transparent';
+  const boxLabel = '';
+  const boxName = '';
+  const boxCd = '';
   const _sunriseTime  = parseTime(times.Sunrise);
   const _ishraqStart  = new Date(_sunriseTime.getTime() + 25 * 60000);  // 25 min after sunrise
-  const _ishraqEnd    = new Date(parseTime(times.Dhuhr).getTime() - 10 * 60000);  // 10 min before Dhuhr
+  const _ishraqEnd    = new Date(parseTime(times.Dhuhr).getTime() - 15 * 60000);  // 15 min before Dhuhr
   window._ishraqStart   = _ishraqStart;
   window._ishraqEnd     = _ishraqEnd;
   window._forbiddenStart = _sunriseTime;
   window._sunriseTime    = _sunriseTime;
   window._fajrTime       = parseTime(times.Fajr);
   window._dhuhrTime      = parseTime(times.Dhuhr);
+  window._dhuhrWarnStart = new Date(parseTime(times.Dhuhr).getTime() - 15 * 60000);
   window._asrTime        = parseTime(times.Asr);
   window._asrWarnStart   = new Date(parseTime(times.Asr).getTime() - 15 * 60000);
   window._maghribTime    = parseTime(times.Maghrib);
@@ -1316,6 +1437,33 @@ function renderPrayers(times, city) {
       return;
     }
 
+    // ── Dhuhr warning (15 min before Dhuhr) ────────────────────────────────
+    const dhuhrWarnStartW = window._dhuhrWarnStart;
+    const inDhuhrWarn = dhuhrWarnStartW && dhuhrTimeW && now3 >= dhuhrWarnStartW && now3 < dhuhrTimeW;
+    if (inDhuhrWarn) {
+      showPrayerWarn('Dhuhr', dhuhrTimeW);
+      // Grid: Dhuhr pill purple, no green on previous prayer
+      if (_grid) {
+        const _dhuhrIdx = PRAYER_KEYS.indexOf('Dhuhr');
+        const sunriseIdx = PRAYER_KEYS.indexOf('Sunrise');
+        _grid.querySelectorAll('[data-pidx]').forEach(cell => {
+          const idx = parseInt(cell.dataset.pidx);
+          const nameEl = cell.querySelector('div:first-child');
+          const timeEl = cell.querySelector('div:last-child');
+          if (idx === _dhuhrIdx) {
+            cell.style.background = '#8B3FA8'; cell.classList.remove('flash-alert');
+            if (nameEl) nameEl.style.color = '#E1F5EE';
+            if (timeEl) timeEl.style.color = '#ffffff';
+          } else {
+            cell.style.background = ''; cell.classList.remove('flash-alert');
+            if (nameEl) nameEl.style.color = 'var(--color-text-secondary)';
+            if (timeEl) timeEl.style.color = 'var(--color-text-primary)';
+          }
+        });
+      }
+      return;
+    }
+
     // ── Dhuhr active window ───────────────────────────────────────────────────
     const _asrWarnStartW = window._asrWarnStart;
     const inDhuhr = dhuhrTimeW && _asrWarnStartW && now3 >= dhuhrTimeW && now3 < _asrWarnStartW;
@@ -1346,9 +1494,9 @@ function renderPrayers(times, city) {
       const ws = Math.floor((ms2 % 60000) / 1000);
       const wCountdown = String(wm).padStart(2,'0') + ':' + String(ws).padStart(2,'0');
       if (_box) { _box.style.background = '#8B3FA8'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'right'; }
-      if (elLbl)  { elLbl.innerHTML = ''; elLbl.textContent = label + ' in'; elLbl.style.display = ''; elLbl.style.color = '#E1F5EE'; elLbl.style.fontSize = '13px'; elLbl.style.fontWeight = '600'; elLbl.classList.add('flash-alert'); }
-      if (elName) { elName.textContent = wCountdown; elName.style.fontSize = '22px'; elName.style.fontWeight = '700'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
-      if (elCd)   { elCd.textContent = ''; elCd.classList.remove('flash-alert'); }
+      if (elLbl)  { elLbl.innerHTML = ''; elLbl.textContent = 'Next prayer'; elLbl.style.display = ''; elLbl.style.color = '#E1F5EE'; elLbl.style.fontSize = '11px'; elLbl.style.fontWeight = '600'; elLbl.classList.remove('flash-alert'); }
+      if (elName) { elName.textContent = label; elName.style.fontSize = '17px'; elName.style.fontWeight = '700'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
+      if (elCd)   { elCd.textContent = 'in ' + wCountdown; elCd.style.color = '#E1F5EE'; elCd.style.fontSize = '14px'; elCd.style.fontWeight = '600'; elCd.classList.remove('flash-alert'); }
     }
 
     if (inAsrWarn) {
@@ -1564,6 +1712,7 @@ function renderPrayers(times, city) {
     }
 
     // ── Restore after all special windows ────────────────────────────────────
+    if (dhuhrWarnStartW && dhuhrTimeW && now3 >= dhuhrWarnStartW && now3 < dhuhrTimeW) return;
     if (dhuhrTimeW && _asrWarnStartW && now3 >= dhuhrTimeW && now3 < _asrWarnStartW) return;
     if (window._asrTime && window._maghribWarnStart && now3 >= window._asrTime && now3 < window._maghribWarnStart) return;
     if (window._maghribTime && window._ishaWarnStart && now3 >= window._maghribTime && now3 < window._ishaWarnStart) return;
@@ -1623,10 +1772,18 @@ function renderPrayers(times, city) {
         }
       });
     }
-    if (_box)   { _box.style.background = _rNear ? '#8B3FA8' : 'transparent'; _box.style.textAlign = 'right'; }
-    if (elLbl)  { elLbl.innerHTML = ''; elLbl.textContent = _rNear ? 'Next prayer' : ''; elLbl.style.color = '#E1F5EE'; elLbl.style.fontSize = '13px'; elLbl.style.fontWeight = '400'; elLbl.classList.remove('flash-alert'); }
-    if (elName && _restoreNext) { elName.textContent = _rNear ? _restoreNext.name : ''; elName.style.fontSize = '17px'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
-    if (elCd)   { elCd.style.color = '#E1F5EE'; elCd.style.fontSize = '14px'; elCd.style.fontWeight = '600'; elCd.classList.remove('flash-alert'); }
+    // Always show next prayer in box — never leave it empty
+    if (_restoreNext && _box) {
+      const _rH = Math.floor(_rMs / 3600000);
+      const _rM = Math.floor((_rMs % 3600000) / 60000);
+      const _rS = Math.floor((_rMs % 60000) / 1000);
+      const _rH2 = _rH * 60 + _rM;
+      const _rCd = `in ${String(_rH2).padStart(2,'0')}:${String(_rS).padStart(2,'0')}`; 
+      _box.style.background = '#8B3FA8'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'right';
+      if (elLbl)  { elLbl.innerHTML = ''; elLbl.textContent = 'Next prayer'; elLbl.style.color = '#E1F5EE'; elLbl.style.fontSize = '11px'; elLbl.style.fontWeight = '600'; elLbl.classList.remove('flash-alert'); }
+      if (elName) { elName.textContent = _restoreNext.name; elName.style.fontSize = '17px'; elName.style.fontWeight = '700'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
+      if (elCd)   { elCd.textContent = _rCd; elCd.style.color = '#E1F5EE'; elCd.style.fontSize = '14px'; elCd.style.fontWeight = '600'; elCd.classList.remove('flash-alert'); }
+    }
   }, 1000);
 
   // Start Suhoor/Iftar countdown banner
@@ -1649,6 +1806,11 @@ function renderPrayers(times, city) {
     scheduleNotifications();
     scheduleEveReminders();
   }
+  // Re-render fast list now that _prayerTimes is set,
+  // so afterMag check correctly removes today-fast decoration if past Maghrib
+  renderUpcoming();
+  // Reschedule precise Maghrib/Fajr triggers with fresh prayer times
+  scheduleUpcomingRerender();
 }
 
 // ── Local prayer time calculation ───────────────────────────────────────
@@ -1753,25 +1915,22 @@ function loadPrayers(lat, lon, city) {
 }
 
 function initPrayers() {
-  if (!navigator.geolocation) {
-    document.getElementById('prayer-box').innerHTML = '<div class="prayer-error">Geolocation not supported by your browser.</div>';
-    return;
+  // Show Houston immediately so UI never blank while waiting for GPS
+  if (!window._cachedLat) {
+    window._cachedLat = 29.7604; window._cachedLon = -95.3698;
+    window._cachedCity = 'Houston';
+    loadPrayers(29.7604, -95.3698, 'Houston');
   }
+  if (!navigator.geolocation) return;
   navigator.geolocation.getCurrentPosition(
     pos => {
       const { latitude: lat, longitude: lon } = pos.coords;
-      window._cachedLat  = lat;
-      window._cachedLon  = lon;
+      window._cachedLat = lat; window._cachedLon = lon;
       window._cachedCity = 'Your location';
       loadPrayers(lat, lon, 'Your location');
     },
-    () => {
-      // FIX: show retry button so user doesn't have to reload the page
-      document.getElementById('prayer-box').innerHTML =
-        '<div class="prayer-error">Location access denied.<br>' +
-        '<button onclick="retryLocation()" style="margin-top:6px;font-family:var(--font-sans);font-size:12px;padding:4px 12px;border-radius:20px;border:1px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-secondary);cursor:pointer">Retry</button></div>';
-    },
-    { timeout: 8000, maximumAge: 600000 }
+    () => { /* already showing Houston fallback */ },
+    { timeout: 5000, maximumAge: 300000, enableHighAccuracy: false }
   );
 }
 
@@ -1837,7 +1996,9 @@ function updateClock() {
       const _dH = window._dhuhrTime, _aW = window._asrWarnStart, _aT = window._asrTime;
       const _mW = window._maghribWarnStart, _mT = window._maghribTime;
       const _iW = window._ishaWarnStart, _iT = window._ishaTime;
+      const _dWS = window._dhuhrWarnStart;
       const _skipCd = ((_fT && _iE && now >= _fT && now < _iE) ||
+          (_dWS && _dH && now >= _dWS && now < _dH) ||
           (_dH && _aW && now >= _dH && now < _aW) ||
           (_aW && _aT && now >= _aW && now < _aT) ||
           (_aT && _mW && now >= _aT && now < _mW) ||
@@ -1920,6 +2081,47 @@ setInterval(() => {
 renderUpcoming();
 calcScore();
 initPrayers();
+
+// Schedule precise re-render at Maghrib and Fajr so decoration
+// appears/disappears exactly on time without polling
+function scheduleUpcomingRerender() {
+  if (!_prayerTimes) return;
+  const now_s = new Date();
+  const maghrib_s = parseTime(_prayerTimes.Maghrib);
+  const fajr_s    = parseTime(_prayerTimes.Fajr);
+  const tomorrowFajr_s = parseTomorrow(_prayerTimes.Fajr);
+
+  function applyFlash() {
+    renderUpcoming();
+    const now2 = new Date();
+    const afterMag2 = now2 > maghrib_s;
+    const flashTomorrow2 = afterMag2 && now2 < tomorrowFajr_s;
+    const flashToday2 = flashTomorrow2 || now2 < fajr_s;
+    document.querySelectorAll('.cd-tomorrow').forEach(el => el.classList.toggle('flash-alert', flashTomorrow2));
+    document.querySelectorAll('.cd-today').forEach(el => {
+      el.classList.toggle('flash-alert', flashToday2);
+      if (afterMag2) el.style.display = 'none';
+    });
+  }
+
+  // Fire exactly at Maghrib
+  const msToMaghrib = maghrib_s - now_s;
+  if (msToMaghrib > 0) setTimeout(() => {
+    // Stop all sparkle canvases immediately at Maghrib
+    document.querySelectorAll('.sparkle-canvas').forEach(c => { c._active = false; });
+    applyFlash();
+    scheduleUpcomingRerender();
+  }, msToMaghrib + 500);
+
+  // Fire exactly at Fajr (start of new day)
+  const msToFajr = fajr_s - now_s;
+  if (msToFajr > 0) setTimeout(() => { applyFlash(); scheduleUpcomingRerender(); }, msToFajr + 500);
+
+  // Fire at tomorrow's Fajr (end of tomorrow window)
+  const msToTomorrowFajr = tomorrowFajr_s - now_s;
+  if (msToTomorrowFajr > 0) setTimeout(applyFlash, msToTomorrowFajr + 500);
+}
+scheduleUpcomingRerender();
 
 // ── Suhoor / Iftar countdown banner ─────────────────────────────────────
 function updateCountdownBanner() {
