@@ -274,6 +274,9 @@
           <span id="hijri-offset-label" style="font-size:10px;color:#1D9E75;min-width:20px;text-align:center;font-weight:600"></span>
           <button onclick="adjustHijri(1)" style="font-family:var(--font-sans);font-size:11px;padding:1px 5px;border-radius:20px;border:1px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-secondary);cursor:pointer">▶</button>
         </div>
+        <button id="notif-btn" onclick="requestNotifPermission()" title="Enable notifications" style="font-family:var(--font-sans);background:none;border:none;cursor:pointer;flex-shrink:0;padding:2px;margin-left:4px">
+          <i class="ti ti-bell" id="notif-icon" style="font-size:18px;color:var(--color-text-tertiary)"></i>
+        </button>
       </div>
       <div class="dash-tiles">
         <!-- Prev month -->
@@ -403,9 +406,7 @@
       <i class="ti ti-upload" style="font-size:20px;color:var(--color-text-tertiary)"></i>
       <input type="file" accept=".json" onchange="importFastingData(event)" style="display:none">
     </label>
-    <button id="notif-btn" onclick="requestNotifPermission()" title="Enable notifications" style="font-family:var(--font-sans);background:none;border:none;cursor:pointer;flex-shrink:0;padding:2px">
-      <i class="ti ti-bell" id="notif-icon" style="font-size:20px;color:var(--color-text-tertiary)"></i>
-    </button>
+
   </div>
 
 </div><!-- /app -->
