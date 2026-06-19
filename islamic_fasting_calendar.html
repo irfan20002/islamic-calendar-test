@@ -2332,35 +2332,23 @@ updateNotifIcon(); // single call — redundant call removed
 async function requestNotifPermission() {
   if (!('Notification' in window)) { alert('Notifications are not supported in this browser.'); return; }
   if (Notification.permission === 'denied') { alert('Notifications are blocked. Please enable them in your browser settings for this site.'); return; }
-  // If already granted — re-register and reschedule silently, just flash the icon
-  if (Notification.permission === 'granted') {
-    localStorage.setItem('notif_granted', '1');
-    registerPushSubscription();
-    scheduleNotifications();
-    scheduleEveReminders();
-    updateNotifIcon();
-    // Brief visual confirmation — flash icon
-    const icon = document.getElementById('notif-icon');
-    if (icon) { icon.style.color = '#FFD700'; setTimeout(() => { icon.style.color = '#1D9E75'; }, 600); }
-    return;
-  }
+  // Always request — iOS will auto-grant silently if previously allowed
   const perm = await Notification.requestPermission();
-  updateNotifIcon();
   if (perm === 'granted') {
     localStorage.setItem('notif_granted', '1');
     scheduleNotifications();
     scheduleEveReminders();
     registerPushSubscription();
-    new Notification('Islamic Fasting Calendar', {
-      body: 'Notifications enabled! You will receive Suhoor, Iftar & eve-of-fast reminders.',
-      icon: 'icon-192.png'
-    });
   }
+  updateNotifIcon();
+  // Flash gold briefly to confirm
+  const icon = document.getElementById('notif-icon');
+  if (icon && perm === 'granted') { icon.style.color = '#FFD700'; setTimeout(() => { icon.style.color = '#1D9E75'; }, 600); }
 }
 
 let _notifScheduledDate = null;
 function scheduleNotifications() {
-  if (!_prayerTimes || Notification.permission !== 'granted') return;
+  if (!_prayerTimes || (Notification.permission !== 'granted' && localStorage.getItem('notif_granted') !== '1')) return;
   const todayStr = getToday().toDateString();
   if (_notifScheduledDate === todayStr) return; // already scheduled for today
   _notifScheduledDate = todayStr;
