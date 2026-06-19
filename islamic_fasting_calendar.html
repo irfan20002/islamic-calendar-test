@@ -2282,15 +2282,25 @@ async function registerPushSubscription() {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('service-worker.js')
-      .then(reg => {
+      .then(async reg => {
         console.log('SW registered:', reg.scope);
-        updateNotifIcon();
-        // Auto-register with push server if permission already granted
-        if (Notification.permission === 'granted' || localStorage.getItem('notif_granted') === '1') {
+        // iOS PWA resets Notification.permission to 'default' on cold launch
+        // If localStorage says we had permission, silently re-request (iOS auto-grants)
+        if (Notification.permission === 'default' && localStorage.getItem('notif_granted') === '1') {
+          try {
+            const rePerm = await Notification.requestPermission();
+            if (rePerm === 'granted') {
+              registerPushSubscription();
+              scheduleNotifications();
+              scheduleEveReminders();
+            }
+          } catch(e) {}
+        } else if (Notification.permission === 'granted') {
           registerPushSubscription();
           scheduleNotifications();
           scheduleEveReminders();
         }
+        updateNotifIcon();
       })
       .catch(err => console.warn('SW registration failed:', err));
   });
@@ -2322,6 +2332,18 @@ updateNotifIcon(); // single call — redundant call removed
 async function requestNotifPermission() {
   if (!('Notification' in window)) { alert('Notifications are not supported in this browser.'); return; }
   if (Notification.permission === 'denied') { alert('Notifications are blocked. Please enable them in your browser settings for this site.'); return; }
+  // If already granted — re-register and reschedule silently, just flash the icon
+  if (Notification.permission === 'granted') {
+    localStorage.setItem('notif_granted', '1');
+    registerPushSubscription();
+    scheduleNotifications();
+    scheduleEveReminders();
+    updateNotifIcon();
+    // Brief visual confirmation — flash icon
+    const icon = document.getElementById('notif-icon');
+    if (icon) { icon.style.color = '#FFD700'; setTimeout(() => { icon.style.color = '#1D9E75'; }, 600); }
+    return;
+  }
   const perm = await Notification.requestPermission();
   updateNotifIcon();
   if (perm === 'granted') {
