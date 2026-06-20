@@ -2382,8 +2382,10 @@ function updateNotifIcon() {
     icon.title = 'Tap to enable Suhoor & Iftar notifications';
   }
 }
-updateNotifIcon(); // single call — redundant call removed
-setTimeout(updateNotifIcon, 500); // iOS fix — recheck after load
+updateNotifIcon();
+setTimeout(updateNotifIcon, 500);  // iOS fix
+setTimeout(updateNotifIcon, 1500); // iOS fix — second check
+setTimeout(updateNotifIcon, 3000); // iOS fix — third check
 
 async function requestNotifPermission() {
   if (!('Notification' in window)) { alert('Notifications are not supported in this browser.'); return; }
