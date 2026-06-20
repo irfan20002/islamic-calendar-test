@@ -1825,11 +1825,10 @@ function renderPrayers(times, city) {
       isFastingDay: isFastingToday()
     });
   }
-  if (Notification.permission === 'granted') {
+  if (Notification.permission === 'granted' || localStorage.getItem('notif_granted') === 'true') {
     scheduleNotifications();
     scheduleEveReminders();
   }
-  // Re-render fast list now that _prayerTimes is set,
   // so afterMag check correctly removes today-fast decoration if past Maghrib
   renderUpcoming();
   // Reschedule precise Maghrib/Fajr triggers with fresh prayer times
@@ -2353,7 +2352,7 @@ if ('serviceWorker' in navigator) {
       .then(reg => {
         console.log('SW registered:', reg.scope);
         updateNotifIcon();
-        if (Notification.permission === 'granted') {
+        if (Notification.permission === 'granted' || localStorage.getItem('notif_granted') === 'true') {
           registerPushSubscription();
           scheduleNotifications();
           scheduleEveReminders();
@@ -2368,14 +2367,19 @@ function updateNotifIcon() {
   const icon = document.getElementById('notif-icon');
   if (!icon) return;
   if (!('Notification' in window)) { icon.style.display = 'none'; return; }
-  if (Notification.permission === 'granted') {
+  // Use localStorage as source of truth — iOS PWA resets Notification.permission on reopen
+  const stored = localStorage.getItem('notif_granted');
+  const granted = Notification.permission === 'granted' || stored === 'true';
+  const denied  = Notification.permission === 'denied';
+  if (granted && !denied) {
     icon.className = 'ti ti-bell-ringing';
     icon.style.color = '#1D9E75';
     icon.title = 'Notifications enabled';
-  } else if (Notification.permission === 'denied') {
+  } else if (denied) {
     icon.className = 'ti ti-bell-off';
     icon.style.color = '#D85A30';
     icon.title = 'Notifications blocked — enable in browser settings';
+    localStorage.removeItem('notif_granted');
   } else {
     icon.className = 'ti ti-bell';
     icon.style.color = 'var(--color-text-tertiary)';
@@ -2383,9 +2387,8 @@ function updateNotifIcon() {
   }
 }
 updateNotifIcon();
-setTimeout(updateNotifIcon, 500);  // iOS fix
-setTimeout(updateNotifIcon, 1500); // iOS fix — second check
-setTimeout(updateNotifIcon, 3000); // iOS fix — third check
+setTimeout(updateNotifIcon, 500);
+setTimeout(updateNotifIcon, 1500);
 
 async function requestNotifPermission() {
   if (!('Notification' in window)) { alert('Notifications are not supported in this browser.'); return; }
@@ -2393,6 +2396,7 @@ async function requestNotifPermission() {
   const perm = await Notification.requestPermission();
   updateNotifIcon();
   if (perm === 'granted') {
+    localStorage.setItem('notif_granted', 'true');
     _notifScheduledDate = null;
     scheduleNotifications();
     scheduleEveReminders();
@@ -2406,7 +2410,8 @@ async function requestNotifPermission() {
 
 let _notifScheduledDate = null;
 function scheduleNotifications() {
-  if (!_prayerTimes || Notification.permission !== 'granted') return;
+  const notifOk = Notification.permission === 'granted' || localStorage.getItem('notif_granted') === 'true';
+  if (!_prayerTimes || !notifOk) return;
   const todayStr = getToday().toDateString();
   if (_notifScheduledDate === todayStr) return; // already scheduled for today
   _notifScheduledDate = todayStr;
@@ -2434,7 +2439,8 @@ function scheduleNotifications() {
 }
 
 function scheduleEveReminders() {
-  if (Notification.permission !== 'granted') return;
+  const notifOk = Notification.permission === 'granted' || localStorage.getItem('notif_granted') === 'true';
+  if (!notifOk) return;
   [1, 2].forEach(daysAhead => {
     const future    = new Date(getToday());
     future.setDate(future.getDate() + daysAhead);
