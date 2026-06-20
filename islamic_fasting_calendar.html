@@ -2304,7 +2304,7 @@ function updateNotifIcon() {
     icon.className = 'ti ti-bell-ringing';
     icon.style.color = '#1D9E75';
     icon.title = 'Notifications enabled';
-  } else if (perm === 'denied') {
+  } else if (Notification.permission === 'denied') {
     icon.className = 'ti ti-bell-off';
     icon.style.color = '#D85A30';
     icon.title = 'Notifications blocked — enable in browser settings';
@@ -2322,6 +2322,7 @@ async function requestNotifPermission() {
   const perm = await Notification.requestPermission();
   updateNotifIcon();
   if (perm === 'granted') {
+    _notifScheduledDate = null;
     scheduleNotifications();
     scheduleEveReminders();
     registerPushSubscription();
