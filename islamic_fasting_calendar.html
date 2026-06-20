@@ -2316,6 +2316,7 @@ function updateNotifIcon() {
   }
 }
 updateNotifIcon(); // single call — redundant call removed
+setTimeout(updateNotifIcon, 500); // iOS fix — recheck after load
 
 async function requestNotifPermission() {
   if (!('Notification' in window)) { alert('Notifications are not supported in this browser.'); return; }
