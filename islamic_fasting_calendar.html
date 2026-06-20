@@ -54,6 +54,8 @@
   }
   .rainbow-title { animation: rainbow 5s linear infinite; position: relative; display: inline-block; }
   .glitter-wrap { position: relative; display: inline-block; overflow: hidden; }
+  .hijri-gold { animation: rainbow 5s linear infinite; font-weight: 700; background: linear-gradient(135deg,#f5c200 0%,#ffe033 50%,#f0b800 100%) !important; padding: 4px 14px; border-radius: 20px; display: inline-block; box-shadow: 0 2px 6px rgba(180,130,0,0.25); }
+
   @keyframes sparkle {
     0%   { opacity: 0; transform: scale(0) rotate(0deg); }
     50%  { opacity: 1; transform: scale(1) rotate(180deg); }
@@ -1113,10 +1115,11 @@ function renderPrayers(times, city) {
   const _greenLabel = _inAsrWin ? 'Asr' : 'Dhuhr';
 
   // Determine initial box content
-  const boxBg = _inGreenWin ? '#1D9E75' : '#8B3FA8';
-  const boxLabel = _inGreenWin ? _greenLabel : 'Next prayer';
-  const boxName = _inGreenWin ? 'Pray now!' : next.name;
-  const boxCd = _inGreenWin ? '' : `in ${countdown}`;
+  const _nearNext = diffMs <= 15 * 60000;
+  const boxBg = _inGreenWin ? '#1D9E75' : (_nearNext ? '#8B3FA8' : 'transparent');
+  const boxLabel = _inGreenWin ? _greenLabel : (_nearNext ? 'Next prayer' : '');
+  const boxName = _inGreenWin ? 'Pray now!' : (_nearNext ? next.name : '');
+  const boxCd = _inGreenWin ? '' : (_nearNext ? `in ${countdown}` : '');
   const _sunriseTime  = parseTime(times.Sunrise);
   const _ishraqStart  = new Date(_sunriseTime.getTime() + 25 * 60000);  // 25 min after sunrise
   const _ishraqEnd    = new Date(_sunriseTime.getTime() + 85 * 60000);  // 60 min window
@@ -1142,7 +1145,7 @@ function renderPrayers(times, city) {
           <span id="prayer-date-greg" style="background:#1a7a4a;color:#ffffff;font-weight:600;padding:3px 12px;border-radius:20px;font-size:15px;white-space:nowrap;display:inline-block;border:1px solid #000">—</span>
         </div>
         <div style="margin-top:4px">
-          <span id="prayer-date-hijri" style="background:#1a7a4a;color:#ffffff;font-weight:600;padding:3px 12px;border-radius:20px;font-size:15px;white-space:nowrap;display:inline-block;border:1px solid #000">—</span>
+          <span id="prayer-date-hijri" class="hijri-gold" style="font-size:15px;white-space:nowrap;">—</span>
         </div>
       </div>
       <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:6px">
@@ -1233,6 +1236,7 @@ function renderPrayers(times, city) {
         const timeEl = cell.querySelector('div:last-child');
         const active = idx === highlightIdx;
         cell.style.background = active ? '#1D9E75' : '';
+        cell.classList.remove('flash-alert');
         if (nameEl) { nameEl.style.color = active ? '#E1F5EE' : 'var(--color-text-secondary)'; if (idx === sunriseIdx) nameEl.textContent = 'Sunrise'; }
         if (timeEl) timeEl.style.color = active ? '#ffffff' : 'var(--color-text-primary)';
       });
@@ -1322,7 +1326,7 @@ function renderPrayers(times, city) {
       const ws = Math.floor((ms2 % 60000) / 1000);
       const wCountdown = String(wm).padStart(2,'0') + ':' + String(ws).padStart(2,'0');
       if (_box) { _box.style.background = '#8B3FA8'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'right'; }
-      if (elLbl)  { elLbl.innerHTML = ''; elLbl.textContent = label + ' begins in'; elLbl.style.display = ''; elLbl.style.color = '#E1F5EE'; elLbl.style.fontSize = '13px'; elLbl.style.fontWeight = '600'; elLbl.classList.add('flash-alert'); }
+      if (elLbl)  { elLbl.innerHTML = ''; elLbl.textContent = label + ' in'; elLbl.style.display = ''; elLbl.style.color = '#E1F5EE'; elLbl.style.fontSize = '13px'; elLbl.style.fontWeight = '600'; elLbl.classList.add('flash-alert'); }
       if (elName) { elName.textContent = wCountdown; elName.style.fontSize = '22px'; elName.style.fontWeight = '700'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
       if (elCd)   { elCd.textContent = ''; elCd.classList.remove('flash-alert'); }
     }
@@ -1441,11 +1445,17 @@ function renderPrayers(times, city) {
     }
 
     // ── Isha/night window (Isha → midnight → last third → Fajr) ─────────────
-    const _isNight = (ishaTimeW && now3 >= ishaTimeW) ||
-                     (now3.getHours() < 12 && window._fajrTime && now3 < window._fajrTime);
+    const _afterMidCheck = now3.getHours() < 12;
+    const _fajrToday = _prayerTimes ? parseTime(_prayerTimes.Fajr) : null;
+    const _pastFajr = _afterMidCheck && _fajrToday && now3 >= _fajrToday;
+    const _isNight = !_pastFajr && ((ishaTimeW && now3 >= ishaTimeW) ||
+                     (_afterMidCheck && window._fajrTime && now3 < window._fajrTime));
     if (_isNight) {
-      const _afterMid = now3.getHours() < 12;
-      const _fajr = _afterMid ? parseTime(_prayerTimes.Fajr) : parseTomorrow(_prayerTimes.Fajr);
+      // Clear all lingering flash/highlights from previous prayer warn windows
+      if (_grid) _grid.querySelectorAll('[data-pidx]').forEach(cell => { cell.classList.remove('flash-alert'); });
+      const _afterMid = _afterMidCheck;
+      let _fajr = _afterMid ? _fajrToday : parseTomorrow(_prayerTimes.Fajr);
+      if (!_fajr || _fajr <= now3) _fajr = parseTomorrow(_prayerTimes.Fajr);
       const _mid  = new Date(now3);
       if (!_afterMid) _mid.setDate(_mid.getDate() + 1);
       _mid.setHours(0, 0, 0, 0);
@@ -1455,23 +1465,18 @@ function renderPrayers(times, city) {
       const _inTahajjud  = _afterMid && now3 >= new Date(_lastThird.getTime() - 60000) && now3 < _fajr;
 
       if (_inFajrWarn) {
-        // Last 15 min — start dedicated 2s toggle if not running
-        if (!_fajrWarnInterval) {
-          _fajrWarnInterval = setInterval(() => { _fajrWarnToggle = !_fajrWarnToggle; }, 2000);
-        }
+        // Clear any old interval — use seconds-based alternation
+        if (_fajrWarnInterval) { clearInterval(_fajrWarnInterval); _fajrWarnInterval = null; }
+        _fajrWarnToggle = now3.getSeconds() % 4 < 2;
         const _fms = _fajr - now3;
         const _fm  = Math.floor(_fms / 60000);
-        if (_fm < 1) {
-          // Under 1 min — just show Pray Tahajjud, no countdown
-          if (_box)  { _box.style.background = '#8B3FA8'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'right'; }
-          if (elLbl) { elLbl.innerHTML = ''; elLbl.textContent = ''; elLbl.classList.remove('flash-alert'); }
-          if (elName){ elName.textContent = 'Pray Tahajjud'; elName.style.fontSize = '17px'; elName.style.fontWeight = '700'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
-          if (elCd)  { elCd.textContent = ''; elCd.classList.remove('flash-alert'); }
-        } else if (_fajrWarnToggle) {
-          // Green — Fajr in Xm
+        const _fs  = Math.floor((_fms % 60000) / 1000);
+        const _fLabel = _fm >= 1 ? `Fajr in ${_fm}m ${_fs}s` : `Fajr in ${_fs}s`;
+        if (_fajrWarnToggle) {
+          // Green — Fajr countdown
           if (_box)  { _box.style.background = '#1D9E75'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'right'; }
           if (elLbl) { elLbl.innerHTML = ''; elLbl.textContent = ''; elLbl.classList.remove('flash-alert'); }
-          if (elName){ elName.textContent = `Fajr in ${_fm}m`; elName.style.fontSize = '17px'; elName.style.fontWeight = '700'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
+          if (elName){ elName.textContent = _fLabel; elName.style.fontSize = '17px'; elName.style.fontWeight = '700'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
           if (elCd)  { elCd.textContent = ''; elCd.classList.remove('flash-alert'); }
         } else {
           // Purple — Pray Tahajjud
@@ -1506,7 +1511,7 @@ function renderPrayers(times, city) {
           if (elCd)  { elCd.textContent = ''; elCd.classList.remove('flash-alert'); }
         }
       }
-      // Grid: highlight Fajr purple during entire night window
+      // Grid: only highlight Isha or Fajr, clear everything else
       const _fajrIdx = PRAYER_KEYS.indexOf('Fajr');
       const _ishaIdx = PRAYER_KEYS.indexOf('Isha');
       if (_grid) {
@@ -1515,22 +1520,20 @@ function renderPrayers(times, city) {
           if (!cell) return;
           const nm = cell.querySelector('div:first-child');
           const tm = cell.querySelector('div:last-child');
+          cell.classList.remove('flash-alert');
           if (_afterMid && _inFajrWarn && i === _fajrIdx) {
-            // Last 15 min before Fajr — Fajr cell purple
             cell.style.background = '#8B3FA8';
             if (nm) nm.style.color = '#E1F5EE';
             if (tm) tm.style.color = '#ffffff';
           } else if (_afterMid && i === _ishaIdx) {
-            // After midnight — Isha cell light green (can still pray)
             cell.style.background = '#fff8d6';
             if (nm) nm.style.color = '#7a6000';
             if (tm) tm.style.color = '#7a6000';
           } else if (!_afterMid && i === _ishaIdx) {
-            // Before midnight — Isha cell full green
             cell.style.background = '#1D9E75';
             if (nm) nm.style.color = '#E1F5EE';
             if (tm) tm.style.color = '#ffffff';
-          } else if (i === _fajrIdx || i === _ishaIdx) {
+          } else {
             cell.style.background = '';
             if (nm) nm.style.color = 'var(--color-text-secondary)';
             if (tm) tm.style.color = 'var(--color-text-primary)';
@@ -1564,21 +1567,45 @@ function renderPrayers(times, city) {
     let _restoreNext = _restoreParsed.find(p => p.time > now3 && p.name !== 'Sunrise');
     if (!_restoreNext && _restoreParsed.length) _restoreNext = _restoreParsed[0];
     const _restoreNextIdx = _restoreNext ? PRAYER_KEYS.indexOf(_restoreNext.name) : -1;
-    // Highlight next prayer cell purple, clear all others
+    const _rMs = _restoreNext ? (_restoreNext.time - now3) : Infinity;
+    const _rNear = _rMs <= 15 * 60000;
+    // Find the prayer immediately before the next one (skip Sunrise)
+    const _prevIdx = _restoreNextIdx > 0 ? (() => {
+      for (let i = _restoreNextIdx - 1; i >= 0; i--) {
+        if (PRAYER_KEYS[i] !== 'Sunrise') return i;
+      }
+      return -1;
+    })() : -1;
     if (_grid) {
       _grid.querySelectorAll('[data-pidx]').forEach(cell => {
         const idx = parseInt(cell.dataset.pidx);
         const nameEl = cell.querySelector('div:first-child');
         const timeEl = cell.querySelector('div:last-child');
         const isNextCell = idx === _restoreNextIdx;
-        cell.style.background = isNextCell ? '#8B3FA8' : '';
-        if (nameEl) nameEl.style.color = isNextCell ? '#E1F5EE' : 'var(--color-text-secondary)';
-        if (timeEl) timeEl.style.color = isNextCell ? '#ffffff' : 'var(--color-text-primary)';
+        const isPrevCell = idx === _prevIdx;
+        if (isNextCell && _rNear) {
+          // Next prayer purple
+          cell.style.background = '#8B3FA8';
+          cell.classList.remove('flash-alert');
+          if (nameEl) nameEl.style.color = '#E1F5EE';
+          if (timeEl) timeEl.style.color = '#ffffff';
+        } else if (isPrevCell && _rNear) {
+          // Only flash green if previous prayer was within last 4 hours (still in its window)
+          cell.style.background = '#1D9E75';
+          cell.classList.add('flash-alert');
+          if (nameEl) nameEl.style.color = '#E1F5EE';
+          if (timeEl) timeEl.style.color = '#ffffff';
+        } else {
+          cell.style.background = '';
+          cell.classList.remove('flash-alert');
+          if (nameEl) nameEl.style.color = 'var(--color-text-secondary)';
+          if (timeEl) timeEl.style.color = 'var(--color-text-primary)';
+        }
       });
     }
-    if (_box)   { _box.style.background = '#8B3FA8'; _box.style.textAlign = 'right'; }
-    if (elLbl)  { elLbl.innerHTML = ''; elLbl.textContent = 'Next prayer'; elLbl.style.color = '#E1F5EE'; elLbl.style.fontSize = '13px'; elLbl.style.fontWeight = '400'; elLbl.classList.remove('flash-alert'); }
-    if (elName && _restoreNext) { elName.textContent = _restoreNext.name; elName.style.fontSize = '17px'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
+    if (_box)   { _box.style.background = _rNear ? '#8B3FA8' : 'transparent'; _box.style.textAlign = 'right'; }
+    if (elLbl)  { elLbl.innerHTML = ''; elLbl.textContent = _rNear ? 'Next prayer' : ''; elLbl.style.color = '#E1F5EE'; elLbl.style.fontSize = '13px'; elLbl.style.fontWeight = '400'; elLbl.classList.remove('flash-alert'); }
+    if (elName && _restoreNext) { elName.textContent = _rNear ? _restoreNext.name : ''; elName.style.fontSize = '17px'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
     if (elCd)   { elCd.style.color = '#E1F5EE'; elCd.style.fontSize = '14px'; elCd.style.fontWeight = '600'; elCd.classList.remove('flash-alert'); }
   }, 1000);
 
@@ -1774,10 +1801,10 @@ function updateClock() {
     if (holy && banner) {
       banner.style.display = 'block';
       banner.innerHTML = `<b>🌙 ${holy[0]}:</b> ${holy[1]} <span style="color:#1a7a4a;font-weight:600">Do:</span> ${holy[2]}`;
-      if (dlH) { dlH.style.animation = 'flash-alert 1.5s ease-in-out infinite'; dlH.style.background = '#0f5c2e'; }
+      if (dlH) { dlH.style.background = ''; }
     } else {
       if (banner) banner.style.display = 'none';
-      if (dlH) { dlH.style.animation = ''; dlH.style.background = '#1a7a4a'; }
+      if (dlH) { dlH.style.background = ''; }
     }
   }
 
@@ -1811,7 +1838,11 @@ function updateClock() {
         const dh = Math.floor(ms / 3600000);
         const dm = Math.floor((ms % 3600000) / 60000);
         const ds = Math.floor((ms % 60000) / 1000);
-        cdEl.textContent = dh > 0 ? `in ${dh}h ${dm}m` : `in ${dm}m ${ds}s`;
+        if (ms <= 15 * 60000) {
+          cdEl.textContent = dh > 0 ? `in ${dh}h ${dm}m` : `in ${dm}m ${ds}s`;
+        } else {
+          cdEl.textContent = '';
+        }
       }
     }
   }
