@@ -1872,7 +1872,7 @@ function calcPrayerTimesLocal(lat, lon) {
   // Angle in degrees; negative = below horizon (Fajr, Sunrise, Maghrib, Isha)
   // Positive = above horizon (Asr)
   function hourAngle(angle, lat, dec) {
-    const num = -Math.sin(angle * Math.PI / 180) - Math.sin(lat * Math.PI / 180) * Math.sin(dec * Math.PI / 180);
+    const num = Math.sin(angle * Math.PI / 180) - Math.sin(lat * Math.PI / 180) * Math.sin(dec * Math.PI / 180);
     const den = Math.cos(lat * Math.PI / 180) * Math.cos(dec * Math.PI / 180);
     const val = num / den;
     if (val < -1 || val > 1) return null;
@@ -1886,10 +1886,9 @@ function calcPrayerTimesLocal(lat, lon) {
 
   const fajrHA    = hourAngle(-18, lat, dec);
   const sunriseHA = hourAngle(-0.833, lat, dec);
-  // FIX: Asr altitude is POSITIVE (sun is above horizon); was incorrectly negated before
   const asrHA = (function () {
-    const target = Math.atan(1 + Math.tan(Math.abs(lat - dec) * Math.PI / 180)) * 180 / Math.PI;
-    return hourAngle(target, lat, dec); // ← FIXED: positive angle
+    const asrAngle = Math.atan(1 / (1 + Math.tan(Math.abs((lat - dec) * Math.PI / 180)))) * 180 / Math.PI;
+    return hourAngle(asrAngle, lat, dec);
   })();
   const maghribHA = hourAngle(-0.833, lat, dec);
   const ishaHA    = hourAngle(-17, lat, dec);
