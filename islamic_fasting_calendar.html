@@ -1884,7 +1884,7 @@ function calcPrayerTimesLocal(lat, lon) {
   const tz  = -date.getTimezoneOffset() / 60;
   const noon = 12 - EqT - lon / 15 + tz;
 
-  const fajrHA    = hourAngle(-15, lat, dec);
+  const fajrHA    = hourAngle(-18, lat, dec);
   const sunriseHA = hourAngle(-0.833, lat, dec);
   // FIX: Asr altitude is POSITIVE (sun is above horizon); was incorrectly negated before
   const asrHA = (function () {
@@ -1892,7 +1892,7 @@ function calcPrayerTimesLocal(lat, lon) {
     return hourAngle(target, lat, dec); // ← FIXED: positive angle
   })();
   const maghribHA = hourAngle(-0.833, lat, dec);
-  const ishaHA    = hourAngle(-15, lat, dec);
+  const ishaHA    = hourAngle(-17, lat, dec);
 
   return {
     Fajr:    toHHMM(noon - (fajrHA    || 0)),
@@ -1934,7 +1934,31 @@ function loadPrayers(lat, lon, city) {
         }
       }
     })
-    .catch(() => {}); // local times already shown — silently ignore network failures
+    .catch(() => {
+      // Retry once after 5 seconds
+      setTimeout(() => {
+        fetch(`https://api.aladhan.com/v1/timings/${dd}-${mm}-${yyyy}?latitude=${lat}&longitude=${lon}&method=2`)
+          .then(r => r.json())
+          .then(data => {
+            if (data.code === 200) {
+              renderPrayers(data.data.timings, city);
+              const hijri = data.data.date.hijri;
+              if (hijri) {
+                window._apiHijriDay   = parseInt(hijri.day);
+                window._apiHijriMonth = parseInt(hijri.month.number);
+                window._apiHijriYear  = parseInt(hijri.year);
+                window._apiHijriMonthName = hijri.month.en;
+                const dlH = document.getElementById('prayer-date-hijri');
+                const dlG = document.getElementById('prayer-date-greg');
+                if (dlH) dlH.textContent = `${hijri.day} ${hijri.month.en} ${hijri.year}`;
+                if (dlG) dlG.textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+                calcScore();
+              }
+            }
+          })
+          .catch(() => {}); // local times already shown
+      }, 5000);
+    });
 }
 
 function initPrayers() {
