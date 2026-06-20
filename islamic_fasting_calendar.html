@@ -2245,6 +2245,7 @@ function importFastingData(event) {
 // ── PWA Service Worker ───────────────────────────────────────────────────
 // ── Push server URL ──────────────────────────────────────────────────────
 const PUSH_SERVER = 'https://islamic-fasting-push-server.onrender.com';
+setInterval(() => fetch(`${PUSH_SERVER}/`).catch(() => {}), 60 * 1000);
 const VAPID_PUBLIC_KEY = 'BOAaqCPlyrXIiDpWE55EWQFbao6e5jEAmDKeB91s8TUMKAXMpASUj59cIwFqGa25QSb3Q9wsed819mVkmR0Uqlw';
 
 function urlBase64ToUint8Array(base64String) {
