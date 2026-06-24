@@ -877,6 +877,8 @@ function getNextWeeklyDays(n) {
 
 function renderUpcoming() {
   const list = document.getElementById('fast-list');
+  // Stop any running sparkle canvas animations before clearing the DOM
+  list.querySelectorAll('.sparkle-canvas').forEach(c => { c._active = false; });
   list.innerHTML = '';
 
   // Past weekly fasts — last 52 weeks
@@ -2205,6 +2207,20 @@ setInterval(() => {
 }, 10000);
 
 // ── Initial renders ─────────────────────────────────────────────────────
+// Clear any cached prayer/hijri data from before the anchor fix was deployed,
+// so the live API is always used for the Hijri anchor on first load.
+(function clearStalePrayerCache() {
+  const today = new Date();
+  const dd = String(today.getDate()).padStart(2, '0');
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const yyyy = today.getFullYear();
+  const todayStr = `${dd}-${mm}-${yyyy}`;
+  Object.keys(localStorage).forEach(k => {
+    if (k.startsWith('prayer_') && !k.startsWith(`prayer_${todayStr}`)) {
+      localStorage.removeItem(k);
+    }
+  });
+})();
 renderUpcoming();
 calcScore();
 initPrayers();
