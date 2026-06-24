@@ -277,6 +277,13 @@
         <button id="notif-btn" onclick="requestNotifPermission()" title="Enable notifications" style="font-family:var(--font-sans);background:none;border:none;cursor:pointer;flex-shrink:0;padding:2px;margin-left:4px">
           <i class="ti ti-bell" id="notif-icon" style="font-size:18px;color:var(--color-text-tertiary)"></i>
         </button>
+        <button onclick="exportFastingData()" title="Export fasting data" style="font-family:var(--font-sans);background:none;border:none;cursor:pointer;flex-shrink:0;padding:2px">
+          <i class="ti ti-download" style="font-size:18px;color:var(--color-text-tertiary)"></i>
+        </button>
+        <label title="Import fasting data" style="cursor:pointer;flex-shrink:0;padding:2px;margin:0">
+          <i class="ti ti-upload" style="font-size:18px;color:var(--color-text-tertiary)"></i>
+          <input type="file" accept=".json" onchange="importFastingData(event)" style="display:none">
+        </label>
       </div>
       <div class="dash-tiles">
         <!-- Prev month -->
@@ -399,14 +406,6 @@
   <div style="display:flex;align-items:center;gap:10px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:.625rem .875rem;margin-top:.75rem">
     <span style="font-size:18px;background:#1a5c3a;color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700">"</span>
     <span style="font-size:12px;color:var(--color-text-secondary);flex:1;line-height:1.5">"Whoever fasts in Ramadan out of faith and seeking reward, his past sins will be forgiven." <em style="color:var(--color-text-tertiary)">[Bukhari &amp; Muslim]</em></span>
-    <button onclick="exportFastingData()" title="Export fasting data" style="font-family:var(--font-sans);background:none;border:none;cursor:pointer;flex-shrink:0;padding:2px">
-      <i class="ti ti-download" style="font-size:20px;color:var(--color-text-tertiary)"></i>
-    </button>
-    <label title="Import fasting data" style="cursor:pointer;flex-shrink:0;padding:2px;margin:0">
-      <i class="ti ti-upload" style="font-size:20px;color:var(--color-text-tertiary)"></i>
-      <input type="file" accept=".json" onchange="importFastingData(event)" style="display:none">
-    </label>
-
   </div>
 
 </div><!-- /app -->
@@ -536,6 +535,43 @@ function hToG(hy, hm, hd) {
   return fromJD(hijriToJD(hy, hm, hd));
 }
 
+// ── Moon-sighting corrected conversions ─────────────────────────────────
+// When the API tells us today's Hijri date, we use it as an anchor.
+// All other Hijri↔Gregorian conversions are computed relative to that anchor
+// by counting days, which is exact regardless of algorithmic drift.
+// _anchorGreg: Gregorian Date object for the known anchor
+// _anchorHijriDayNum: absolute Hijri day number for the anchor
+function _hijriAbsDay(hy, hm, hd) {
+  // Approximate absolute Hijri day count (months alternate 30/29 days)
+  return Math.round(hijriToJD(hy, hm, hd) - hijriToJD(1, 1, 1));
+}
+
+function hToGCorrected(hy, hm, hd) {
+  if (!window._anchorGreg) return hToG(hy, hm, hd);
+  const deltaDays = _hijriAbsDay(hy, hm, hd) - window._anchorHijriDayNum;
+  const d = new Date(window._anchorGreg);
+  d.setDate(d.getDate() + deltaDays);
+  return d;
+}
+
+function gToHCorrected(date) {
+  if (!window._anchorGreg) return gToH(date);
+  const d = new Date(date); d.setHours(0, 0, 0, 0);
+  const deltaDays = Math.round((d - window._anchorGreg) / 86400000);
+  const anchorAbsDay = window._anchorHijriDayNum + deltaDays;
+  // Convert absolute Hijri day back to year/month/day
+  const anchorJD = hijriToJD(1, 1, 1) + anchorAbsDay;
+  return jdToHijri(anchorJD);
+}
+
+function setHijriAnchor(apiYear, apiMonth, apiDay) {
+  // The API is telling us today's Hijri date — so the anchor Gregorian date is simply today.
+  // Do NOT use hToG() here — that's the algorithm which may be wrong by 1-2 days.
+  window._anchorGreg = new Date(getToday());
+  window._anchorGreg.setHours(0, 0, 0, 0);
+  window._anchorHijriDayNum = _hijriAbsDay(apiYear, apiMonth, apiDay);
+}
+
 function dateRange(start, days) {
   const arr = [];
   for (let i = 0; i < days; i++) {
@@ -547,8 +583,8 @@ function dateRange(start, days) {
 }
 
 // ── Fast data generation ────────────────────────────────────────────────
-// FIX: Skip Ayyam al-Beed for Ramadan (month 9) — those are obligatory Ramadan days,
-//      not separate voluntary fasts.
+// Uses hToGCorrected so dates automatically match moon-sighted Hijri once
+// the API anchor is set — no manual offset needed.
 function generateFasts(fromHY, toHY) {
   const fasts = [];
   for (let hy = fromHY; hy <= toHY; hy++) {
@@ -556,17 +592,17 @@ function generateFasts(fromHY, toHY) {
     // 6 days of Shawwal: 2–7 Shawwal
     fasts.push({
       name: '6 days of Shawwal',
-      dates: dateRange(hToG(hy, 10, 2), 6),
+      dates: dateRange(hToGCorrected(hy, 10, 2), 6),
       hijri: `2–7 Shawwal ${hy}`,
       icon: 'ti-star', note: 'After Ramadan', color: '#E1F5EE', iconColor: '#0F6E56'
     });
 
     // Ayyam al-Beed for all months except Ramadan (9)
     for (let hm = 1; hm <= 12; hm++) {
-      if (hm === 9) continue; // Ramadan fasts are obligatory — skip Ayyam al-Beed entry
+      if (hm === 9) continue;
       fasts.push({
         name: `Ayyam al-Beed — ${HIJRI_MONTHS[hm - 1]}`,
-        dates: dateRange(hToG(hy, hm, 13), 3),
+        dates: dateRange(hToGCorrected(hy, hm, 13), 3),
         hijri: `13–15 ${HIJRI_MONTHS[hm - 1]} ${hy}`,
         icon: 'ti-moon', note: 'White days', color: '#E1F5EE', iconColor: '#0F6E56'
       });
@@ -575,29 +611,28 @@ function generateFasts(fromHY, toHY) {
     // Day of Arafah: 9 Dhul Hijjah
     fasts.push({
       name: 'Day of Arafah',
-      dates: [hToG(hy, 12, 9)],
+      dates: [hToGCorrected(hy, 12, 9)],
       hijri: `9 Dhul Hijjah ${hy}`,
       icon: 'ti-heart', note: 'Expiates 2 years', color: '#E1F5EE', iconColor: '#0F6E56'
     });
 
-    // Tasua, Ashura, 11 Muharram — generate for NEXT year's Muharram
-    // (so the current year's Muharram comes from hy-1 iteration)
+    // Tasua, Ashura, 11 Muharram
     const nextHY = hy + 1;
     fasts.push({
       name: 'Tasua',
-      dates: [hToG(nextHY, 1, 9)],
+      dates: [hToGCorrected(nextHY, 1, 9)],
       hijri: `9 Muharram ${nextHY}`,
       icon: 'ti-moon-stars', note: 'Day before Ashura', color: '#E1F5EE', iconColor: '#0F6E56'
     });
     fasts.push({
       name: 'Ashura',
-      dates: [hToG(nextHY, 1, 10)],
+      dates: [hToGCorrected(nextHY, 1, 10)],
       hijri: `10 Muharram ${nextHY}`,
       icon: 'ti-moon-stars', note: 'Expiates 1 year', color: '#E1F5EE', iconColor: '#0F6E56'
     });
     fasts.push({
       name: '11 Muharram fast',
-      dates: [hToG(nextHY, 1, 11)],
+      dates: [hToGCorrected(nextHY, 1, 11)],
       hijri: `11 Muharram ${nextHY}`,
       icon: 'ti-moon-stars', note: 'Recommended with Ashura', color: '#E1F5EE', iconColor: '#0F6E56'
     });
@@ -606,33 +641,38 @@ function generateFasts(fromHY, toHY) {
 }
 
 const _initTodayH = gToH(getToday());
-const FASTS = generateFasts(_initTodayH.year - 1, _initTodayH.year + 2);
+let FASTS = generateFasts(_initTodayH.year - 1, _initTodayH.year + 2);
 
-// ── Hijri offset (moon-sighting adjustment) ─────────────────────────────
+// ── Hijri offset (manual fine-tuning only) ──────────────────────────────
+// The primary correction is automatic via the API anchor (setHijriAnchor).
+// These buttons allow ±1/2 day fine-tuning on top if needed.
 let hijriOffset = parseInt(localStorage.getItem('hijri_offset') || '0');
 
 function getAdjustedHijri(date) {
-  // For today's date, use API Hijri if available (correct moon sighting)
-  const d = new Date(date); d.setHours(0,0,0,0);
-  const today = getToday();
-  if (window._apiHijriDay && d.getTime() === today.getTime() && hijriOffset === 0) {
-    return { day: window._apiHijriDay, month: window._apiHijriMonth, year: window._apiHijriYear };
-  }
   const adjusted = new Date(date);
   adjusted.setDate(adjusted.getDate() + hijriOffset);
-  return gToH(adjusted);
+  return gToHCorrected(adjusted);
 }
 
 function updateHijriHeader() {
-  // Update offset label in the prayer box (if rendered)
   const lbl = document.getElementById('hijri-offset-label');
   if (lbl) lbl.textContent = hijriOffset === 0 ? '0' : (hijriOffset > 0 ? `+${hijriOffset}` : `${hijriOffset}`);
+}
+
+function _rebuildFasts() {
+  const _todayH = gToHCorrected(getToday());
+  FASTS = generateFasts(_todayH.year - 1, _todayH.year + 2);
+  _fastDateCache = null;
+  renderUpcoming();
+  calcScore();
+  if (document.getElementById('tab-calendar') && document.getElementById('tab-calendar').style.display !== 'none') renderCalendar();
 }
 
 function adjustHijri(delta) {
   hijriOffset = Math.max(-2, Math.min(2, hijriOffset + delta));
   localStorage.setItem('hijri_offset', hijriOffset);
   updateHijriHeader();
+  _rebuildFasts();
   const dlH2 = document.getElementById('prayer-date-hijri');
   const dlG2 = document.getElementById('prayer-date-greg');
   if (dlH2 || dlG2) {
@@ -702,20 +742,23 @@ function calcScore() {
   const prevHMY = curHM === 1 ? curHY - 1 : curHY;
   const prevHY  = curHY - 1;
 
-  // FIX: robust key parsing — the date is always the last segment after the last underscore
-  // that resolves to a valid date. We use the fact that toDateString() never contains underscores.
   const keys = Object.keys(localStorage).filter(k => k.startsWith('fast_') && localStorage.getItem(k) === '1');
-  const doneDates = keys.map(k => {
-    // Find the last underscore-prefixed valid Date portion
+  const _rawDates = keys.map(k => {
     const parts = k.split('_');
-    // Try progressively combining tail parts until we get a valid date
     for (let i = parts.length - 1; i >= 1; i--) {
       const candidate = parts.slice(i).join('_');
       const d = new Date(candidate);
       if (!isNaN(d.getTime())) return d;
     }
     return null;
-  }).filter(d => d !== null).sort((a, b) => a - b);
+  }).filter(d => d !== null);
+  // Deduplicate by date — multiple fasts on same day count as one
+  const _seen = new Set();
+  const doneDates = _rawDates.filter(d => {
+    const s = d.toDateString();
+    if (_seen.has(s)) return false;
+    _seen.add(s); return true;
+  }).sort((a, b) => a - b);
 
   const thisMonth = countFastsInHijriPeriod(doneDates, curHY,   curHM);
   const lastMonth = countFastsInHijriPeriod(doneDates, prevHMY, prevHM);
@@ -866,14 +909,20 @@ function renderUpcoming() {
   const todayH         = gToH(getToday());
   const startDate      = new Date(getToday()); startDate.setFullYear(startDate.getFullYear() - 1);
   const endOfHijriYear = hToG(todayH.year + 1, 12, 29);
+
+  // Suppress weekly cards when a named fast falls on the same date
+  const namedFastDates = new Set();
+  FASTS.forEach(f => f.dates.forEach(d => namedFastDates.add(d.toDateString())));
+
   const all = [...FASTS, ...pastWeekly, ...todayWeekly, ...weekly].sort((a, b) => firstDate(a) - firstDate(b));
 
   let firstUpcoming = true;
   all.forEach(f => {
     const last  = lastDate(f);
     const first = firstDate(f);
-    if (last < startDate)        return;  // older than 1 year ago
+    if (last < startDate)        return;
     if (first > endOfHijriYear)  return;
+    if (f.weekly && namedFastDates.has(first.toDateString())) return;
 
     const diff  = Math.ceil((first - getToday()) / 86400000);
     const card  = document.createElement('div');
@@ -902,8 +951,8 @@ function renderUpcoming() {
     if (isDone) card.classList.add('done');
 
     const isFuture = diff > 0;
-    // Show decoration: during today's fast OR during tomorrow's eve window
-    const isTodayFast = (diff === 0 && !afterMag) || (diff === 1 && inTomorrowWindow);
+    // Show decoration: during today's fast OR tomorrow's eve window OR mid-period of multi-day fast
+    const isTodayFast = (diff === 0 && !afterMag) || (diff === 1 && inTomorrowWindow) || (diff < 0 && getToday() <= lastDate(f));
     if (isTodayFast) card.classList.add('today-fast');
     const REMINDERS = [
       '🤲 May Allah accept it',
@@ -1149,30 +1198,13 @@ function renderIslamicDayCountdown() {
     { hm: 12, hd: 10, label: 'Eid al-Adha',       emoji: '🎉', color: '#E74C3C' },
   ];
 
-  // Use API Hijri date if available
-  const todayH = (window._apiHijriDay && hijriOffset === 0)
-    ? { year: window._apiHijriYear, month: window._apiHijriMonth, day: window._apiHijriDay }
-    : gToH(getToday());
-
-  // API offset: difference in days between API Hijri day and algorithmic Hijri day
-  // e.g. API says day=2, algo says day=1 → offset = -(2-1) = -1 (events shift back 1 day)
-  const _apiOffsetDays = (window._apiHijriDay && hijriOffset === 0) ? (() => {
-    const algoH = gToH(getToday());
-    // If same month/year, simple day difference
-    if (algoH.month === window._apiHijriMonth && algoH.year === window._apiHijriYear) {
-      return -(window._apiHijriDay - algoH.day);
-    }
-    // Different month: use Gregorian difference
-    const algoGreg = hToG(algoH.year, algoH.month, algoH.day);
-    const apiGreg  = hToG(window._apiHijriYear, window._apiHijriMonth, window._apiHijriDay);
-    return Math.round((algoGreg - apiGreg) / 86400000);
-  })() : 0;
+  // Use corrected Hijri for today — consistent with calendar and fast list
+  const todayH = getAdjustedHijri(getToday());
 
   let next = null, minDays = Infinity;
   for (const hy of [todayH.year, todayH.year + 1]) {
     for (const day of DAYS) {
-      const greg = hToG(hy, day.hm, day.hd);
-      greg.setDate(greg.getDate() + _apiOffsetDays);
+      const greg = hToGCorrected(hy, day.hm, day.hd);
       greg.setHours(0, 0, 0, 0);
       const isToday = (todayH.year === hy && todayH.month === day.hm && todayH.day === day.hd);
       const diff = isToday ? 0 : Math.ceil((greg - getToday()) / 86400000);
@@ -1799,9 +1831,7 @@ function renderPrayers(times, city) {
     if (_restoreNext && _box) {
       const _rH = Math.floor(_rMs / 3600000);
       const _rM = Math.floor((_rMs % 3600000) / 60000);
-      const _rS = Math.floor((_rMs % 60000) / 1000);
-      const _rH2 = _rH * 60 + _rM;
-      const _rCd = `in ${String(_rH2).padStart(2,'0')}:${String(_rS).padStart(2,'0')}`; 
+      const _rCd = _rH > 0 ? `in ${_rH}h ${String(_rM).padStart(2,'0')}m` : `in ${_rM}m`;
       _box.style.background = '#8B3FA8'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'right';
       if (elLbl)  { elLbl.innerHTML = ''; elLbl.textContent = 'Next prayer'; elLbl.style.color = '#E1F5EE'; elLbl.style.fontSize = '11px'; elLbl.style.fontWeight = '600'; elLbl.classList.remove('flash-alert'); }
       if (elName) { elName.textContent = _restoreNext.name; elName.style.fontSize = '17px'; elName.style.fontWeight = '700'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
@@ -1921,6 +1951,8 @@ function loadPrayers(lat, lon, city) {
         window._apiHijriMonth = parseInt(hijri.month.number);
         window._apiHijriYear = parseInt(hijri.year);
         window._apiHijriMonthName = hijri.month.en;
+        setHijriAnchor(window._apiHijriYear, window._apiHijriMonth, window._apiHijriDay);
+        _rebuildFasts();
         const dlH = document.getElementById('prayer-date-hijri');
         if (dlH) dlH.textContent = `${hijri.day} ${hijri.month.en} ${hijri.year}`;
         calcScore();
@@ -1937,6 +1969,8 @@ function loadPrayers(lat, lon, city) {
               window._apiHijriMonth = parseInt(hijri.month.number);
               window._apiHijriYear  = parseInt(hijri.year);
               window._apiHijriMonthName = hijri.month.en;
+              setHijriAnchor(window._apiHijriYear, window._apiHijriMonth, window._apiHijriDay);
+              _rebuildFasts();
               const dlH = document.getElementById('prayer-date-hijri');
               const dlG = document.getElementById('prayer-date-greg');
               if (dlH) dlH.textContent = `${hijri.day} ${hijri.month.en} ${hijri.year}`;
@@ -1967,6 +2001,8 @@ function loadPrayers(lat, lon, city) {
           window._apiHijriMonth = parseInt(hijri.month.number);
           window._apiHijriYear  = parseInt(hijri.year);
           window._apiHijriMonthName = hijri.month.en;
+          setHijriAnchor(window._apiHijriYear, window._apiHijriMonth, window._apiHijriDay);
+          _rebuildFasts();
           const dlH = document.getElementById('prayer-date-hijri');
           const dlG = document.getElementById('prayer-date-greg');
           if (dlH) dlH.textContent = `${hijri.day} ${hijri.month.en} ${hijri.year}`;
@@ -1989,6 +2025,8 @@ function loadPrayers(lat, lon, city) {
                 window._apiHijriMonth = parseInt(hijri.month.number);
                 window._apiHijriYear  = parseInt(hijri.year);
                 window._apiHijriMonthName = hijri.month.en;
+                setHijriAnchor(window._apiHijriYear, window._apiHijriMonth, window._apiHijriDay);
+                _rebuildFasts();
                 const dlH = document.getElementById('prayer-date-hijri');
                 const dlG = document.getElementById('prayer-date-greg');
                 if (dlH) dlH.textContent = `${hijri.day} ${hijri.month.en} ${hijri.year}`;
