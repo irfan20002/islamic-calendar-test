@@ -420,6 +420,7 @@ let _flashInterval = null;
 let _fajrWarnToggle = false;
 let _fajrWarnInterval = null;
 let _lastNextPrayerIdx = -1;
+let _notifScheduledDate = null;
 
 // Dynamic today — always returns midnight of the current day
 // Use getToday() instead of TODAY everywhere except initialisation
@@ -2404,6 +2405,7 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('service-worker.js')
       .then(reg => {
+        reg.update(); // force check for new service worker on every load
         console.log('SW registered:', reg.scope);
         updateNotifIcon();
         if (Notification.permission === 'granted' || localStorage.getItem('notif_granted') === 'true') {
@@ -2462,7 +2464,6 @@ async function requestNotifPermission() {
   }
 }
 
-let _notifScheduledDate = null;
 function scheduleNotifications() {
   const notifOk = Notification.permission === 'granted' || localStorage.getItem('notif_granted') === 'true';
   if (!_prayerTimes || !notifOk) return;
