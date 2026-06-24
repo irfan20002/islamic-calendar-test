@@ -1,4 +1,4 @@
-const CACHE_NAME = 'islamic-calendar-v5';
+const CACHE_NAME = 'islamic-calendar-v6';
 const ASSETS = ['islamic_fasting_calendar.html', 'manifest.json'];
 
 // ── Install & cache ──────────────────────────────────────────────────────
