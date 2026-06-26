@@ -197,7 +197,7 @@
     .dashboard-box { grid-template-columns: 1fr; }
   }
   /* Score card */
-  .dashboard-left { background: #F5E8C7; border-radius: var(--border-radius-lg); padding: .875rem; color: #3d1f00; overflow: hidden; }
+  .dashboard-left { background: #F5E8C7; border-radius: var(--border-radius-lg); padding: .5rem .75rem; color: #3d1f00; overflow: hidden; border: 1.5px solid #1a6eb5; }
   .dash-header { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
   .dash-header-title { font-size: 13px; font-weight: 600; opacity: .9; }
   .dash-tiles { display: grid; grid-template-columns: 1fr 1px 1fr 1px 1fr 1px 1fr; gap: 0; align-items: start; }
@@ -213,7 +213,7 @@
   .dash-tile-bar-excess { background: #f0c040; }
   .dash-tile-delta { font-size: 10px; font-weight: 600; background: rgba(80,40,0,.15); color: #3d1f00; border-radius: 12px; padding: 2px 8px; margin-top: 2px; white-space: nowrap; }
   /* Prayer card */
-  .dashboard-right { background: var(--color-background-primary); border: 1.5px solid #1D9E75; border-radius: var(--border-radius-lg); padding: .75rem .875rem; min-width: 0; }
+  .dashboard-right { background: var(--color-background-primary); border: 1.5px solid #1D9E75; border-radius: var(--border-radius-lg); padding: .5rem .75rem; min-width: 0; }
   .prayer-error { font-size: 12px; color: var(--color-text-secondary); text-align: center; padding: .4rem; }
 </style>
 </head>
@@ -221,16 +221,16 @@
 <div class="container">
 <div class="app">
   <h2 class="sr-only">Islamic fasting calendar — auto-updating</h2>
-  <div class="header" style="background: linear-gradient(135deg, #f5c200 0%, #ffe033 50%, #f0b800 100%); border-radius: var(--border-radius-lg); padding: .5rem 1rem .6rem; margin-bottom: 0.4rem; display:flex; align-items:stretch; justify-content:space-between; gap:8px; overflow:hidden;">
+  <div class="header" style="background: linear-gradient(135deg, #f5c200 0%, #ffe033 50%, #f0b800 100%); border-radius: var(--border-radius-lg); padding: .5rem 1rem .6rem; margin-bottom: 0.4rem; display:flex; align-items:flex-start; justify-content:space-between; gap:8px; overflow:hidden; position:relative;">
     <!-- Left: title + name + countdown -->
-    <div style="flex:1;min-width:0">
+    <div style="flex:1;min-width:0;padding-right:48px">
       <div class="glitter-wrap" id="glitter-wrap">
         <h1 class="rainbow-title" id="rainbow-title" style="font-size:18px;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,0.3);">Islamic fasting calendar <span style="color:#0f5c2e;font-size:13px;font-weight:600;">(Irfan Bandey)</span></h1>
       </div>
       <div id="fast-countdown-wrap" style="margin-top:4px;text-align:center;width:100%"></div>
     </div>
     <!-- Right: moon + stars -->
-    <div style="flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-end;gap:4px;align-self:stretch">
+    <div style="position:absolute;top:6px;right:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px">
       <div style="position:relative;width:48px;height:36px;display:flex;align-items:center;justify-content:center">
         <svg style="position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;pointer-events:none" viewBox="0 0 48 36">
           <g class="star-twinkle" style="animation-delay:0s">
@@ -314,7 +314,7 @@
     </div>
   </div>
 
-  <div style="height:1.5rem"></div>
+  <div style="height:0.4rem"></div>
 
   <div class="tabs">
     <button class="tab active" data-tab="upcoming" onclick="showTab('upcoming')">Upcoming fasts</button>
