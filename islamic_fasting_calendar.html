@@ -556,6 +556,8 @@ function setHijriAnchor(apiYear, apiMonth, apiDay) {
   window._anchorGreg = new Date(getToday());
   window._anchorGreg.setHours(0, 0, 0, 0);
   window._anchorHijriDayNum = newAbsDay;
+  // Always rebuild FASTS when anchor changes so fast dates match the API's moon-sighted date
+  _rebuildFasts();
 }
 
 function dateRange(start, days) {
