@@ -394,6 +394,17 @@
   </div>
 
 </div><!-- /app -->
+<!-- Monthly Prayer Schedule Modal -->
+<div id="monthly-prayer-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);align-items:flex-end;justify-content:center" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:var(--color-background-primary);border-radius:16px 16px 0 0;width:100%;max-width:480px;max-height:85vh;overflow:hidden;display:flex;flex-direction:column">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid var(--color-border-secondary)">
+      <div id="monthly-prayer-title" style="font-size:15px;font-weight:700;color:var(--color-text-primary)"></div>
+      <button onclick="document.getElementById('monthly-prayer-modal').style.display='none'" style="font-family:var(--font-sans);background:none;border:none;font-size:20px;cursor:pointer;color:var(--color-text-tertiary);padding:0 4px">✕</button>
+    </div>
+    <div id="monthly-prayer-list" style="overflow-y:auto;padding:8px 0"></div>
+  </div>
+</div>
+
 </div><!-- /container -->
 
 <script>
@@ -414,6 +425,13 @@ function getToday() { return _today; }
 
 // ── Moon phase SVG ──────────────────────────────────────────────────────
 function getMoonPhase(date) {
+  // Use API Hijri day if available — most accurate since it's based on actual moon sighting
+  if (window._apiHijriDay) {
+    // Hijri day 1 = new moon, day 15 = full moon, day 29/30 = new moon
+    // Convert to 0-1 scale using 29.5 day cycle
+    return window._apiHijriDay / 29.5;
+  }
+  // Fallback: astronomical calculation
   const REF   = new Date(Date.UTC(2000, 0, 6, 18, 14, 0)); // known new moon
   const CYCLE = 29.53058867;
   const elapsed = (date - REF) / (1000 * 60 * 60 * 24);
@@ -585,15 +603,18 @@ function generateFasts(fromHY, toHY) {
       icon: 'ti-star', note: 'After Ramadan', color: '#E1F5EE', iconColor: '#0F6E56'
     });
 
-    // Ayyam al-Beed for all months except Ramadan (9)
+    // Ayyam al-Beed for all months except Ramadan (9) — one card per day
     for (let hm = 1; hm <= 12; hm++) {
       if (hm === 9) continue;
-      fasts.push({
-        name: 'Ayyam al-Beed',
-        dates: dateRange(hToGCorrected(hy, hm, 13), 3),
-        hijri: `13–15 ${HIJRI_MONTHS[hm - 1]} ${hy}`,
-        icon: 'ti-moon', note: 'White days', color: '#E1F5EE', iconColor: '#0F6E56'
-      });
+      const dayLabels = ['13th', '14th', '15th'];
+      for (let hd = 13; hd <= 15; hd++) {
+        fasts.push({
+          name: 'Ayyam al-Beed',
+          dates: [hToGCorrected(hy, hm, hd)],
+          hijri: `${hd} ${HIJRI_MONTHS[hm - 1]} ${hy}`,
+          icon: 'ti-moon', note: `White day · ${dayLabels[hd - 13]}`, color: '#E1F5EE', iconColor: '#0F6E56'
+        });
+      }
     }
 
     // Day of Arafah: 9 Dhul Hijjah
@@ -1053,11 +1074,14 @@ ${isTodayFast ? `<div class="today-reminder-inline" id="fast-reminder-inline">�
       scrollContainer.scrollTop += (cardTop - containerTop) - 8;
     }, 200);
 
-    // Auto-snap back to today after 2.5s of scroll inactivity
+    // Auto-snap back to today after 3s of scroll inactivity, but only if finger is not on screen
     let _snapTimer = null;
+    let _touching = false;
+    scrollContainer.addEventListener('touchstart', () => { _touching = true; if (_snapTimer) { clearTimeout(_snapTimer); _snapTimer = null; } }, { passive: true });
+    scrollContainer.addEventListener('touchend', () => { _touching = false; });
     scrollContainer.addEventListener('scroll', () => {
       if (_snapTimer) clearTimeout(_snapTimer);
-      _snapTimer = setTimeout(() => scrollToToday(), 2500);
+      _snapTimer = setTimeout(() => { if (!_touching) scrollToToday(); }, 3000);
     });
   }
 }
@@ -1375,8 +1399,11 @@ function renderPrayers(times, city) {
         const isDhuhrActive = _inDhuhrWin && i === PRAYER_KEYS.indexOf('Dhuhr');
         const isAsrActive = _inAsrWin && i === PRAYER_KEYS.indexOf('Asr');
         const cellBg = (active || isDhuhrActive || isAsrActive) ? '#1D9E75' : isNext ? '#8B3FA8' : '';
-        return `<div data-pidx="${i}" style="text-align:center;padding:6px 2px;border-radius:8px;${cellBg ? 'background:' + cellBg + ';' : ''}">
-          <div style="font-size:11px;margin-bottom:2px;${(active || isNext || isDhuhrActive || isAsrActive) ? 'color:#E1F5EE;' : 'color:var(--color-text-secondary);'}">${p.name}</div>
+        const isFajr = p.name === 'Fajr';
+        const isMaghrib = p.name === 'Maghrib';
+        const clickable = isFajr || isMaghrib;
+        return `<div data-pidx="${i}" ${clickable ? `onclick="showMonthlyPrayerSchedule('${p.name}')" style="cursor:pointer;` : 'style="'}text-align:center;padding:6px 2px;border-radius:8px;${cellBg ? 'background:' + cellBg + ';' : ''}">
+          <div style="font-size:11px;margin-bottom:2px;${(active || isNext || isDhuhrActive || isAsrActive) ? 'color:#E1F5EE;' : 'color:var(--color-text-secondary);'}">${p.name}${clickable ? ' 📅' : ''}</div>
           <div style="font-size:12px;font-weight:600;${(active || isNext || isDhuhrActive || isAsrActive) ? 'color:#ffffff;' : 'color:var(--color-text-primary);'}">${p.str ? to12hr(p.str) : ''}</div>
         </div>`;
       }).join('')}
@@ -2020,6 +2047,83 @@ document.addEventListener('click', e => {
   if (dd && lbl && !dd.contains(e.target) && e.target !== lbl) dd.style.display = 'none';
 });
 
+// ── Monthly prayer schedule (Fajr / Maghrib) ─────────────────────────────
+async function showMonthlyPrayerSchedule(prayerName) {
+  const modal = document.getElementById('monthly-prayer-modal');
+  const title = document.getElementById('monthly-prayer-title');
+  const list  = document.getElementById('monthly-prayer-list');
+  if (!modal || !list) return;
+
+  const today = new Date();
+  const year  = today.getFullYear();
+  const month = today.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const monthName = today.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+  title.textContent = `${prayerName} — ${monthName}`;
+  list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--color-text-tertiary)">Loading...</div>';
+  modal.style.display = 'flex';
+
+  const lat = window._cachedLat;
+  const lon = window._cachedLon;
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  if (!lat || !lon) {
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--color-text-tertiary)">Location not available</div>';
+    return;
+  }
+
+  // Fetch monthly timings from Al-Adhan API
+  try {
+    const mm = String(month + 1).padStart(2, '0');
+    const url = `https://api.aladhan.com/v1/calendar/${year}/${mm}?latitude=${lat}&longitude=${lon}&method=${_prayerMethod}&school=${_prayerSchool}`;
+    const res  = await fetch(url);
+    const data = await res.json();
+
+    if (data.code !== 200) throw new Error('API error');
+
+    const todayDate = today.getDate();
+    let html = '';
+    data.data.forEach((day, i) => {
+      const dayNum  = i + 1;
+      const time    = day.timings[prayerName].split(' ')[0]; // remove timezone suffix
+      const [h, m]  = time.split(':').map(Number);
+      const ampm    = h >= 12 ? 'PM' : 'AM';
+      const h12     = h % 12 || 12;
+      const timeStr = `${h12}:${String(m).padStart(2,'0')} ${ampm}`;
+      const date    = new Date(year, month, dayNum);
+      const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+      const isToday = dayNum === todayDate;
+      const isFast  = allFastDates().has(date.toDateString());
+      const hijri   = gToHCorrected(date);
+      const hijriStr = `${hijri.day} ${HIJRI_MONTHS[hijri.month-1]}`;
+
+      html += `<div style="display:flex;align-items:center;padding:8px 16px;${isToday ? 'background:var(--color-background-secondary);border-left:3px solid #1D9E75;' : 'border-left:3px solid transparent;'}">
+        <div style="width:36px;text-align:center;font-size:13px;font-weight:${isToday?'700':'400'};color:${isToday?'#1D9E75':'var(--color-text-primary)'}">
+          <div>${dayName}</div>
+          <div style="font-size:16px;font-weight:700">${dayNum}</div>
+        </div>
+        <div style="flex:1;margin-left:12px">
+          <div style="font-size:10px;color:var(--color-text-tertiary)">${hijriStr}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${isFast ? '<span style="font-size:10px;background:#e8f5ee;color:#1D9E75;padding:2px 6px;border-radius:99px;font-weight:600">Fast</span>' : ''}
+          <div style="font-size:14px;font-weight:700;color:${isToday?'#1D9E75':'var(--color-text-primary)'}">${timeStr}</div>
+        </div>
+      </div>`;
+    });
+    list.innerHTML = html;
+
+    // Scroll to today
+    const items = list.querySelectorAll('div[style*="padding:8px"]');
+    if (items[todayDate - 1]) {
+      setTimeout(() => items[todayDate - 1].scrollIntoView({ block: 'center' }), 100);
+    }
+  } catch (err) {
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--color-text-tertiary)">Could not load schedule</div>';
+  }
+}
+
 function loadPrayers(lat, lon, city) {
   const today = new Date();
   const dd    = String(today.getDate()).padStart(2, '0');
@@ -2041,6 +2145,7 @@ function loadPrayers(lat, lon, city) {
         window._apiHijriMonthName = hijri.month.en;
         setHijriAnchor(window._apiHijriYear, window._apiHijriMonth, window._apiHijriDay);
         _rebuildFasts();
+        renderMoonPhaseSVG(new Date());
         const dlH = document.getElementById('prayer-date-hijri');
         if (dlH) dlH.textContent = `${hijri.day} ${hijri.month.en} ${hijri.year}`;
         calcScore();
@@ -2160,7 +2265,11 @@ function toggleFast(el, key) {
   card.classList.toggle('done', checked);
   localStorage.setItem(key, checked ? '1' : '0');
   calcScore();
-  renderUpcoming(); // re-apply .next highlight to the correct upcoming fast
+  // Preserve scroll position so ticking doesn't jump back to top
+  const sc = document.getElementById('fast-list-scroll');
+  const savedScroll = sc ? sc.scrollTop : 0;
+  renderUpcoming();
+  if (sc) sc.scrollTop = savedScroll;
 }
 
 // ── Clock (updates every second, minimal DOM work) ───────────────────────
