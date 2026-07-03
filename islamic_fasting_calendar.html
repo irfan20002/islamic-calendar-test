@@ -2343,7 +2343,7 @@ function updateSpecialBanner() {
   const _hd  = window._apiHijriDay;
   console.log('[Banner] dow='+_dow+' hm='+_hm+' hd='+_hd+' el='+!!_el);
   const _heart = `<span style="font-size:12px;display:inline-block;animation:heartbeat 1.2s ease-in-out infinite;margin-left:3px">❤️</span>`;
-  const _shimmer = (text) => `<span style="font-size:12px;font-weight:700;font-family:Georgia,serif;white-space:nowrap;color:#1D9E75">${text}</span>`;
+  const _shimmer = (text) => `<span style="font-size:14px;font-weight:800;font-family:Georgia,serif;white-space:nowrap;animation:rainbow 3s linear infinite">${text}</span>`;
   if (_hm === 9) {
     _el.innerHTML = _shimmer('🌙 Ramadan Mubarak') + _heart;
   } else if (_hm === 10 && _hd === 1) {
