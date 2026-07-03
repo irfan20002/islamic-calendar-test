@@ -53,6 +53,7 @@
   .header h1 { font-size: 17px; font-weight: 500; white-space: nowrap; } /* used for sr-only h2 sibling */
   @keyframes fadeIn { from { opacity:0; transform:translateY(-3px); } to { opacity:1; transform:translateY(0); } }
   @keyframes shimmer { to { background-position: 200% center; } }
+  @keyframes colorShimmer { 0%,100% { color:#1D9E75; } 50% { color:#c8860a; } }
   @keyframes heartbeat { 0%,100% { transform:scale(1); } 14% { transform:scale(1.3); } 28% { transform:scale(1); } 42% { transform:scale(1.25); } 56% { transform:scale(1); } }
   @keyframes flash-alert {
     0% { opacity: 1; }
@@ -578,6 +579,7 @@ function setHijriAnchor(apiYear, apiMonth, apiDay) {
   window._anchorHijriDayNum = newAbsDay;
   // Always rebuild FASTS when anchor changes so fast dates match the API's moon-sighted date
   _rebuildFasts();
+  if (typeof updateSpecialBanner === 'function') updateSpecialBanner();
 }
 
 function dateRange(start, days) {
@@ -677,7 +679,7 @@ function _rebuildFasts() {
   FASTS = generateFasts(_todayH.year - 1, _todayH.year + 2);
   _fastDateCache = null;
   renderUpcoming();
-  calcScore();
+  calcScore(); updateSpecialBanner();
   if (document.getElementById('tab-calendar') && document.getElementById('tab-calendar').style.display !== 'none') renderCalendar();
 }
 
@@ -1409,7 +1411,7 @@ function renderPrayers(times, city) {
         const clickable = isFajr || isMaghrib;
         return `<div data-pidx="${i}" ${clickable ? `onclick="showMonthlyPrayerSchedule('${p.name}')" style="cursor:pointer;` : 'style="'}text-align:center;padding:6px 2px;border-radius:8px;${cellBg ? 'background:' + cellBg + ';' : ''}">
           <div style="font-size:11px;margin-bottom:2px;${(active || isNext || isDhuhrActive || isAsrActive) ? 'color:#E1F5EE;' : 'color:var(--color-text-secondary);'}">${p.name}</div>
-          <div class="prayer-time-val" style="font-size:12px;font-weight:600;${(active || isNext || isDhuhrActive || isAsrActive) ? 'color:#ffffff;' : 'color:var(--color-text-primary);'}">${p.str ? to12hr(p.str) : ''}</div>
+          <div class="prayer-time-val" style="font-size:12px;font-weight:600;white-space:nowrap;${(active || isNext || isDhuhrActive || isAsrActive) ? 'color:#ffffff;' : 'color:var(--color-text-primary);'}">${p.str ? to12hr(p.str) : ''}</div>
           ${clickable ? `<div style="font-size:11px;line-height:1.2;margin-top:1px">📅</div>` : ''}
         </div>`;
       }).join('')}
@@ -1419,6 +1421,8 @@ function renderPrayers(times, city) {
   updateClock();
   updateDateDisplay();
   updateHijriHeader();
+  updateSpecialBanner();
+  setTimeout(updateSpecialBanner, 2000); // retry after API responds and sets _apiHijriMonth
 
   // FIX: flash logic — after Maghrib, compare now vs TOMORROW's Fajr
   setTimeout(() => {
@@ -1520,23 +1524,8 @@ function renderPrayers(times, city) {
       return;
     }
 
-    // ── Jumu'ah / Eid banner (always runs, writes to prayer-extra-text) ──────
-    function updateSpecialBanner() {
-      const _el = document.getElementById('special-day-banner');
-      if (!_el) return;
-      const _dow = new Date().getDay();
-      const _hm  = window._apiHijriMonth;
-      const _hd  = window._apiHijriDay;
-      if (_hm === 10 && _hd === 1) {
-        _el.innerHTML = `<span style="font-size:11px;font-weight:700;color:#c8860a;font-family:Georgia,serif">🌙 Eid al-Fitr Mubarak · Taqabbalallahu Minna wa Minkum</span>`;
-      } else if (_hm === 12 && _hd === 10) {
-        _el.innerHTML = `<span style="font-size:11px;font-weight:700;color:#c8860a;font-family:Georgia,serif">🐑 Eid al-Adha Mubarak · Taqabbalallahu Minna wa Minkum</span>`;
-      } else if (_dow === 5) {
-        _el.innerHTML = `<span style="font-size:12px;font-weight:700;font-family:Georgia,serif;white-space:nowrap;background:linear-gradient(90deg,#1D9E75,#c8860a,#1D9E75);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 2.5s linear infinite">🕌 Jumu'ah Mubarak</span><span style="font-size:12px;display:inline-block;animation:heartbeat 1.2s ease-in-out infinite;margin-left:3px">❤️</span>`;
-      } else {
-        _el.innerHTML = '';
-      }
-    }
+    // ── Jumu'ah / Eid banner ─────────────────────────────────────────────────
+    updateSpecialBanner();
 
     // ── Ishraq window ────────────────────────────────────────────────────────
     if (inIshraq) {
@@ -2175,14 +2164,14 @@ function loadPrayers(lat, lon, city) {
         renderMoonPhaseSVG(new Date());
         const dlH = document.getElementById('prayer-date-hijri');
         if (dlH) dlH.textContent = `${hijri.day} ${hijri.month.en} ${hijri.year}`;
-        calcScore();
+        calcScore(); updateSpecialBanner();
       }
       // Still fetch in background to keep cache fresh
       fetch(buildApiUrl(dd, mm, yyyy, lat, lon))
         .then(r => r.json())
         .then(data => {
           if (data.code === 200) {
-            renderPrayers(data.data.timings, city);
+            renderPrayers(data.data.timings, city); setTimeout(updateSpecialBanner, 100);
             const hijri = data.data.date.hijri;
             if (hijri) {
               window._apiHijriDay   = parseInt(hijri.day);
@@ -2195,7 +2184,7 @@ function loadPrayers(lat, lon, city) {
               const dlG = document.getElementById('prayer-date-greg');
               if (dlH) dlH.textContent = `${hijri.day} ${hijri.month.en} ${hijri.year}`;
               if (dlG) dlG.textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
-              calcScore();
+              calcScore(); updateSpecialBanner();
               try { localStorage.setItem(cacheKeyFull, JSON.stringify({ timings: data.data.timings, hijri })); } catch(e) {}
             }
           }
@@ -2214,7 +2203,7 @@ function loadPrayers(lat, lon, city) {
     .then(r => r.json())
     .then(data => {
       if (data.code === 200) {
-        renderPrayers(data.data.timings, city);
+        renderPrayers(data.data.timings, city); setTimeout(updateSpecialBanner, 100);
         const hijri = data.data.date.hijri;
         if (hijri) {
           window._apiHijriDay   = parseInt(hijri.day);
@@ -2227,7 +2216,7 @@ function loadPrayers(lat, lon, city) {
           const dlG = document.getElementById('prayer-date-greg');
           if (dlH) dlH.textContent = `${hijri.day} ${hijri.month.en} ${hijri.year}`;
           if (dlG) dlG.textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
-          calcScore();
+          calcScore(); updateSpecialBanner();
           try { localStorage.setItem(cacheKeyFull, JSON.stringify({ timings: data.data.timings, hijri })); } catch(e) {}
         }
       }
@@ -2238,7 +2227,7 @@ function loadPrayers(lat, lon, city) {
           .then(r => r.json())
           .then(data => {
             if (data.code === 200) {
-              renderPrayers(data.data.timings, city);
+              renderPrayers(data.data.timings, city); setTimeout(updateSpecialBanner, 100);
               const hijri = data.data.date.hijri;
               if (hijri) {
                 window._apiHijriDay   = parseInt(hijri.day);
@@ -2251,7 +2240,7 @@ function loadPrayers(lat, lon, city) {
                 const dlG = document.getElementById('prayer-date-greg');
                 if (dlH) dlH.textContent = `${hijri.day} ${hijri.month.en} ${hijri.year}`;
                 if (dlG) dlG.textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
-                calcScore();
+                calcScore(); updateSpecialBanner();
                 try { localStorage.setItem(cacheKeyFull, JSON.stringify({ timings: data.data.timings, hijri })); } catch(e) {}
               }
             }
@@ -2291,7 +2280,7 @@ function toggleFast(el, key) {
   const checked = el.classList.toggle('checked');
   card.classList.toggle('done', checked);
   localStorage.setItem(key, checked ? '1' : '0');
-  calcScore();
+  calcScore(); updateSpecialBanner();
   // Preserve scroll position so ticking doesn't jump back to top
   const sc = document.getElementById('fast-list-scroll');
   const savedScroll = sc ? sc.scrollTop : 0;
@@ -2346,6 +2335,28 @@ updateDateDisplay();
 setInterval(updateClock, 1000);
 setInterval(updateDateDisplay, 60000);
 
+function updateSpecialBanner() {
+  const _el = document.getElementById('special-day-banner');
+  if (!_el) { setTimeout(updateSpecialBanner, 500); return; }
+  const _dow = new Date().getDay();
+  const _hm  = window._apiHijriMonth;
+  const _hd  = window._apiHijriDay;
+  console.log('[Banner] dow='+_dow+' hm='+_hm+' hd='+_hd+' el='+!!_el);
+  const _heart = `<span style="font-size:12px;display:inline-block;animation:heartbeat 1.2s ease-in-out infinite;margin-left:3px">❤️</span>`;
+  const _shimmer = (text) => `<span style="font-size:12px;font-weight:700;font-family:Georgia,serif;white-space:nowrap;color:#1D9E75">${text}</span>`;
+  if (_hm === 9) {
+    _el.innerHTML = _shimmer('🌙 Ramadan Mubarak') + _heart;
+  } else if (_hm === 10 && _hd === 1) {
+    _el.innerHTML = _shimmer('🎉 Eid al-Fitr Mubarak') + _heart;
+  } else if (_hm === 12 && _hd === 10) {
+    _el.innerHTML = _shimmer('🐑 Eid al-Adha Mubarak') + _heart;
+  } else if (_dow === 5) {
+    _el.innerHTML = _shimmer('🕌 Jumu\'ah Mubarak') + _heart;
+  } else {
+    _el.innerHTML = '';
+  }
+}
+
 // ── Midnight rollover — refresh TODAY and all views ──────────────────────
 (function scheduleMidnightRefresh() {
   const now  = new Date();
@@ -2356,7 +2367,7 @@ setInterval(updateDateDisplay, 60000);
     _parsedPrayerTimes = null;
     _notifScheduledDate = null; // reset so notifications reschedule for new day
     renderUpcoming();
-    calcScore();
+    calcScore(); updateSpecialBanner();
     if (window._cachedLat !== undefined) loadPrayers(window._cachedLat, window._cachedLon, window._cachedCity || 'Your location');
     scheduleMidnightRefresh(); // reschedule for next midnight
   }, msToMidnight + 100);
@@ -2407,7 +2418,7 @@ setInterval(() => {
   });
 })();
 renderUpcoming();
-calcScore();
+calcScore(); updateSpecialBanner();
 initPrayers();
 updatePrayerMethodLabel();
 
@@ -2537,7 +2548,7 @@ function importFastingData(event) {
           count++;
         }
       });
-      calcScore();
+      calcScore(); updateSpecialBanner();
       renderUpcoming();
       alert('Imported ' + count + ' entries successfully.');
     } catch(err) {
