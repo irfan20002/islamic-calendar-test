@@ -1362,7 +1362,6 @@ function renderPrayers(times, city) {
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;position:relative">
           <div id="prayer-method-label" onclick="togglePrayerDropdown()" style="font-size:11px;color:#cc0000;cursor:pointer;white-space:nowrap;user-select:none;display:inline-block;font-weight:600"></div>
-          <div id="special-day-banner" style="font-size:11px;line-height:1.3;text-align:left"></div>
           <div id="prayer-dropdown" style="display:none;position:absolute;left:0;bottom:100%;margin-bottom:4px;background:#fff;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.18);z-index:999;min-width:220px;overflow:hidden;text-align:left">
             <div style="padding:8px 10px 4px;font-size:10px;font-weight:700;color:#888;border-bottom:1px solid #f0f0f0">CALCULATION METHOD</div>
             <div id="prayer-method-list" style="max-height:220px;overflow-y:auto"></div>
@@ -1372,8 +1371,9 @@ function renderPrayers(times, city) {
         <div style="margin-top:4px">
           <span id="prayer-date-greg" style="background:#1a7a4a;color:#ffffff;font-weight:600;padding:3px 12px;border-radius:20px;font-size:15px;white-space:nowrap;display:inline-block;border:1px solid #000">—</span>
         </div>
-        <div style="margin-top:4px">
+        <div style="margin-top:4px;display:flex;align-items:center;gap:8px">
           <span id="prayer-date-hijri" class="hijri-gold" style="font-size:15px;white-space:nowrap;">—</span>
+          <span id="special-day-banner" style="font-size:11px;line-height:1.3;"></span>
         </div>
       </div>
       <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:6px">
@@ -1530,7 +1530,7 @@ function renderPrayers(times, city) {
       } else if (_hm === 12 && _hd === 10) {
         _el.innerHTML = `<span style="font-size:11px;font-weight:700;color:#c8860a;font-family:Georgia,serif">🐑 Eid al-Adha Mubarak · Taqabbalallahu Minna wa Minkum</span>`;
       } else if (_dow === 5) {
-        _el.innerHTML = `<span style="font-size:11px;font-weight:700;color:#1D9E75;font-family:Georgia,serif;white-space:nowrap;display:block">Jumu'ah Mubarak</span><span style="font-size:10px;color:#888;font-style:italic;white-space:nowrap;display:block">Recite Surah Al-Kahf today</span>`;
+        _el.innerHTML = `<span style="font-size:12px;font-weight:700;color:#1D9E75;font-family:Georgia,serif;white-space:nowrap">🕌 Jumu'ah Mubarak</span>`;
       } else {
         _el.innerHTML = '';
       }
