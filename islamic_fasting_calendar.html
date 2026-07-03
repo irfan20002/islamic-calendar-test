@@ -1526,11 +1526,11 @@ function renderPrayers(times, city) {
       const _hm  = window._apiHijriMonth;
       const _hd  = window._apiHijriDay;
       if (_hm === 10 && _hd === 1) {
-        _el.innerHTML = `<span style="font-size:13px;font-weight:700;color:#c8860a;font-family:Georgia,serif">🌙 Eid al-Fitr Mubarak</span><br><span style="font-size:10px;color:#888;font-style:italic">Taqabbalallahu Minna wa Minkum</span>`;
+        _el.innerHTML = `<span style="font-size:11px;font-weight:700;color:#c8860a;font-family:Georgia,serif">🌙 Eid al-Fitr Mubarak · Taqabbalallahu Minna wa Minkum</span>`;
       } else if (_hm === 12 && _hd === 10) {
-        _el.innerHTML = `<span style="font-size:13px;font-weight:700;color:#c8860a;font-family:Georgia,serif">🐑 Eid al-Adha Mubarak</span><br><span style="font-size:10px;color:#888;font-style:italic">Taqabbalallahu Minna wa Minkum</span>`;
+        _el.innerHTML = `<span style="font-size:11px;font-weight:700;color:#c8860a;font-family:Georgia,serif">🐑 Eid al-Adha Mubarak · Taqabbalallahu Minna wa Minkum</span>`;
       } else if (_dow === 5) {
-        _el.innerHTML = `<span style="font-size:13px;font-weight:700;background:linear-gradient(135deg,#1D9E75,#c8860a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-family:Georgia,serif">🕌 Jumu'ah Mubarak</span><br><span style="font-size:10px;color:#888;font-style:italic">📖 Read Surah Al-Kahf today</span>`;
+        _el.innerHTML = `<span style="font-size:11px;font-weight:700;color:#1D9E75;font-family:Georgia,serif">🕌 Jumu'ah Mubarak · 📖 Read Surah Al-Kahf</span>`;
       } else {
         _el.innerHTML = '';
       }
