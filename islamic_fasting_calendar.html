@@ -51,6 +51,7 @@
   .app { padding: 0.6rem; background: var(--color-background-primary); border-radius: var(--border-radius-lg); border: 0.5px solid var(--color-border-tertiary); }
   .header h1 + p { margin-top: 2px; } /* layout is inline on the element */
   .header h1 { font-size: 17px; font-weight: 500; white-space: nowrap; } /* used for sr-only h2 sibling */
+  @keyframes fadeIn { from { opacity:0; transform:translateY(-3px); } to { opacity:1; transform:translateY(0); } }
   @keyframes flash-alert {
     0% { opacity: 1; }
     50% { opacity: 0; }
@@ -425,17 +426,14 @@ function getToday() { return _today; }
 
 // ── Moon phase SVG ──────────────────────────────────────────────────────
 function getMoonPhase(date) {
-  // Use API Hijri day if available — most accurate since it's based on actual moon sighting
   if (window._apiHijriDay) {
-    // Hijri day 1 = new moon, day 15 = full moon, day 29/30 = new moon
-    // Convert to 0-1 scale using 29.5 day cycle
-    return window._apiHijriDay / 29.5;
+    const day = Math.min(window._apiHijriDay, 29.5);
+    return day / 29.5;
   }
-  // Fallback: astronomical calculation
-  const REF   = new Date(Date.UTC(2000, 0, 6, 18, 14, 0)); // known new moon
+  const REF   = new Date(Date.UTC(2000, 0, 6, 18, 14, 0));
   const CYCLE = 29.53058867;
   const elapsed = (date - REF) / (1000 * 60 * 60 * 24);
-  return ((elapsed % CYCLE) + CYCLE) % CYCLE / CYCLE; // 0–1
+  return ((elapsed % CYCLE) + CYCLE) % CYCLE / CYCLE;
 }
 
 function renderMoonPhaseSVG(date) {
@@ -443,35 +441,40 @@ function renderMoonPhaseSVG(date) {
   const svg = document.getElementById('moon-phase-svg');
   if (!svg) return;
   const R = 12, cx = 14, cy = 14;
-  const lit  = '#ffffff';
-  const dark = 'rgba(255,255,255,0.1)';
 
   if (phase < 0.02 || phase > 0.98) {
-    svg.innerHTML = `<circle cx="${cx}" cy="${cy}" r="${R}" fill="rgba(255,255,255,0.2)"/>`;
-    svg.setAttribute('aria-label', 'New moon');
-    return;
+    svg.innerHTML = `<circle cx="${cx}" cy="${cy}" r="${R}" fill="rgba(255,255,255,0.15)"/>`;
+    svg.setAttribute('aria-label', 'New moon'); return;
   }
-  if (phase > 0.48 && phase < 0.52) {
+  if (phase > 0.46 && phase < 0.54) {
     svg.innerHTML = `<circle cx="${cx}" cy="${cy}" r="${R}" fill="#ffffff"/>`;
-    svg.setAttribute('aria-label', 'Full moon');
-    return;
+    svg.setAttribute('aria-label', 'Full moon'); return;
   }
 
-  const angle  = phase * 2 * Math.PI;
-  const illum  = (1 - Math.cos(angle)) / 2;
+  const illum  = (1 - Math.cos(phase * 2 * Math.PI)) / 2;
   const waxing = phase < 0.5;
-  let ex = waxing ? R * (1 - 2 * illum) : R * (2 * illum - 1);
 
-  const top    = `${cx},${cy - R}`;
-  const bottom = `${cx},${cy + R}`;
-  const absEx  = Math.abs(ex);
+  // ex: x-radius of the terminator ellipse
+  // Positive = bulges toward lit side (gibbous), Negative = bulges toward dark side (crescent)
+  // Waxing: lit on right. Gibbous (illum>0.5): ex<0 (terminator bulges left into dark).
+  // Waning: lit on left. Gibbous (illum>0.5): ex>0 (terminator bulges right into dark).
+  const T = `${cx},${cy - R}`, B = `${cx},${cy + R}`;
+
   let litPath;
   if (waxing) {
-    const tSweep = ex >= 0 ? 0 : 1;
-    litPath = `M ${top} A ${R} ${R} 0 0 1 ${bottom} A ${absEx} ${R} 0 0 ${tSweep} ${top} Z`;
+    // Lit on right
+    const ex = R * (1 - 2 * illum);
+    // Gibbous (illum>0.5, ex<0): outer right + inner ellipse sweep=0
+    // Crescent (illum<0.5, ex>0): outer right + inner ellipse sweep=1
+    const termSweep = ex >= 0 ? 1 : 0;
+    litPath = `M ${T} A ${R} ${R} 0 0 1 ${B} A ${Math.abs(ex)} ${R} 0 0 ${termSweep} ${T} Z`;
   } else {
-    const tSweep = ex >= 0 ? 1 : 0;
-    litPath = `M ${top} A ${R} ${R} 0 0 0 ${bottom} A ${absEx} ${R} 0 0 ${tSweep} ${top} Z`;
+    // Lit on left
+    const ex = R * (2 * illum - 1);
+    // Gibbous (illum>0.5, ex>0): outer left + inner ellipse sweep=0 → wide lit area ✓
+    // Crescent (illum<0.5, ex<0): outer left + inner ellipse sweep=1 → thin lit sliver on left
+    const termSweep = ex >= 0 ? 0 : 1;
+    litPath = `M ${T} A ${R} ${R} 0 0 0 ${B} A ${Math.abs(ex)} ${R} 0 0 ${termSweep} ${T} Z`;
   }
 
   const phaseName = phase < 0.25 ? 'Waxing crescent'
@@ -479,13 +482,10 @@ function renderMoonPhaseSVG(date) {
     : phase < 0.75 ? 'Waning gibbous'
     : 'Waning crescent';
 
-  svg.innerHTML = `
-    <circle cx="${cx}" cy="${cy}" r="${R}" fill="${dark}" opacity="0.3"/>
-    <path d="${litPath}" fill="${lit}"/>`;
+  svg.innerHTML = `<path d="${litPath}" fill="#ffffff"/>`;
   svg.setAttribute('aria-label', phaseName);
 }
-
-renderMoonPhaseSVG(new Date());
+// Called after Hijri math defined below
 
 // ── Hijri calendar math ─────────────────────────────────────────────────
 const HIJRI_MONTHS       = ['Muharram','Safar','Rabi al-Awwal','Rabi al-Thani','Jumada al-Ula','Jumada al-Thani','Rajab','Shaban','Ramadan','Shawwal','Dhul Qidah','Dhul Hijjah'];
@@ -662,6 +662,8 @@ function getAdjustedHijri(date) {
   adjusted.setDate(adjusted.getDate() + hijriOffset);
   return gToHCorrected(adjusted);
 }
+if (!window._apiHijriDay) { window._apiHijriDay = getAdjustedHijri(new Date()).day; }
+renderMoonPhaseSVG(new Date());
 
 function updateHijriHeader() {
   const lbl = document.getElementById('hijri-offset-label');
@@ -1356,7 +1358,7 @@ function renderPrayers(times, city) {
 
   const box = document.getElementById('prayer-box');
   box.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;gap:8px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px">
       <div style="flex:1;min-width:0">
         <div style="position:relative;margin-bottom:2px">
           <div id="prayer-method-label" onclick="togglePrayerDropdown()" style="font-size:11px;color:#cc0000;cursor:pointer;white-space:nowrap;user-select:none;display:inline-block;font-weight:600"></div>
@@ -1373,6 +1375,7 @@ function renderPrayers(times, city) {
           <span id="prayer-date-hijri" class="hijri-gold" style="font-size:15px;white-space:nowrap;">—</span>
         </div>
       </div>
+      <div id="special-day-banner" style="flex:1;text-align:center;min-width:0"></div>
       <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:6px">
         <div id="next-prayer-box" style="background:${boxBg};border-radius:10px;padding:8px 10px;text-align:right">
           <div style="font-size:13px;color:#E1F5EE;margin-bottom:1px" id="next-prayer-label">${boxLabel}</div>
@@ -1403,8 +1406,9 @@ function renderPrayers(times, city) {
         const isMaghrib = p.name === 'Maghrib';
         const clickable = isFajr || isMaghrib;
         return `<div data-pidx="${i}" ${clickable ? `onclick="showMonthlyPrayerSchedule('${p.name}')" style="cursor:pointer;` : 'style="'}text-align:center;padding:6px 2px;border-radius:8px;${cellBg ? 'background:' + cellBg + ';' : ''}">
-          <div style="font-size:11px;margin-bottom:2px;${(active || isNext || isDhuhrActive || isAsrActive) ? 'color:#E1F5EE;' : 'color:var(--color-text-secondary);'}">${p.name}${clickable ? ' 📅' : ''}</div>
-          <div style="font-size:12px;font-weight:600;${(active || isNext || isDhuhrActive || isAsrActive) ? 'color:#ffffff;' : 'color:var(--color-text-primary);'}">${p.str ? to12hr(p.str) : ''}</div>
+          <div style="font-size:11px;margin-bottom:2px;${(active || isNext || isDhuhrActive || isAsrActive) ? 'color:#E1F5EE;' : 'color:var(--color-text-secondary);'}">${p.name}</div>
+          <div class="prayer-time-val" style="font-size:12px;font-weight:600;${(active || isNext || isDhuhrActive || isAsrActive) ? 'color:#ffffff;' : 'color:var(--color-text-primary);'}">${p.str ? to12hr(p.str) : ''}</div>
+          ${clickable ? `<div style="font-size:11px;line-height:1.2;margin-top:1px">📅</div>` : ''}
         </div>`;
       }).join('')}
     </div>
@@ -1461,7 +1465,7 @@ function renderPrayers(times, city) {
       _grid.querySelectorAll('[data-pidx]').forEach(cell => {
         const idx = parseInt(cell.dataset.pidx);
         const nameEl = cell.querySelector('div:first-child');
-        const timeEl = cell.querySelector('div:last-child');
+        const timeEl = cell.querySelector('.prayer-time-val');
         const active = idx === highlightIdx;
         cell.style.background = active ? '#1D9E75' : '';
         cell.classList.remove('flash-alert');
@@ -1499,7 +1503,7 @@ function renderPrayers(times, city) {
         _grid.querySelectorAll('[data-pidx]').forEach(cell => {
           const idx = parseInt(cell.dataset.pidx);
           const nameEl = cell.querySelector('div:first-child');
-          const timeEl = cell.querySelector('div:last-child');
+          const timeEl = cell.querySelector('.prayer-time-val');
           if (idx === _sunriseIdx) {
             cell.style.background = 'linear-gradient(135deg,#c8860a,#f5c200)';
             if (nameEl) { nameEl.style.color = '#3d1f00'; nameEl.textContent = 'Sunrise 🚫'; }
@@ -1514,15 +1518,36 @@ function renderPrayers(times, city) {
       return;
     }
 
+    // ── Jumu'ah / Eid banner (always runs, writes to prayer-extra-text) ──────
+    function updateSpecialBanner() {
+      const _el = document.getElementById('special-day-banner');
+      if (!_el) return;
+      const _dow  = new Date().getDay();
+      const _hm   = window._apiHijriMonth;
+      const _hd   = window._apiHijriDay;
+      if (_hm === 10 && _hd === 1) {
+        _el.innerHTML = `<div style="animation:fadeIn 0.8s ease"><div style="font-size:22px">🌙✨🌙</div><div style="font-size:17px;font-weight:800;color:#c8860a;font-family:Georgia,serif;letter-spacing:1px">Eid al-Fitr Mubarak</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">Taqabbalallahu Minna wa Minkum</div></div>`;
+      } else if (_hm === 12 && _hd === 10) {
+        _el.innerHTML = `<div style="animation:fadeIn 0.8s ease"><div style="font-size:22px">🐑✨🕌</div><div style="font-size:17px;font-weight:800;color:#c8860a;font-family:Georgia,serif;letter-spacing:1px">Eid al-Adha Mubarak</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">Taqabbalallahu Minna wa Minkum</div></div>`;
+      } else if (_dow === 5) {
+        _el.innerHTML = `<div style="animation:fadeIn 0.8s ease"><div style="font-size:17px;font-weight:800;background:linear-gradient(135deg,#1D9E75,#c8860a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-family:Georgia,serif;letter-spacing:1px">🕌 Jumu'ah Mubarak</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">📖 Read Surah Al-Kahf today</div></div>`;
+      } else {
+        _el.innerHTML = '';
+      }
+    }
+
     // ── Ishraq window ────────────────────────────────────────────────────────
     if (inIshraq) {
       if (_box) { _box.style.background = '#8B3FA8'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'right'; }
       if (elLbl)  { elLbl.innerHTML = ''; elLbl.textContent = '🌅 Ishraq/Duha'; elLbl.style.color = '#E1F5EE'; elLbl.style.fontSize = '15px'; elLbl.style.fontWeight = '600'; elLbl.classList.add('flash-alert'); }
       if (elName) { elName.textContent = 'Pray now!'; elName.style.fontSize = '17px'; elName.style.fontWeight = '700'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
       if (elCd)   { elCd.textContent = ''; elCd.classList.remove('flash-alert'); }
-      resetGrid(-1); // clears all highlights including Sunrise 🚫
+      resetGrid(-1);
+      updateSpecialBanner();
       return;
     }
+
+    updateSpecialBanner();
 
     // ── Dhuhr warning (15 min before Dhuhr) ────────────────────────────────
     const dhuhrWarnStartW = window._dhuhrWarnStart;
@@ -1536,7 +1561,7 @@ function renderPrayers(times, city) {
         _grid.querySelectorAll('[data-pidx]').forEach(cell => {
           const idx = parseInt(cell.dataset.pidx);
           const nameEl = cell.querySelector('div:first-child');
-          const timeEl = cell.querySelector('div:last-child');
+          const timeEl = cell.querySelector('.prayer-time-val');
           if (idx === _dhuhrIdx) {
             cell.style.background = '#8B3FA8'; cell.classList.remove('flash-alert');
             if (nameEl) nameEl.style.color = '#E1F5EE';
@@ -1596,7 +1621,7 @@ function renderPrayers(times, city) {
         _grid.querySelectorAll('[data-pidx]').forEach(cell => {
           const idx = parseInt(cell.dataset.pidx);
           const nameEl = cell.querySelector('div:first-child');
-          const timeEl = cell.querySelector('div:last-child');
+          const timeEl = cell.querySelector('.prayer-time-val');
           if (idx === _dhuhrIdx) {
             cell.style.background = '#1D9E75';
             cell.classList.add('flash-alert');
@@ -1639,7 +1664,7 @@ function renderPrayers(times, city) {
         _grid.querySelectorAll('[data-pidx]').forEach(cell => {
           const idx = parseInt(cell.dataset.pidx);
           const nameEl = cell.querySelector('div:first-child');
-          const timeEl = cell.querySelector('div:last-child');
+          const timeEl = cell.querySelector('.prayer-time-val');
           if (idx === _asrIdx) {
             cell.style.background = '#1D9E75'; cell.classList.add('flash-alert');
             if (nameEl) nameEl.style.color = '#E1F5EE';
@@ -1678,7 +1703,7 @@ function renderPrayers(times, city) {
         _grid.querySelectorAll('[data-pidx]').forEach(cell => {
           const idx = parseInt(cell.dataset.pidx);
           const nameEl = cell.querySelector('div:first-child');
-          const timeEl = cell.querySelector('div:last-child');
+          const timeEl = cell.querySelector('.prayer-time-val');
           if (idx === _maghribIdx) {
             cell.style.background = '#1D9E75'; cell.classList.add('flash-alert');
             if (nameEl) nameEl.style.color = '#E1F5EE';
@@ -1770,7 +1795,7 @@ function renderPrayers(times, city) {
           const cell = _grid.querySelector(`[data-pidx="${i}"]`);
           if (!cell) return;
           const nm = cell.querySelector('div:first-child');
-          const tm = cell.querySelector('div:last-child');
+          const tm = cell.querySelector('.prayer-time-val');
           cell.classList.remove('flash-alert');
           if (_afterMid && _inFajrWarn && i === _fajrIdx) {
             cell.style.background = '#8B3FA8';
@@ -1808,7 +1833,7 @@ function renderPrayers(times, city) {
           const sName = sCell.querySelector('div:first-child');
           if (sName && sName.textContent.includes('🚫')) sName.textContent = PRAYER_KEYS[sIdx];
           sCell.style.background = '';
-          const sTime = sCell.querySelector('div:last-child');
+          const sTime = sCell.querySelector('.prayer-time-val');
           if (sTime) { sTime.style.color = 'var(--color-text-primary)'; }
           if (sName) sName.style.color = 'var(--color-text-secondary)';
         }
@@ -1832,7 +1857,7 @@ function renderPrayers(times, city) {
       _grid.querySelectorAll('[data-pidx]').forEach(cell => {
         const idx = parseInt(cell.dataset.pidx);
         const nameEl = cell.querySelector('div:first-child');
-        const timeEl = cell.querySelector('div:last-child');
+        const timeEl = cell.querySelector('.prayer-time-val');
         const isNextCell = idx === _restoreNextIdx;
         const isPrevCell = idx === _prevIdx;
         if (isNextCell && _rNear) {
