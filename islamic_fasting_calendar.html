@@ -1358,8 +1358,8 @@ function renderPrayers(times, city) {
 
   const box = document.getElementById('prayer-box');
   box.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px">
-      <div style="flex:1;min-width:0">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;position:relative">
+      <div style="flex:1;min-width:0;z-index:1">
         <div style="position:relative;margin-bottom:2px">
           <div id="prayer-method-label" onclick="togglePrayerDropdown()" style="font-size:11px;color:#cc0000;cursor:pointer;white-space:nowrap;user-select:none;display:inline-block;font-weight:600"></div>
           <div id="prayer-dropdown" style="display:none;position:absolute;left:0;bottom:100%;margin-bottom:4px;background:#fff;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.18);z-index:999;min-width:220px;overflow:hidden;text-align:left">
@@ -1375,8 +1375,8 @@ function renderPrayers(times, city) {
           <span id="prayer-date-hijri" class="hijri-gold" style="font-size:15px;white-space:nowrap;">—</span>
         </div>
       </div>
-      <div id="special-day-banner" style="flex:1;text-align:center;min-width:0"></div>
-      <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+      <div id="special-day-banner" style="position:absolute;left:50%;top:0;transform:translateX(-50%);text-align:center;pointer-events:none;width:max-content;max-width:45%"></div>
+      <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:6px;z-index:1">
         <div id="next-prayer-box" style="background:${boxBg};border-radius:10px;padding:8px 10px;text-align:right">
           <div style="font-size:13px;color:#E1F5EE;margin-bottom:1px" id="next-prayer-label">${boxLabel}</div>
           <div style="font-size:17px;font-weight:700;color:#ffffff;line-height:1.1;white-space:nowrap" id="next-prayer-name">${boxName}</div>
