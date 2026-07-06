@@ -910,7 +910,7 @@ function getNextWeeklyDays(n) {
   return results;
 }
 
-function renderUpcoming() {
+function renderUpcoming(doScrollToToday = true) {
   const list = document.getElementById('fast-list');
   // Stop any running sparkle canvas animations before clearing the DOM
   list.querySelectorAll('.sparkle-canvas').forEach(c => { c._active = false; });
@@ -1092,7 +1092,7 @@ ${isTodayFast ? `<div class="today-reminder-inline" id="fast-reminder-inline">ðŸ
   // Scroll to the first upcoming (today or future) fast
   // Scroll container so today's fast is at the top
   const scrollContainer = document.getElementById('fast-list-scroll');
-  if (list.querySelector('.fast-card.next') && scrollContainer) {
+  if (doScrollToToday && list.querySelector('.fast-card.next') && scrollContainer) {
     // Cancel any pending scroll adjustment from a previous render so a stale,
     // now-detached card reference can't snap the list to the wrong position.
     if (_pendingScrollToTodayId) { clearTimeout(_pendingScrollToTodayId); _pendingScrollToTodayId = null; }
@@ -2297,10 +2297,15 @@ function toggleFast(el, key) {
   card.classList.toggle('done', checked);
   localStorage.setItem(key, checked ? '1' : '0');
   calcScore(); updateSpecialBanner();
-  // Preserve scroll position so ticking doesn't jump back to top
+  // Preserve scroll position so ticking doesn't jump back to top.
+  // Pass false so renderUpcoming() skips its own delayed scroll-into-view â€”
+  // that recompute was firing ~200ms after this function already restored
+  // the correct position, and on iOS the viewport can shift slightly right
+  // after a tap (toolbar animating), throwing that delayed math off and
+  // scrolling today's card out of view.
   const sc = document.getElementById('fast-list-scroll');
   const savedScroll = sc ? sc.scrollTop : 0;
-  renderUpcoming();
+  renderUpcoming(false);
   if (sc) sc.scrollTop = savedScroll;
 }
 
