@@ -115,6 +115,21 @@
   .fast-card.today-fast .countdown { position: relative; z-index: 1; }
   .fast-card.done { opacity: 0.5; }
   .fast-card.done .fast-name { text-decoration: line-through; }
+  #update-banner {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 9999;
+    background: #1D3557; color: #ffffff;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: .75rem 1rem; padding-bottom: calc(.75rem + env(safe-area-inset-bottom));
+    box-shadow: 0 -2px 10px rgba(0,0,0,.2);
+    font-size: 14px; font-weight: 600;
+    transform: translateY(100%);
+    animation: update-banner-in .3s ease-out forwards;
+  }
+  @keyframes update-banner-in { to { transform: translateY(0); } }
+  #update-banner button {
+    background: #E1F5EE; color: #0f5c2e; border: none; border-radius: 8px;
+    padding: .5rem .875rem; font-size: 13px; font-weight: 700; cursor: pointer; flex-shrink: 0;
+  }
   .fast-check { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #1D9E75; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all 0.2s; }
   .fast-check.checked { background: #1D9E75; border-color: #1D9E75; }
   .fast-check.future { border-color: var(--color-border-tertiary); opacity: 0.35; cursor: not-allowed; }
@@ -419,6 +434,9 @@ let _countdownInterval = null;
 let _flashInterval = null;
 let _lastNextPrayerIdx = -1;
 let _notifScheduledDate = null;
+let _pendingScrollToTodayId = null; // guards against stale scroll-into-view timeouts across re-renders
+let _scrollSnapTimer = null;
+let _scrollTouching = false;
 let _prayerMethod = parseInt(localStorage.getItem('prayer_method') || '2');
 let _prayerSchool = parseInt(localStorage.getItem('prayer_school') || '0');
 
@@ -1073,24 +1091,28 @@ ${isTodayFast ? `<div class="today-reminder-inline" id="fast-reminder-inline">�
 
   // Scroll to the first upcoming (today or future) fast
   // Scroll container so today's fast is at the top
-  const nextCard = list.querySelector('.fast-card.next');
   const scrollContainer = document.getElementById('fast-list-scroll');
-  if (nextCard && scrollContainer) {
-    setTimeout(() => {
-      const containerTop = scrollContainer.getBoundingClientRect().top;
-      const cardTop = nextCard.getBoundingClientRect().top;
-      scrollContainer.scrollTop += (cardTop - containerTop) - 8;
+  if (list.querySelector('.fast-card.next') && scrollContainer) {
+    // Cancel any pending scroll adjustment from a previous render so a stale,
+    // now-detached card reference can't snap the list to the wrong position.
+    if (_pendingScrollToTodayId) { clearTimeout(_pendingScrollToTodayId); _pendingScrollToTodayId = null; }
+    _pendingScrollToTodayId = setTimeout(() => {
+      _pendingScrollToTodayId = null;
+      scrollToToday(); // re-queries the current DOM instead of using a closured element
     }, 200);
 
-    // Auto-snap back to today after 3s of scroll inactivity, but only if finger is not on screen
-    let _snapTimer = null;
-    let _touching = false;
-    scrollContainer.addEventListener('touchstart', () => { _touching = true; if (_snapTimer) { clearTimeout(_snapTimer); _snapTimer = null; } }, { passive: true });
-    scrollContainer.addEventListener('touchend', () => { _touching = false; });
-    scrollContainer.addEventListener('scroll', () => {
-      if (_snapTimer) clearTimeout(_snapTimer);
-      _snapTimer = setTimeout(() => { if (!_touching) scrollToToday(); }, 3000);
-    });
+    // Auto-snap back to today after 3s of scroll inactivity, but only if finger is not on screen.
+    // Attach these listeners once — renderUpcoming() runs on every checkbox tap, and
+    // re-adding them each time was stacking duplicate handlers on the same persistent element.
+    if (!scrollContainer._snapListenersAttached) {
+      scrollContainer._snapListenersAttached = true;
+      scrollContainer.addEventListener('touchstart', () => { _scrollTouching = true; if (_scrollSnapTimer) { clearTimeout(_scrollSnapTimer); _scrollSnapTimer = null; } }, { passive: true });
+      scrollContainer.addEventListener('touchend', () => { _scrollTouching = false; });
+      scrollContainer.addEventListener('scroll', () => {
+        if (_scrollSnapTimer) clearTimeout(_scrollSnapTimer);
+        _scrollSnapTimer = setTimeout(() => { if (!_scrollTouching) scrollToToday(); }, 3000);
+      });
+    }
   }
 }
 
@@ -1736,25 +1758,17 @@ function renderPrayers(times, city) {
       const _inTahajjud  = _afterMid && now3 >= new Date(_lastThird.getTime() - 60000) && now3 < _fajr;
 
       if (_inFajrWarn) {
-        // Clear any old interval — use seconds-based alternation
-        const _fajrWarnToggle = now3.getSeconds() % 4 < 2;
+        // Steady purple box for the whole 15-min window — "Pray Tahajjud" pulses via the
+        // real flash-alert CSS animation instead of being hard-swapped with the countdown
+        // every 2 seconds. The Fajr countdown stays visible underneath the whole time.
         const _fms = _fajr - now3;
         const _fm  = Math.floor(_fms / 60000);
         const _fs  = Math.floor((_fms % 60000) / 1000);
         const _fLabel = _fm >= 1 ? `Fajr in ${_fm}m ${_fs}s` : `Fajr in ${_fs}s`;
-        if (_fajrWarnToggle) {
-          // Green — Fajr countdown
-          if (_box)  { _box.style.background = '#1D9E75'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'right'; }
-          if (elLbl) { elLbl.innerHTML = ''; elLbl.textContent = ''; elLbl.classList.remove('flash-alert'); }
-          if (elName){ elName.textContent = _fLabel; elName.style.fontSize = '17px'; elName.style.fontWeight = '700'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
-          if (elCd)  { elCd.textContent = ''; elCd.classList.remove('flash-alert'); }
-        } else {
-          // Purple — Pray Tahajjud
-          if (_box)  { _box.style.background = '#8B3FA8'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'right'; }
-          if (elLbl) { elLbl.innerHTML = ''; elLbl.textContent = ''; elLbl.classList.remove('flash-alert'); }
-          if (elName){ elName.textContent = 'Pray Tahajjud'; elName.style.fontSize = '17px'; elName.style.fontWeight = '700'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.remove('flash-alert'); }
-          if (elCd)  { elCd.textContent = ''; elCd.classList.remove('flash-alert'); }
-        }
+        if (_box)  { _box.style.background = '#8B3FA8'; _box.style.borderRadius = '10px'; _box.style.padding = '8px 10px'; _box.style.textAlign = 'right'; }
+        if (elLbl) { elLbl.innerHTML = ''; elLbl.textContent = ''; elLbl.classList.remove('flash-alert'); }
+        if (elName){ elName.textContent = 'Pray Tahajjud'; elName.style.fontSize = '17px'; elName.style.fontWeight = '700'; elName.style.color = '#ffffff'; elName.style.whiteSpace = 'nowrap'; elName.classList.add('flash-alert'); }
+        if (elCd)  { elCd.textContent = _fLabel; elCd.style.color = '#E1F5EE'; elCd.style.fontSize = '13px'; elCd.style.fontWeight = '600'; elCd.classList.remove('flash-alert'); }
       } else {
         // Not in Fajr warn
         if (_inTahajjud) {
@@ -2612,8 +2626,54 @@ if ('serviceWorker' in navigator) {
           scheduleNotifications();
           scheduleEveReminders();
         }
+
+        // ── Update detection: show a banner instead of silently reloading ──
+        if (reg.waiting) showUpdateBanner(reg);
+
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if (!newWorker) return;
+          newWorker.addEventListener('statechange', () => {
+            // 'installed' + an existing controller means this is an update to an
+            // already-running app, not the very first install
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              showUpdateBanner(reg);
+            }
+          });
+        });
+
+        // iOS PWAs don't reliably auto-check for SW updates on their own —
+        // check whenever the app is reopened/foregrounded, and hourly while open
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') reg.update();
+        });
+        setInterval(() => reg.update(), 60 * 60 * 1000);
       })
       .catch(err => console.warn('SW registration failed:', err));
+  });
+
+  // Reload once the new service worker actually takes control (after the
+  // user taps "Refresh now" in the banner, which tells it to skip waiting)
+  let _swReloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (_swReloading) return;
+    _swReloading = true;
+    window.location.reload();
+  });
+}
+
+function showUpdateBanner(reg) {
+  if (document.getElementById('update-banner')) return; // already showing
+  const banner = document.createElement('div');
+  banner.id = 'update-banner';
+  banner.innerHTML = `<span>🔄 An update is ready</span><button id="update-banner-btn">Refresh now</button>`;
+  document.body.appendChild(banner);
+  document.getElementById('update-banner-btn').addEventListener('click', () => {
+    if (reg.waiting) {
+      reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+    } else {
+      window.location.reload();
+    }
   });
 }
 
