@@ -2296,21 +2296,25 @@ function toggleFast(el, key) {
   const checked = el.classList.toggle('checked');
   card.classList.toggle('done', checked);
   localStorage.setItem(key, checked ? '1' : '0');
-  calcScore();
-  // Don't rebuild the special banner when simply checking today's fast.
-  // It can advance the current-day state and make today's card disappear.
-  const todayCard = card.classList.contains('today-fast');
-  if (!todayCard) updateSpecialBanner();
+  calcScore(); updateSpecialBanner();
   // Preserve scroll position so ticking doesn't jump back to top.
-  // Pass false so renderUpcoming() skips its own delayed scroll-into-view —
-  // that recompute was firing ~200ms after this function already restored
-  // the correct position, and on iOS the viewport can shift slightly right
-  // after a tap (toolbar animating), throwing that delayed math off and
-  // scrolling today's card out of view.
+  // Pass false so renderUpcoming() skips its own delayed scroll-into-view.
   const sc = document.getElementById('fast-list-scroll');
   const savedScroll = sc ? sc.scrollTop : 0;
   renderUpcoming(false);
-  if (sc) sc.scrollTop = savedScroll;
+  // Restore scrollTop AFTER the browser has actually finished laying out and
+  // painting the rebuilt list, not in the same synchronous tick as the DOM
+  // rebuild. iOS Safari can silently accept a scrollTop write immediately
+  // after innerHTML is replaced without visually applying it — the value
+  // "sticks" internally but the paint doesn't catch up until something else
+  // (like a manual scroll) forces reconciliation. That matches this bug being
+  // invisible on Mac Chrome, momentary, and instantly fixed by any scroll.
+  // Two rAFs (not one) reliably lands after that layout+paint on iOS.
+  if (sc) {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => { sc.scrollTop = savedScroll; });
+    });
+  }
 }
 
 // ── Clock (updates every second, minimal DOM work) ───────────────────────
