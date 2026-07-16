@@ -748,7 +748,7 @@ function formatDate(d) {
 // ── Score / dashboard ───────────────────────────────────────────────────
 function countFastsInHijriPeriod(doneDates, hy, hm) {
   return doneDates.filter(d => {
-    const h = gToH(d);
+    const h = gToHCorrected(d);
     if (hm !== null) return h.year === hy && h.month === hm;
     return h.year === hy;
   }).length;
