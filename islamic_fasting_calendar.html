@@ -1330,12 +1330,17 @@ function renderStats() {
   });
 
   // Group counts by Hijri year-month, excluding the current and previous
-  // month (those are still shown live in the Fasting Tracker tiles above).
+  // month (those are still shown live in the Fasting Tracker tiles above),
+  // and excluding anything before the install anchor month.
+  const anchorRaw = localStorage.getItem('install_hijri_ym');
+  const [anchorHY, anchorHM] = anchorRaw ? anchorRaw.split('-').map(Number) : [curHY, curHM];
+
   const counts = {}; // key "hy-hm" -> count
   doneDates.forEach(d => {
     const h = gToHCorrected(d);
     if (h.year === curHY && h.month === curHM) return;
     if (h.year === prevHMY && h.month === prevHM) return;
+    if (h.year < anchorHY || (h.year === anchorHY && h.month < anchorHM)) return;
     const key = h.year + '-' + h.month;
     counts[key] = (counts[key] || 0) + 1;
   });
@@ -2513,6 +2518,15 @@ setInterval(() => {
     }
   });
 })();
+// ── Install anchor for Stats archive ─────────────────────────────────────
+// The archive only shows months from whichever Hijri month was "current"
+// at first install — never backfills older, pre-existing scattered data.
+(function recordInstallAnchor() {
+  if (!localStorage.getItem('install_hijri_ym')) {
+    const h = getAdjustedHijri(getToday());
+    localStorage.setItem('install_hijri_ym', h.year + '-' + h.month);
+  }
+})();
 renderUpcoming();
 calcScore(); updateSpecialBanner();
 initPrayers();
@@ -2619,7 +2633,7 @@ function _setCountdownRight(html) {
 function exportFastingData() {
   const data = {};
   Object.keys(localStorage).forEach(k => {
-    if (k.startsWith('fast_') || k === 'hijri_offset' || k === 'prayer_method' || k === 'prayer_school') data[k] = localStorage.getItem(k);
+    if (k.startsWith('fast_') || k === 'hijri_offset' || k === 'prayer_method' || k === 'prayer_school' || k === 'install_hijri_ym') data[k] = localStorage.getItem(k);
   });
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
@@ -2639,7 +2653,7 @@ function importFastingData(event) {
       const data = JSON.parse(e.target.result);
       let count = 0;
       Object.keys(data).forEach(k => {
-        if (k.startsWith('fast_') || k === 'hijri_offset' || k === 'prayer_method' || k === 'prayer_school') {
+        if (k.startsWith('fast_') || k === 'hijri_offset' || k === 'prayer_method' || k === 'prayer_school' || k === 'install_hijri_ym') {
           localStorage.setItem(k, data[k]);
           count++;
         }
