@@ -92,6 +92,7 @@
   .tab.active { color: #fff; background: #1D9E75; border-bottom: 2px solid #1D9E75; }
   .tab[data-tab="calendar"].active { background: #2E86C1; border-bottom-color: #2E86C1; }
   .tab[data-tab="guide"].active { background: #8E44AD; border-bottom-color: #8E44AD; }
+  .tab[data-tab="stats"].active { background: #E67E22; border-bottom-color: #E67E22; }
   .tab:hover:not(.active) { color: var(--color-text-primary); background: var(--color-background-secondary); }
   .section { margin-bottom: 1.5rem; }
   .section-title { font-size: 15px; font-weight: 700; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .75rem; }
@@ -339,6 +340,7 @@
     <button class="tab active" data-tab="upcoming" onclick="showTab('upcoming')">Upcoming fasts</button>
     <button class="tab" data-tab="calendar" onclick="showTab('calendar')">Calendar</button>
     <button class="tab" data-tab="guide" onclick="showTab('guide')">Guide</button>
+    <button class="tab" data-tab="stats" onclick="showTab('stats')">Stats</button>
   </div>
 
   <div id="tab-upcoming">
@@ -378,7 +380,6 @@
       <div class="legend-item"><div style="width:10px;height:10px;border-radius:50%;background:#E67E22;flex-shrink:0"></div> Arafah</div>
       <div class="legend-item"><div style="width:10px;height:10px;border-radius:50%;background:#2E86C1;flex-shrink:0"></div> Ashura</div>
       <div class="legend-item"><div style="width:10px;height:10px;border-radius:50%;background:#8E44AD;flex-shrink:0"></div> Laylat al-Qadr / New Year</div>
-      <div class="legend-item"><div style="width:10px;height:10px;border-radius:50%;background:#D4AC0D;flex-shrink:0"></div> Mawlid</div>
       <div class="legend-item"><div style="width:10px;height:10px;border-radius:50%;background:#1D9E75;flex-shrink:0"></div> Isra wal Miraj</div>
     </div>
     <div class="month-grid" id="month-grid"></div>
@@ -403,6 +404,13 @@
     <div class="section">
       <div class="section-title">Prohibited days</div>
       <div class="tip" style="border-left:3px solid #D85A30"><strong>No fasting on:</strong> Eid al-Fitr (1 Shawwal), Eid al-Adha (10 Dhul Hijjah), Ayyam al-Tashriq (11–13 Dhul Hijjah), or Friday/Saturday alone.</div>
+    </div>
+  </div>
+
+  <div id="tab-stats" style="display:none">
+    <div class="section">
+      <div class="section-title">Monthly archive</div>
+      <div id="stats-list"></div>
     </div>
   </div>
 
@@ -1132,7 +1140,6 @@ let viewYear = getToday().getFullYear(), viewMonth = getToday().getMonth();
 const ISLAMIC_DAYS_MAP = {
   '1-1':   { label: 'Islamic New Year', emoji: '🌙', color: '#8E44AD' },
   '1-10':  { label: 'Ashura',           emoji: '💧', color: '#2E86C1' },
-  '3-12':  { label: 'Mawlid al-Nabi',   emoji: '⭐', color: '#D4AC0D' },
   '7-27':  { label: 'Isra wal Miraj',   emoji: '🕌', color: '#1D9E75' },
   '9-27':  { label: 'Laylat al-Qadr',   emoji: '✨', color: '#8E44AD' },
   '10-1':  { label: 'Eid al-Fitr',      emoji: '🎉', color: '#E74C3C' },
@@ -1242,7 +1249,6 @@ function renderIslamicDayCountdown() {
     { hm: 1,  hd: 1,  label: "Islamic New Year", emoji: '🌙', color: '#8E44AD' },
     { hm: 1,  hd: 9,  label: "Tasu\u02bca",       emoji: '💧', color: '#2E86C1' },
     { hm: 1,  hd: 10, label: 'Ashura',            emoji: '💧', color: '#2E86C1' },
-    { hm: 3,  hd: 12, label: 'Mawlid al-Nabi',    emoji: '⭐', color: '#D4AC0D' },
     { hm: 7,  hd: 27, label: 'Isra wal Miraj',    emoji: '🕌', color: '#1D9E75' },
     { hm: 9,  hd: 27, label: 'Laylat al-Qadr',    emoji: '✨', color: '#8E44AD' },
     { hm: 10, hd: 1,  label: 'Eid al-Fitr',       emoji: '🎉', color: '#E74C3C' },
@@ -1285,13 +1291,72 @@ function prevMonth() { viewMonth--; if (viewMonth < 0)  { viewMonth = 11; viewYe
 function nextMonth() { viewMonth++; if (viewMonth > 11) { viewMonth = 0;  viewYear++; } renderCalendar(); }
 
 function showTab(name) {
-  ['upcoming', 'calendar', 'guide'].forEach(t => {
+  ['upcoming', 'calendar', 'guide', 'stats'].forEach(t => {
     document.getElementById('tab-' + t).style.display = t === name ? 'block' : 'none';
   });
   document.querySelectorAll('.tab').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === name);
   });
   if (name === 'calendar') { renderCalendar(); renderIslamicDayCountdown(); }
+  if (name === 'stats') renderStats();
+}
+
+function renderStats() {
+  const wrap = document.getElementById('stats-list');
+  if (!wrap) return;
+
+  const now = getToday();
+  const todayH = getAdjustedHijri(now);
+  const curHY  = todayH.year;
+  const curHM  = todayH.month;
+  const prevHM = curHM === 1 ? 12 : curHM - 1;
+  const prevHMY = curHM === 1 ? curHY - 1 : curHY;
+
+  const keys = Object.keys(localStorage).filter(k => k.startsWith('fast_') && localStorage.getItem(k) === '1');
+  const _rawDates = keys.map(k => {
+    const parts = k.split('_');
+    for (let i = parts.length - 1; i >= 1; i--) {
+      const candidate = parts.slice(i).join('_');
+      const d = new Date(candidate);
+      if (!isNaN(d.getTime())) return d;
+    }
+    return null;
+  }).filter(d => d !== null);
+  const _seen = new Set();
+  const doneDates = _rawDates.filter(d => {
+    const s = d.toDateString();
+    if (_seen.has(s)) return false;
+    _seen.add(s); return true;
+  });
+
+  // Group counts by Hijri year-month, excluding the current and previous
+  // month (those are still shown live in the Fasting Tracker tiles above).
+  const counts = {}; // key "hy-hm" -> count
+  doneDates.forEach(d => {
+    const h = gToHCorrected(d);
+    if (h.year === curHY && h.month === curHM) return;
+    if (h.year === prevHMY && h.month === prevHM) return;
+    const key = h.year + '-' + h.month;
+    counts[key] = (counts[key] || 0) + 1;
+  });
+
+  const rows = Object.keys(counts)
+    .map(key => {
+      const [hy, hm] = key.split('-').map(Number);
+      return { hy, hm, n: counts[key] };
+    })
+    .sort((a, b) => (b.hy - a.hy) || (b.hm - a.hm)); // most recent first
+
+  if (!rows.length) {
+    wrap.innerHTML = '<div class="tip">No archived months yet. Past months appear here once they move out of the tracker.</div>';
+    return;
+  }
+
+  wrap.innerHTML = rows.map(r => `
+    <div style="display:flex;justify-content:space-between;align-items:center;background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:.55rem .875rem;margin-bottom:.5rem">
+      <span style="font-size:13px;font-weight:600;color:var(--color-text-primary)">${HIJRI_MONTHS[r.hm - 1]} ${r.hy} AH</span>
+      <span style="font-size:13px;color:var(--color-text-secondary)">${r.n} day${r.n === 1 ? '' : 's'} fasted</span>
+    </div>`).join('');
 }
 
 // ── Prayer time utilities ────────────────────────────────────────────────
@@ -2554,7 +2619,7 @@ function _setCountdownRight(html) {
 function exportFastingData() {
   const data = {};
   Object.keys(localStorage).forEach(k => {
-    if (k.startsWith('fast_') || k === 'hijri_offset') data[k] = localStorage.getItem(k);
+    if (k.startsWith('fast_') || k === 'hijri_offset' || k === 'prayer_method' || k === 'prayer_school') data[k] = localStorage.getItem(k);
   });
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
@@ -2574,11 +2639,13 @@ function importFastingData(event) {
       const data = JSON.parse(e.target.result);
       let count = 0;
       Object.keys(data).forEach(k => {
-        if (k.startsWith('fast_') || k === 'hijri_offset') {
+        if (k.startsWith('fast_') || k === 'hijri_offset' || k === 'prayer_method' || k === 'prayer_school') {
           localStorage.setItem(k, data[k]);
           count++;
         }
       });
+      if (data.prayer_method !== undefined) _prayerMethod = parseInt(data.prayer_method);
+      if (data.prayer_school !== undefined) _prayerSchool = parseInt(data.prayer_school);
       calcScore(); updateSpecialBanner();
       renderUpcoming();
       alert('Imported ' + count + ' entries successfully.');
