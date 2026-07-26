@@ -2226,6 +2226,28 @@ async function showMonthlyPrayerSchedule(prayerName) {
   }
 }
 
+// ── Single source of truth for "Hijri day changed" side effects ──────────
+// Every place that receives a fresh Hijri date from the API (or cache)
+// must call this instead of repeating these steps inline. Consolidating
+// them here means a fix or new step only ever needs to be added once —
+// it can't silently go missing from one of several duplicated code paths
+// (which is exactly what caused the moon-phase icon to go stale before).
+function applyHijriUpdate(hijri) {
+  if (!hijri) return;
+  window._apiHijriDay      = parseInt(hijri.day);
+  window._apiHijriMonth    = parseInt(hijri.month.number);
+  window._apiHijriYear     = parseInt(hijri.year);
+  window._apiHijriMonthName = hijri.month.en;
+  setHijriAnchor(window._apiHijriYear, window._apiHijriMonth, window._apiHijriDay);
+  _rebuildFasts();
+  renderMoonPhaseSVG(new Date());
+  const dlH = document.getElementById('prayer-date-hijri');
+  const dlG = document.getElementById('prayer-date-greg');
+  if (dlH) dlH.textContent = `${hijri.day} ${hijri.month.en} ${hijri.year}`;
+  if (dlG) dlG.textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+  calcScore(); updateSpecialBanner();
+}
+
 function loadPrayers(lat, lon, city) {
   const today = new Date();
   const dd    = String(today.getDate()).padStart(2, '0');
@@ -2241,16 +2263,7 @@ function loadPrayers(lat, lon, city) {
       const { timings, hijri } = JSON.parse(cached);
       renderPrayers(timings, city);
       if (hijri) {
-        window._apiHijriDay = parseInt(hijri.day);
-        window._apiHijriMonth = parseInt(hijri.month.number);
-        window._apiHijriYear = parseInt(hijri.year);
-        window._apiHijriMonthName = hijri.month.en;
-        setHijriAnchor(window._apiHijriYear, window._apiHijriMonth, window._apiHijriDay);
-        _rebuildFasts();
-        renderMoonPhaseSVG(new Date());
-        const dlH = document.getElementById('prayer-date-hijri');
-        if (dlH) dlH.textContent = `${hijri.day} ${hijri.month.en} ${hijri.year}`;
-        calcScore(); updateSpecialBanner();
+        applyHijriUpdate(hijri);
       }
       // Still fetch in background to keep cache fresh
       fetch(buildApiUrl(dd, mm, yyyy, lat, lon))
@@ -2260,17 +2273,7 @@ function loadPrayers(lat, lon, city) {
             renderPrayers(data.data.timings, city); setTimeout(updateSpecialBanner, 100);
             const hijri = data.data.date.hijri;
             if (hijri) {
-              window._apiHijriDay   = parseInt(hijri.day);
-              window._apiHijriMonth = parseInt(hijri.month.number);
-              window._apiHijriYear  = parseInt(hijri.year);
-              window._apiHijriMonthName = hijri.month.en;
-              setHijriAnchor(window._apiHijriYear, window._apiHijriMonth, window._apiHijriDay);
-              _rebuildFasts();
-              const dlH = document.getElementById('prayer-date-hijri');
-              const dlG = document.getElementById('prayer-date-greg');
-              if (dlH) dlH.textContent = `${hijri.day} ${hijri.month.en} ${hijri.year}`;
-              if (dlG) dlG.textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
-              calcScore(); updateSpecialBanner();
+              applyHijriUpdate(hijri);
               try { localStorage.setItem(cacheKeyFull, JSON.stringify({ timings: data.data.timings, hijri })); } catch(e) {}
             }
           }
@@ -2292,17 +2295,7 @@ function loadPrayers(lat, lon, city) {
         renderPrayers(data.data.timings, city); setTimeout(updateSpecialBanner, 100);
         const hijri = data.data.date.hijri;
         if (hijri) {
-          window._apiHijriDay   = parseInt(hijri.day);
-          window._apiHijriMonth = parseInt(hijri.month.number);
-          window._apiHijriYear  = parseInt(hijri.year);
-          window._apiHijriMonthName = hijri.month.en;
-          setHijriAnchor(window._apiHijriYear, window._apiHijriMonth, window._apiHijriDay);
-          _rebuildFasts();
-          const dlH = document.getElementById('prayer-date-hijri');
-          const dlG = document.getElementById('prayer-date-greg');
-          if (dlH) dlH.textContent = `${hijri.day} ${hijri.month.en} ${hijri.year}`;
-          if (dlG) dlG.textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
-          calcScore(); updateSpecialBanner();
+          applyHijriUpdate(hijri);
           try { localStorage.setItem(cacheKeyFull, JSON.stringify({ timings: data.data.timings, hijri })); } catch(e) {}
         }
       }
@@ -2316,17 +2309,7 @@ function loadPrayers(lat, lon, city) {
               renderPrayers(data.data.timings, city); setTimeout(updateSpecialBanner, 100);
               const hijri = data.data.date.hijri;
               if (hijri) {
-                window._apiHijriDay   = parseInt(hijri.day);
-                window._apiHijriMonth = parseInt(hijri.month.number);
-                window._apiHijriYear  = parseInt(hijri.year);
-                window._apiHijriMonthName = hijri.month.en;
-                setHijriAnchor(window._apiHijriYear, window._apiHijriMonth, window._apiHijriDay);
-                _rebuildFasts();
-                const dlH = document.getElementById('prayer-date-hijri');
-                const dlG = document.getElementById('prayer-date-greg');
-                if (dlH) dlH.textContent = `${hijri.day} ${hijri.month.en} ${hijri.year}`;
-                if (dlG) dlG.textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
-                calcScore(); updateSpecialBanner();
+                applyHijriUpdate(hijri);
                 try { localStorage.setItem(cacheKeyFull, JSON.stringify({ timings: data.data.timings, hijri })); } catch(e) {}
               }
             }
