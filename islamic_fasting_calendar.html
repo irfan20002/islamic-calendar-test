@@ -493,9 +493,12 @@ function renderMoonPhaseSVG(date) {
   if (waxing) {
     // Lit on right
     const ex = R * (1 - 2 * illum);
-    // Gibbous (illum>0.5, ex<0): outer right + inner ellipse sweep=0
-    // Crescent (illum<0.5, ex>0): outer right + inner ellipse sweep=1
-    const termSweep = ex >= 0 ? 1 : 0;
+    // Gibbous (illum>0.5, ex<0): outer right + inner ellipse sweep=1 (bulge left into dark)
+    // Crescent (illum<0.5, ex>0): outer right + inner ellipse sweep=0 (bulge right into lit)
+    // NOTE: sweep flags were inverted here previously — verified numerically that
+    // sweep=0 bulges toward +x (right) and sweep=1 bulges toward -x (left) for this
+    // arc direction, which is the opposite of what the original comment assumed.
+    const termSweep = ex >= 0 ? 0 : 1;
     litPath = `M ${T} A ${R} ${R} 0 0 1 ${B} A ${Math.abs(ex)} ${R} 0 0 ${termSweep} ${T} Z`;
   } else {
     // Lit on left
@@ -1465,7 +1468,18 @@ function renderPrayers(times, city) {
             <div id="prayer-method-list" style="max-height:220px;overflow-y:auto"></div>
           </div>
         </div>
-        <div style="font-size:32px;font-weight:700;color:var(--color-text-primary);line-height:1.05;letter-spacing:-0.5px" id="current-time">--:-- --</div>
+        <div style="display:flex;align-items:center;gap:3px" >
+          <span style="font-size:32px;font-weight:700;color:var(--color-text-primary);line-height:1.05;letter-spacing:-0.5px" id="current-time-main">--:--</span>
+          <span style="display:flex;flex-direction:column;align-items:flex-start;line-height:0.95;gap:1px">
+            <span style="font-size:13px;font-weight:700;color:var(--color-text-primary)" id="current-time-ampm">--</span>
+            <span style="font-size:13px;font-weight:700;color:#cc0000;font-variant-numeric:tabular-nums" id="clock-countdown">--</span>
+          </span>
+          <span style="display:flex;flex-direction:column;align-items:flex-start;line-height:1.05;gap:0px;margin-left:4px">
+            <span style="font-size:9px;font-weight:700;color:#c41e3a;white-space:nowrap" id="weather-city">--</span>
+            <span style="font-size:13px" id="weather-icon">--</span>
+            <span style="font-size:13px;font-weight:700;color:var(--color-text-secondary);font-variant-numeric:tabular-nums" id="weather-temp">--</span>
+          </span>
+        </div>
         <div style="margin-top:4px">
           <span id="prayer-date-greg" style="background:#1a7a4a;color:#ffffff;font-weight:600;padding:3px 12px;border-radius:20px;font-size:15px;white-space:nowrap;display:inline-block;border:1px solid #000">—</span>
         </div>
@@ -2325,6 +2339,8 @@ function initPrayers() {
     window._cachedLat = 29.7604; window._cachedLon = -95.3698;
     window._cachedCity = 'Houston';
     loadPrayers(29.7604, -95.3698, 'Houston');
+    fetchWeather(29.7604, -95.3698);
+    fetchCityName(29.7604, -95.3698);
   }
   if (!navigator.geolocation) return;
   navigator.geolocation.getCurrentPosition(
@@ -2333,10 +2349,65 @@ function initPrayers() {
       window._cachedLat = lat; window._cachedLon = lon;
       window._cachedCity = 'Your location';
       loadPrayers(lat, lon, 'Your location');
+      fetchWeather(lat, lon);
+      fetchCityName(lat, lon);
     },
     () => { /* already showing Houston fallback */ },
     { timeout: 5000, maximumAge: 300000, enableHighAccuracy: false }
   );
+}
+
+// ── Reverse geocode lat/lon into a real city name (BigDataCloud — free, no key) ──
+function fetchCityName(lat, lon) {
+  fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`)
+    .then(r => r.json())
+    .then(data => {
+      const name = data && (data.city || data.locality || data.principalSubdivision);
+      const el = document.getElementById('weather-city');
+      if (name && el) el.textContent = name;
+    })
+    .catch(() => {});
+}
+
+// ── Live weather (Open-Meteo — free, no API key required) ────────────────
+const WEATHER_ICONS = {
+  clear:  '☀️',
+  partly: '⛅',
+  cloudy: '☁️',
+  fog:    '🌫️',
+  rain:   '🌧️',
+  snow:   '❄️',
+  storm:  '⛈️',
+};
+function weatherCodeToIcon(code) {
+  if (code === 0) return WEATHER_ICONS.clear;
+  if (code === 1) return WEATHER_ICONS.partly;
+  if (code === 2 || code === 3) return WEATHER_ICONS.cloudy;
+  if (code === 45 || code === 48) return WEATHER_ICONS.fog;
+  if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return WEATHER_ICONS.rain;
+  if (code >= 71 && code <= 77) return WEATHER_ICONS.snow;
+  if (code >= 95) return WEATHER_ICONS.storm;
+  return WEATHER_ICONS.partly;
+}
+let _weatherInterval = null;
+function fetchWeather(lat, lon) {
+  fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&temperature_unit=fahrenheit`)
+    .then(r => r.json())
+    .then(data => {
+      const cur = data && data.current;
+      if (!cur) return;
+      const iconEl = document.getElementById('weather-icon');
+      const tempEl = document.getElementById('weather-temp');
+      if (iconEl) iconEl.textContent = weatherCodeToIcon(cur.weather_code);
+      if (tempEl) tempEl.textContent = `${Math.round(cur.temperature_2m)}°`;
+    })
+    .catch(() => {});
+  // Refresh every 15 minutes — weather doesn't need per-second updates
+  if (!_weatherInterval) {
+    _weatherInterval = setInterval(() => {
+      if (window._cachedLat !== undefined) fetchWeather(window._cachedLat, window._cachedLon);
+    }, 15 * 60000);
+  }
 }
 
 function retryLocation() {
@@ -2372,14 +2443,19 @@ function toggleFast(el, key) {
 
 // ── Clock (updates every second, minimal DOM work) ───────────────────────
 function updateClock() {
-  const el = document.getElementById('current-time');
-  if (!el) return;
+  const elMain = document.getElementById('current-time-main');
+  const elAmpm = document.getElementById('current-time-ampm');
+  const elSec  = document.getElementById('clock-countdown');
+  if (!elMain) return;
   const now  = new Date();
   let h      = now.getHours();
   const m    = String(now.getMinutes()).padStart(2, '0');
+  const s    = String(now.getSeconds()).padStart(2, '0');
   const ampm = h >= 12 ? 'PM' : 'AM';
   h          = h % 12 || 12;
-  el.innerHTML = `${h}:${m}<span style="font-size:0.45em;vertical-align:super;margin-left:3px;font-weight:500">${ampm}</span>`;
+  elMain.textContent = `${h}:${m}`;
+  if (elAmpm) elAmpm.textContent = ampm;
+  if (elSec)  elSec.textContent  = s;
 }
 
 // ── Date/Hijri/holy month update (runs once per minute) ──────────────────
