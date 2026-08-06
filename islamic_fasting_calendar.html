@@ -217,21 +217,21 @@
     .dashboard-box { grid-template-columns: 1fr; }
   }
   /* Score card */
-  .dashboard-left { background: linear-gradient(135deg, #6B69F7 0%, #504EF5 45%, #4038E0 100%); border-radius: var(--border-radius-lg); padding: .5rem .75rem; color: #ffffff; overflow: hidden; border: 1.5px solid #3230b8; box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 8px rgba(80,78,245,0.25); }
+  .dashboard-left { background: #F5E8C7; border-radius: var(--border-radius-lg); padding: .5rem .75rem; color: #3d1f00; overflow: hidden; border: 1.5px solid #1a6eb5; }
   .dash-header { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
   .dash-header-title { font-size: 13px; font-weight: 600; opacity: .9; }
   .dash-tiles { display: grid; grid-template-columns: 1fr 1px 1fr 1px 1fr 1px 1fr; gap: 0; align-items: start; }
-  .dash-tile-divider { background: rgba(255,255,255,.2); align-self: stretch; margin: 0 2px; }
+  .dash-tile-divider { background: rgba(80,40,0,.15); align-self: stretch; margin: 0 2px; }
   .dash-tile { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 0 2px; }
-  .dash-tile-label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,.85); text-align: center; line-height: 1.2; height: 18px; display: flex; align-items: center; justify-content: center; }
+  .dash-tile-label { font-size: 11px; font-weight: 600; color: #5c2d00; text-align: center; line-height: 1.2; height: 18px; display: flex; align-items: center; justify-content: center; }
   .dash-tile-tree { font-size: 30px; line-height: 1; display: flex; align-items: center; justify-content: center; height: 36px; min-height: 36px; }
   .dash-tile-num { font-size: 18px; font-weight: 700; line-height: 1; }
   .dash-tile-bar-wrap { width: 100%; margin-top: 4px; position: relative; }
   .dash-tile-bar-fill { height: 100%; border-radius: 99px; transition: width 0.4s ease; }
-  .dash-tile-bar-base { background: #ffffff; border: 1.5px solid rgba(255,255,255,.4); }
+  .dash-tile-bar-base { background: #ffffff; border: 1.5px solid rgba(80,40,0,.3); }
   .dash-tile-bar-progress { background: #5DCAA5; }
   .dash-tile-bar-excess { background: #f0c040; }
-  .dash-tile-delta { font-size: 10px; font-weight: 600; background: rgba(255,255,255,.2); color: #ffffff; border-radius: 12px; padding: 2px 8px; margin-top: 2px; white-space: nowrap; }
+  .dash-tile-delta { font-size: 10px; font-weight: 600; background: rgba(80,40,0,.15); color: #3d1f00; border-radius: 12px; padding: 2px 8px; margin-top: 2px; white-space: nowrap; }
   /* Prayer card */
   .dashboard-right { background: var(--color-background-primary); border: 1.5px solid #1D9E75; border-radius: var(--border-radius-lg); padding: .5rem .75rem; min-width: 0; }
   .prayer-error { font-size: 12px; color: var(--color-text-secondary); text-align: center; padding: .4rem; }
@@ -275,18 +275,18 @@
         <span style="font-size:16px">🌙</span>
         <span class="dash-header-title">Fasting Tracker</span>
         <div style="display:flex;align-items:center;gap:2px;margin-left:4px">
-          <button onclick="adjustHijri(-1)" style="font-family:var(--font-sans);font-size:11px;padding:1px 5px;border-radius:20px;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.15);color:#ffffff;cursor:pointer">◀</button>
-          <span id="hijri-offset-label" style="font-size:10px;color:#ffe033;min-width:20px;text-align:center;font-weight:600"></span>
-          <button onclick="adjustHijri(1)" style="font-family:var(--font-sans);font-size:11px;padding:1px 5px;border-radius:20px;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.15);color:#ffffff;cursor:pointer">▶</button>
+          <button onclick="adjustHijri(-1)" style="font-family:var(--font-sans);font-size:11px;padding:1px 5px;border-radius:20px;border:1px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-secondary);cursor:pointer">◀</button>
+          <span id="hijri-offset-label" style="font-size:10px;color:#1D9E75;min-width:20px;text-align:center;font-weight:600"></span>
+          <button onclick="adjustHijri(1)" style="font-family:var(--font-sans);font-size:11px;padding:1px 5px;border-radius:20px;border:1px solid var(--color-border-tertiary);background:var(--color-background-secondary);color:var(--color-text-secondary);cursor:pointer">▶</button>
         </div>
         <button id="notif-btn" onclick="requestNotifPermission()" title="Enable notifications" style="font-family:var(--font-sans);background:none;border:none;cursor:pointer;flex-shrink:0;padding:2px;margin-left:4px">
-          <i class="ti ti-bell" id="notif-icon" style="font-size:18px;color:rgba(255,255,255,.85)"></i>
+          <i class="ti ti-bell" id="notif-icon" style="font-size:18px;color:var(--color-text-tertiary)"></i>
         </button>
         <button onclick="exportFastingData()" title="Export fasting data" style="font-family:var(--font-sans);background:none;border:none;cursor:pointer;flex-shrink:0;padding:2px">
-          <i class="ti ti-download" style="font-size:18px;color:rgba(255,255,255,.85)"></i>
+          <i class="ti ti-download" style="font-size:18px;color:var(--color-text-tertiary)"></i>
         </button>
         <label title="Import fasting data" style="cursor:pointer;flex-shrink:0;padding:2px;margin:0">
-          <i class="ti ti-upload" style="font-size:18px;color:rgba(255,255,255,.85)"></i>
+          <i class="ti ti-upload" style="font-size:18px;color:var(--color-text-tertiary)"></i>
           <input type="file" accept=".json" onchange="importFastingData(event)" style="display:none">
         </label>
       </div>
@@ -492,12 +492,9 @@ function renderMoonPhaseSVG(date) {
   if (waxing) {
     // Lit on right
     const ex = R * (1 - 2 * illum);
-    // Gibbous (illum>0.5, ex<0): outer right + inner ellipse sweep=1 (bulge left into dark)
-    // Crescent (illum<0.5, ex>0): outer right + inner ellipse sweep=0 (bulge right into lit)
-    // NOTE: sweep flags were inverted here previously — verified numerically that
-    // sweep=0 bulges toward +x (right) and sweep=1 bulges toward -x (left) for this
-    // arc direction, which is the opposite of what the original comment assumed.
-    const termSweep = ex >= 0 ? 0 : 1;
+    // Gibbous (illum>0.5, ex<0): outer right + inner ellipse sweep=0
+    // Crescent (illum<0.5, ex>0): outer right + inner ellipse sweep=1
+    const termSweep = ex >= 0 ? 1 : 0;
     litPath = `M ${T} A ${R} ${R} 0 0 1 ${B} A ${Math.abs(ex)} ${R} 0 0 ${termSweep} ${T} Z`;
   } else {
     // Lit on left
@@ -833,6 +830,8 @@ function calcScore() {
   // Segmented progress bars
   renderSegmentBar('sc-month-bar-wrap', thisMonth, lastMonth);
   renderSegmentBar('sc-year-bar-wrap',  thisYear,  lastYear);
+  renderPrevBar('sc-month-prev-bar-wrap', lastMonth);
+  renderPrevBar('sc-year-prev-bar-wrap',  lastYear);
 }
 
 // ── Score helpers — hoisted out of calcScore for efficiency ─────────────
@@ -861,19 +860,19 @@ function renderSegmentBar(wrapId, cur, prev) {
     for (let i = 0; i < segs; i++) {
       const filled   = i < cur;
       const isExcess = prev > 0 && i >= prev && filled;
-      const color    = isExcess ? '#f0c040' : (filled ? segColor(i, segs) : 'rgba(255,255,255,0.15)');
+      const color    = isExcess ? '#f0c040' : (filled ? segColor(i, segs) : 'rgba(80,40,0,0.1)');
       segHTML += `<div style="flex:1;height:100%;background:${color};border-radius:2px;margin:0 1px;transition:background 0.3s"></div>`;
     }
     const needleHTML = needlePct !== null
-      ? `<div style="position:absolute;top:-3px;bottom:-3px;width:3px;background:rgba(255,255,255,0.95);border-radius:2px;left:calc(${needlePct}% - 1.5px);box-shadow:0 0 4px rgba(0,0,0,0.4)"></div>`
+      ? `<div style="position:absolute;top:-3px;bottom:-3px;width:3px;background:rgba(80,40,0,0.7);border-radius:2px;left:calc(${needlePct}% - 1.5px);box-shadow:0 0 4px rgba(0,0,0,0.4)"></div>`
       : '';
     const pct      = prev > 0 ? Math.round((cur / prev) * 100) : (cur > 0 ? 100 : 0);
-    const pctColor = cur > prev ? '#ffe033' : 'rgba(255,255,255,0.7)';
+    const pctColor = cur > prev ? '#c8860a' : 'rgba(80,40,0,0.6)';
     const pctLabel = prev > 0
       ? `<div style="font-size:9px;font-weight:700;color:${pctColor};text-align:center;margin-top:3px">${pct}% of prev</div>`
       : '';
     wrap.innerHTML = `
-      <div style="position:relative;height:10px;border-radius:99px;overflow:visible;background:#ffffff;border:2px solid rgba(255,255,255,0.5);box-shadow:0 0 4px rgba(0,0,0,0.2)">
+      <div style="position:relative;height:10px;border-radius:99px;overflow:visible;background:#ffffff;border:2px solid rgba(80,40,0,0.35);box-shadow:0 0 4px rgba(80,40,0,0.15)">
         <div style="display:flex;width:100%;height:100%;border-radius:99px;overflow:hidden">${segHTML}</div>
         ${needleHTML}
       </div>
@@ -1465,18 +1464,7 @@ function renderPrayers(times, city) {
             <div id="prayer-method-list" style="max-height:220px;overflow-y:auto"></div>
           </div>
         </div>
-        <div style="display:flex;align-items:center;gap:3px" >
-          <span style="font-size:32px;font-weight:700;color:var(--color-text-primary);line-height:1.05;letter-spacing:-0.5px" id="current-time-main">--:--</span>
-          <span style="display:flex;flex-direction:column;align-items:flex-start;line-height:0.95;gap:1px">
-            <span style="font-size:13px;font-weight:700;color:var(--color-text-primary)" id="current-time-ampm">--</span>
-            <span style="font-size:13px;font-weight:700;color:#cc0000;font-variant-numeric:tabular-nums" id="clock-countdown">--</span>
-          </span>
-          <span style="display:flex;flex-direction:column;align-items:flex-start;line-height:1.05;gap:0px;margin-left:4px">
-            <span style="font-size:9px;font-weight:700;color:#c41e3a;white-space:nowrap" id="weather-city">--</span>
-            <span style="font-size:13px" id="weather-icon">--</span>
-            <span style="font-size:13px;font-weight:700;color:var(--color-text-secondary);font-variant-numeric:tabular-nums" id="weather-temp">--</span>
-          </span>
-        </div>
+        <div style="font-size:32px;font-weight:700;color:var(--color-text-primary);line-height:1.05;letter-spacing:-0.5px" id="current-time">--:-- --</div>
         <div style="margin-top:4px">
           <span id="prayer-date-greg" style="background:#1a7a4a;color:#ffffff;font-weight:600;padding:3px 12px;border-radius:20px;font-size:15px;white-space:nowrap;display:inline-block;border:1px solid #000">—</span>
         </div>
@@ -2231,28 +2219,6 @@ async function showMonthlyPrayerSchedule(prayerName) {
   }
 }
 
-// ── Single source of truth for "Hijri day changed" side effects ──────────
-// Every place that receives a fresh Hijri date from the API (or cache)
-// must call this instead of repeating these steps inline. Consolidating
-// them here means a fix or new step only ever needs to be added once —
-// it can't silently go missing from one of several duplicated code paths
-// (which is exactly what caused the moon-phase icon to go stale before).
-function applyHijriUpdate(hijri) {
-  if (!hijri) return;
-  window._apiHijriDay      = parseInt(hijri.day);
-  window._apiHijriMonth    = parseInt(hijri.month.number);
-  window._apiHijriYear     = parseInt(hijri.year);
-  window._apiHijriMonthName = hijri.month.en;
-  setHijriAnchor(window._apiHijriYear, window._apiHijriMonth, window._apiHijriDay);
-  _rebuildFasts();
-  renderMoonPhaseSVG(new Date());
-  const dlH = document.getElementById('prayer-date-hijri');
-  const dlG = document.getElementById('prayer-date-greg');
-  if (dlH) dlH.textContent = `${hijri.day} ${hijri.month.en} ${hijri.year}`;
-  if (dlG) dlG.textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
-  calcScore(); updateSpecialBanner();
-}
-
 function loadPrayers(lat, lon, city) {
   const today = new Date();
   const dd    = String(today.getDate()).padStart(2, '0');
@@ -2268,7 +2234,16 @@ function loadPrayers(lat, lon, city) {
       const { timings, hijri } = JSON.parse(cached);
       renderPrayers(timings, city);
       if (hijri) {
-        applyHijriUpdate(hijri);
+        window._apiHijriDay = parseInt(hijri.day);
+        window._apiHijriMonth = parseInt(hijri.month.number);
+        window._apiHijriYear = parseInt(hijri.year);
+        window._apiHijriMonthName = hijri.month.en;
+        setHijriAnchor(window._apiHijriYear, window._apiHijriMonth, window._apiHijriDay);
+        _rebuildFasts();
+        renderMoonPhaseSVG(new Date());
+        const dlH = document.getElementById('prayer-date-hijri');
+        if (dlH) dlH.textContent = `${hijri.day} ${hijri.month.en} ${hijri.year}`;
+        calcScore(); updateSpecialBanner();
       }
       // Still fetch in background to keep cache fresh
       fetch(buildApiUrl(dd, mm, yyyy, lat, lon))
@@ -2278,7 +2253,17 @@ function loadPrayers(lat, lon, city) {
             renderPrayers(data.data.timings, city); setTimeout(updateSpecialBanner, 100);
             const hijri = data.data.date.hijri;
             if (hijri) {
-              applyHijriUpdate(hijri);
+              window._apiHijriDay   = parseInt(hijri.day);
+              window._apiHijriMonth = parseInt(hijri.month.number);
+              window._apiHijriYear  = parseInt(hijri.year);
+              window._apiHijriMonthName = hijri.month.en;
+              setHijriAnchor(window._apiHijriYear, window._apiHijriMonth, window._apiHijriDay);
+              _rebuildFasts();
+              const dlH = document.getElementById('prayer-date-hijri');
+              const dlG = document.getElementById('prayer-date-greg');
+              if (dlH) dlH.textContent = `${hijri.day} ${hijri.month.en} ${hijri.year}`;
+              if (dlG) dlG.textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+              calcScore(); updateSpecialBanner();
               try { localStorage.setItem(cacheKeyFull, JSON.stringify({ timings: data.data.timings, hijri })); } catch(e) {}
             }
           }
@@ -2300,7 +2285,17 @@ function loadPrayers(lat, lon, city) {
         renderPrayers(data.data.timings, city); setTimeout(updateSpecialBanner, 100);
         const hijri = data.data.date.hijri;
         if (hijri) {
-          applyHijriUpdate(hijri);
+          window._apiHijriDay   = parseInt(hijri.day);
+          window._apiHijriMonth = parseInt(hijri.month.number);
+          window._apiHijriYear  = parseInt(hijri.year);
+          window._apiHijriMonthName = hijri.month.en;
+          setHijriAnchor(window._apiHijriYear, window._apiHijriMonth, window._apiHijriDay);
+          _rebuildFasts();
+          const dlH = document.getElementById('prayer-date-hijri');
+          const dlG = document.getElementById('prayer-date-greg');
+          if (dlH) dlH.textContent = `${hijri.day} ${hijri.month.en} ${hijri.year}`;
+          if (dlG) dlG.textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+          calcScore(); updateSpecialBanner();
           try { localStorage.setItem(cacheKeyFull, JSON.stringify({ timings: data.data.timings, hijri })); } catch(e) {}
         }
       }
@@ -2314,7 +2309,17 @@ function loadPrayers(lat, lon, city) {
               renderPrayers(data.data.timings, city); setTimeout(updateSpecialBanner, 100);
               const hijri = data.data.date.hijri;
               if (hijri) {
-                applyHijriUpdate(hijri);
+                window._apiHijriDay   = parseInt(hijri.day);
+                window._apiHijriMonth = parseInt(hijri.month.number);
+                window._apiHijriYear  = parseInt(hijri.year);
+                window._apiHijriMonthName = hijri.month.en;
+                setHijriAnchor(window._apiHijriYear, window._apiHijriMonth, window._apiHijriDay);
+                _rebuildFasts();
+                const dlH = document.getElementById('prayer-date-hijri');
+                const dlG = document.getElementById('prayer-date-greg');
+                if (dlH) dlH.textContent = `${hijri.day} ${hijri.month.en} ${hijri.year}`;
+                if (dlG) dlG.textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+                calcScore(); updateSpecialBanner();
                 try { localStorage.setItem(cacheKeyFull, JSON.stringify({ timings: data.data.timings, hijri })); } catch(e) {}
               }
             }
@@ -2330,8 +2335,6 @@ function initPrayers() {
     window._cachedLat = 29.7604; window._cachedLon = -95.3698;
     window._cachedCity = 'Houston';
     loadPrayers(29.7604, -95.3698, 'Houston');
-    fetchWeather(29.7604, -95.3698);
-    fetchCityName(29.7604, -95.3698);
   }
   if (!navigator.geolocation) return;
   navigator.geolocation.getCurrentPosition(
@@ -2340,65 +2343,10 @@ function initPrayers() {
       window._cachedLat = lat; window._cachedLon = lon;
       window._cachedCity = 'Your location';
       loadPrayers(lat, lon, 'Your location');
-      fetchWeather(lat, lon);
-      fetchCityName(lat, lon);
     },
     () => { /* already showing Houston fallback */ },
     { timeout: 5000, maximumAge: 300000, enableHighAccuracy: false }
   );
-}
-
-// ── Reverse geocode lat/lon into a real city name (BigDataCloud — free, no key) ──
-function fetchCityName(lat, lon) {
-  fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`)
-    .then(r => r.json())
-    .then(data => {
-      const name = data && (data.city || data.locality || data.principalSubdivision);
-      const el = document.getElementById('weather-city');
-      if (name && el) el.textContent = name;
-    })
-    .catch(() => {});
-}
-
-// ── Live weather (Open-Meteo — free, no API key required) ────────────────
-const WEATHER_ICONS = {
-  clear:  '☀️',
-  partly: '⛅',
-  cloudy: '☁️',
-  fog:    '🌫️',
-  rain:   '🌧️',
-  snow:   '❄️',
-  storm:  '⛈️',
-};
-function weatherCodeToIcon(code) {
-  if (code === 0) return WEATHER_ICONS.clear;
-  if (code === 1) return WEATHER_ICONS.partly;
-  if (code === 2 || code === 3) return WEATHER_ICONS.cloudy;
-  if (code === 45 || code === 48) return WEATHER_ICONS.fog;
-  if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return WEATHER_ICONS.rain;
-  if (code >= 71 && code <= 77) return WEATHER_ICONS.snow;
-  if (code >= 95) return WEATHER_ICONS.storm;
-  return WEATHER_ICONS.partly;
-}
-let _weatherInterval = null;
-function fetchWeather(lat, lon) {
-  fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&temperature_unit=fahrenheit`)
-    .then(r => r.json())
-    .then(data => {
-      const cur = data && data.current;
-      if (!cur) return;
-      const iconEl = document.getElementById('weather-icon');
-      const tempEl = document.getElementById('weather-temp');
-      if (iconEl) iconEl.textContent = weatherCodeToIcon(cur.weather_code);
-      if (tempEl) tempEl.textContent = `${Math.round(cur.temperature_2m)}°`;
-    })
-    .catch(() => {});
-  // Refresh every 15 minutes — weather doesn't need per-second updates
-  if (!_weatherInterval) {
-    _weatherInterval = setInterval(() => {
-      if (window._cachedLat !== undefined) fetchWeather(window._cachedLat, window._cachedLon);
-    }, 15 * 60000);
-  }
 }
 
 function retryLocation() {
@@ -2434,19 +2382,14 @@ function toggleFast(el, key) {
 
 // ── Clock (updates every second, minimal DOM work) ───────────────────────
 function updateClock() {
-  const elMain = document.getElementById('current-time-main');
-  const elAmpm = document.getElementById('current-time-ampm');
-  const elSec  = document.getElementById('clock-countdown');
-  if (!elMain) return;
+  const el = document.getElementById('current-time');
+  if (!el) return;
   const now  = new Date();
   let h      = now.getHours();
   const m    = String(now.getMinutes()).padStart(2, '0');
-  const s    = String(now.getSeconds()).padStart(2, '0');
   const ampm = h >= 12 ? 'PM' : 'AM';
   h          = h % 12 || 12;
-  elMain.textContent = `${h}:${m}`;
-  if (elAmpm) elAmpm.textContent = ampm;
-  if (elSec)  elSec.textContent  = s;
+  el.innerHTML = `${h}:${m}<span style="font-size:0.45em;vertical-align:super;margin-left:3px;font-weight:500">${ampm}</span>`;
 }
 
 // ── Date/Hijri/holy month update (runs once per minute) ──────────────────
@@ -2723,7 +2666,14 @@ function importFastingData(event) {
 // ── Push server URL ──────────────────────────────────────────────────────
 const PUSH_SERVER = 'https://islamic-fasting-push-server.onrender.com';
 setInterval(() => fetch(`${PUSH_SERVER}/`).catch(() => {}), 60 * 1000);
-const VAPID_PUBLIC_KEY = 'BOAaqCPlyrXIiDpWE55EWQFbao6e5jEAmDKeB91s8TUMKAXMpASUj59cIwFqGa25QSb3Q9wsed819mVkmR0Uqlw';
+let VAPID_PUBLIC_KEY = null;
+async function getVapidKey() {
+  if (VAPID_PUBLIC_KEY) return VAPID_PUBLIC_KEY;
+  const res = await fetch(`${PUSH_SERVER}/vapid-public-key`);
+  const data = await res.json();
+  VAPID_PUBLIC_KEY = data.key;
+  return VAPID_PUBLIC_KEY;
+}
 
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -2737,21 +2687,58 @@ async function registerPushSubscription() {
   try {
     const reg = await navigator.serviceWorker.ready;
     let sub = await reg.pushManager.getSubscription();
+    const VAPID_PUBLIC_KEY = await getVapidKey();
+
+    // ── One-time forced reset for the July 2026 VAPID key rotation ──
+    // Old subscriptions created before this rotation are permanently dead;
+    // the browser can't tell us which key they used, so we force everyone
+    // through unsubscribe+resubscribe exactly once via this flag.
+    const RESET_FLAG = 'vapid_reset_2026_07';
+    if (sub && !localStorage.getItem(RESET_FLAG)) {
+      console.warn('Forcing one-time resubscribe after VAPID key rotation');
+      await sub.unsubscribe();
+      sub = null;
+      localStorage.setItem(RESET_FLAG, 'true');
+    }
+
+    // ── Ongoing protection: detect any future key rotation too ──
+    const storedKey = localStorage.getItem('vapid_key_used');
+    if (sub && storedKey && storedKey !== VAPID_PUBLIC_KEY) {
+      console.warn('VAPID key changed — resubscribing with new key');
+      await sub.unsubscribe();
+      sub = null;
+    }
+
     if (!sub) {
       sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
       });
+      localStorage.setItem('vapid_key_used', VAPID_PUBLIC_KEY);
     }
     // A persistent per-device ID (survives resubscription, unlike the push
-    // endpoint itself, which changes every time the browser generates a new
-    // subscription). Sent to the server so it can replace this device's old
-    // subscription instead of piling up a new row every time — this is what
-    // prevents duplicate notifications from accumulating stale subscriptions.
+    // endpoint itself, which changes whenever the browser generates a new
+    // subscription — e.g. during the VAPID reset above). Sent to the server
+    // so it can replace this device's old subscription instead of piling up
+    // a new row every time — this is what prevents duplicate notifications
+    // from accumulating stale subscriptions.
     let deviceId = localStorage.getItem('push_device_id');
+    const isFirstTimeOnDeviceId = !deviceId;
     if (!deviceId) {
       deviceId = 'dev_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
       localStorage.setItem('push_device_id', deviceId);
+    }
+    // If this is the first time this browser is using the deviceId system,
+    // it may already have an old subscription row on the server keyed by
+    // the endpoint tail (from before this update). Clean it up explicitly
+    // here, once, during the transition, so it doesn't linger alongside the
+    // new deviceId-keyed row and cause a permanent duplicate.
+    if (isFirstTimeOnDeviceId && sub && sub.endpoint) {
+      fetch(`${PUSH_SERVER}/unsubscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: sub.endpoint })
+      }).catch(() => {}); // best-effort — don't block registration on this
     }
     // Send subscription + location + device ID to server
     const lat = window._cachedLat || 29.7604;
