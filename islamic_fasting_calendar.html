@@ -441,7 +441,6 @@ let _parsedPrayerTimes = null;
 let _countdownInterval = null;
 let _flashInterval = null;
 let _lastNextPrayerIdx = -1;
-let _notifScheduledDate = null;
 let _pendingScrollToTodayId = null; // guards against stale scroll-into-view timeouts across re-renders
 let _scrollSnapTimer = null;
 let _scrollTouching = false;
@@ -1987,20 +1986,14 @@ function renderPrayers(times, city) {
   _countdownInterval = setInterval(updateCountdownBanner, 60000);
 
   // Post to service worker for background notifications
-  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-    navigator.serviceWorker.controller.postMessage({
-      type: 'SCHEDULE_NOTIFICATIONS',
-      fajr:         parseTime(times.Fajr).toISOString(),
-      sunrise:      parseTime(times.Sunrise).toISOString(),
-      maghrib:      parseTime(times.Maghrib).toISOString(),
-      isha:         parseTime(times.Isha).toISOString(),
-      isFastingDay: isFastingToday()
-    });
-  }
-  if (Notification.permission === 'granted' || localStorage.getItem('notif_granted') === 'true') {
-    scheduleNotifications();
-    scheduleEveReminders();
-  }
+  // Notifications are handled entirely by the server-side push cron (see
+  // islamic-fasting-push-server/server.js), which checks real wall-clock time
+  // every minute against fresh prayer-time data. Client-side setTimeout-based
+  // scheduling (both here and in the service worker) was removed because iOS
+  // suspends long-running setTimeout calls in the background and fires them
+  // late with stale data once the app resumes, producing Suhoor reminders
+  // that could arrive after Fajr had already passed. registerPushSubscription()
+  // (called elsewhere) is the only thing needed to keep notifications working.
   // so afterMag check correctly removes today-fast decoration if past Maghrib
   renderUpcoming();
   scheduleUpcomingRerender();
@@ -2523,7 +2516,6 @@ function updateSpecialBanner() {
     _today = new Date(); _today.setHours(0,0,0,0);
     _fastDateCache = null; // invalidate allFastDates cache
     _parsedPrayerTimes = null;
-    _notifScheduledDate = null; // reset so notifications reschedule for new day
     renderUpcoming();
     calcScore(); updateSpecialBanner();
     if (window._cachedLat !== undefined) loadPrayers(window._cachedLat, window._cachedLon, window._cachedCity || 'Your location');
@@ -2774,8 +2766,6 @@ if ('serviceWorker' in navigator) {
         updateNotifIcon();
         if (Notification.permission === 'granted' || localStorage.getItem('notif_granted') === 'true') {
           registerPushSubscription();
-          scheduleNotifications();
-          scheduleEveReminders();
         }
 
         // ── Update detection: show a banner instead of silently reloading ──
@@ -2863,9 +2853,6 @@ async function requestNotifPermission() {
   updateNotifIcon();
   if (perm === 'granted') {
     localStorage.setItem('notif_granted', 'true');
-    _notifScheduledDate = null;
-    scheduleNotifications();
-    scheduleEveReminders();
     registerPushSubscription();
     new Notification('Islamic Fasting Calendar', {
       body: 'Notifications enabled! You will receive Suhoor, Iftar & eve-of-fast reminders.',
@@ -2874,57 +2861,12 @@ async function requestNotifPermission() {
   }
 }
 
-function scheduleNotifications() {
-  const notifOk = Notification.permission === 'granted' || localStorage.getItem('notif_granted') === 'true';
-  if (!_prayerTimes || !notifOk) return;
-  const todayStr = getToday().toDateString();
-  if (_notifScheduledDate === todayStr) return; // already scheduled for today
-  _notifScheduledDate = todayStr;
-  const now     = new Date();
-  const fajr    = parseTime(_prayerTimes.Fajr);
-  const sunrise = parseTime(_prayerTimes.Sunrise);
-  const maghrib = parseTime(_prayerTimes.Maghrib);
-  const isha    = parseTime(_prayerTimes.Isha);
-  const fasting = isFastingToday();
-
-  function schedule(ms, title, body) {
-    if (ms > 0) setTimeout(() => navigator.serviceWorker.ready.then(reg => reg.showNotification(title, { body, icon: 'icon-192.png', badge: 'icon-192.png' })), ms);
-  }
-
-  if (fasting) {
-    schedule(fajr - now - 30 * 60000, '🍽️ Suhoor time',             `Fajr is at ${to12hr(_prayerTimes.Fajr)}. Eat and make your intention.`);
-    schedule(fajr - now - 2  * 60000, '⏰ Suhoor ending in 2 minutes', `Fajr at ${to12hr(_prayerTimes.Fajr)}. Stop eating now.`);
-    schedule(maghrib - now,            '🌙 Iftar time!',               `Maghrib at ${to12hr(_prayerTimes.Maghrib)}. Break your fast. Allahu Akbar!`);
-  } else {
-    schedule(maghrib - now, '🕌 Maghrib prayer time', `Maghrib is at ${to12hr(_prayerTimes.Maghrib)}.`);
-  }
-  // Ishraq — 25 min after sunrise, every day
-  // Isha — every day
-  schedule(isha - now, '🌙 Isha prayer time', `Isha is at ${to12hr(_prayerTimes.Isha)}.`);
-}
-
-function scheduleEveReminders() {
-  const notifOk = Notification.permission === 'granted' || localStorage.getItem('notif_granted') === 'true';
-  if (!notifOk) return;
-  [1, 2].forEach(daysAhead => {
-    const future    = new Date(getToday());
-    future.setDate(future.getDate() + daysAhead);
-    const futureStr = future.toDateString();
-    const fastDates = allFastDates();
-    if (!fastDates.has(futureStr)) return;
-    const match    = FASTS.find(f => f.dates.some(d => d.toDateString() === futureStr));
-    const dow      = future.getDay();
-    const fastName = match ? match.name : (dow === 1 ? 'Monday fast' : dow === 4 ? 'Thursday fast' : 'a sunnah fast');
-    const ninepm   = new Date(future);
-    ninepm.setDate(ninepm.getDate() - 1);
-    ninepm.setHours(21, 0, 0, 0);
-    const ms = ninepm - new Date();
-    if (ms > 0) setTimeout(() => navigator.serviceWorker.ready.then(reg => reg.showNotification('🌙 Fast tomorrow', {
-      body: `Tomorrow is ${fastName}. Make your intention tonight. May Allah give you strength.`,
-      icon: 'icon-192.png', badge: 'icon-192.png'
-    })), ms);
-  });
-}
+// Notifications are sent entirely by the server-side push cron — see
+// islamic-fasting-push-server/server.js. It re-checks real wall-clock time
+// every minute against fresh prayer-time data, so it doesn't suffer from
+// the iOS background-suspension bug that made client-side setTimeout-based
+// scheduling fire late with stale data. registerPushSubscription() (above)
+// is all that's needed to keep this device receiving notifications.
 
 // ── Shooting stars — run for 60s then stop ───────────────────────────────
 (function () {
