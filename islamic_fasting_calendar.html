@@ -2744,6 +2744,22 @@ function urlBase64ToUint8Array(base64String) {
 
 async function registerPushSubscription() {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  // Only register push subscriptions from the installed home-screen app —
+  // not from someone just visiting the site in a regular browser tab.
+  // Browser tabs and the installed PWA have completely separate storage on
+  // iOS, so without this check, casually opening the site in Safari/Chrome
+  // (e.g. to check something) can silently create its own subscription
+  // alongside the real app's — producing duplicate notifications that have
+  // nothing to do with the deviceId dedup logic above, since they're
+  // legitimately different, independent subscriptions.
+  // navigator.standalone is Safari's iOS-specific flag; display-mode is the
+  // standard check other browsers use — checking both covers all cases.
+  const isInstalledApp = window.navigator.standalone === true ||
+    window.matchMedia('(display-mode: standalone)').matches;
+  if (!isInstalledApp) {
+    console.log('Not running as installed app — skipping push registration');
+    return;
+  }
   try {
     const reg = await navigator.serviceWorker.ready;
     let sub = await reg.pushManager.getSubscription();
