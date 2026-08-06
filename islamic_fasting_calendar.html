@@ -2743,13 +2743,23 @@ async function registerPushSubscription() {
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
       });
     }
-    // Send subscription + location + prayer times to server
+    // A persistent per-device ID (survives resubscription, unlike the push
+    // endpoint itself, which changes every time the browser generates a new
+    // subscription). Sent to the server so it can replace this device's old
+    // subscription instead of piling up a new row every time — this is what
+    // prevents duplicate notifications from accumulating stale subscriptions.
+    let deviceId = localStorage.getItem('push_device_id');
+    if (!deviceId) {
+      deviceId = 'dev_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem('push_device_id', deviceId);
+    }
+    // Send subscription + location + device ID to server
     const lat = window._cachedLat || 29.7604;
     const lon = window._cachedLon || -95.3698;
     await fetch(`${PUSH_SERVER}/subscribe`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subscription: sub, lat, lon })
+      body: JSON.stringify({ subscription: sub, lat, lon, deviceId })
     });
     console.log('Push subscription registered with server ✓');
   } catch (err) {
