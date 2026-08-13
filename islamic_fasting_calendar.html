@@ -119,6 +119,9 @@
   .quran-corner.br { bottom:-9px; right:14px; }
   .surah-ayah-arabic.indopak { font-family:'Quran Naskh Full', serif; font-size:calc(24px * var(--quran-text-scale, 1)); line-height:2.3; }
   .quran-text-size-row { display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:.75rem; }
+  .quran-float-textsize { display:none; position:fixed; right:14px; bottom:24px; z-index:500; flex-direction:column; gap:8px; background:var(--color-background-primary); border:1px solid var(--color-border-tertiary); border-radius:14px; padding:6px; box-shadow:0 2px 10px rgba(0,0,0,0.15); }
+  .quran-float-textsize.visible { display:flex; }
+  .quran-float-textsize .quran-text-size-btn { width:38px; height:38px; }
   .quran-text-size-btn { border:1px solid var(--color-border-tertiary); background:var(--color-background-primary); color:var(--color-text-primary); border-radius:8px; width:34px; height:34px; font-weight:700; cursor:pointer; font-family:var(--font-sans); }
   .quran-text-size-btn:first-child { font-size:13px; }
   .quran-text-size-btn:last-child { font-size:19px; }
@@ -479,11 +482,6 @@
         <button class="script-toggle-btn" id="script-btn-uthmani" onclick="setQuranScript('uthmani')">Uthmani</button>
         <button class="script-toggle-btn" id="script-btn-indopak" onclick="setQuranScript('indopak')">IndoPak</button>
       </div>
-      <div class="quran-text-size-row">
-        <button class="quran-text-size-btn" onclick="adjustQuranTextSize(-1)" aria-label="Smaller text">A</button>
-        <span class="quran-text-size-label" id="quran-text-size-label">100%</span>
-        <button class="quran-text-size-btn" onclick="adjustQuranTextSize(1)" aria-label="Larger text">A</button>
-      </div>
       <div class="quran-frame">
         <span class="quran-corner tl">✦</span>
         <span class="quran-corner tr">✦</span>
@@ -501,6 +499,16 @@
   </div>
 
 </div><!-- /app -->
+
+<!-- Floating text-size control for the Quran reader — fixed position so it
+     stays reachable while scrolled deep into a chapter, instead of requiring
+     a scroll back to the top where the reader's own header controls live. -->
+<div id="quran-float-textsize" class="quran-float-textsize">
+  <button class="quran-text-size-btn" onclick="adjustQuranTextSize(1)" aria-label="Larger text">A</button>
+  <span class="quran-text-size-label" id="quran-text-size-label">100%</span>
+  <button class="quran-text-size-btn" onclick="adjustQuranTextSize(-1)" aria-label="Smaller text">A</button>
+</div>
+
 <!-- Monthly Prayer Schedule Modal -->
 <div id="monthly-prayer-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);align-items:flex-end;justify-content:center" onclick="if(event.target===this)this.style.display='none'">
   <div style="background:var(--color-background-primary);border-radius:16px 16px 0 0;width:100%;max-width:480px;max-height:85vh;overflow:hidden;display:flex;flex-direction:column">
@@ -1399,6 +1407,9 @@ function showTab(name) {
   if (name === 'calendar') { renderCalendar(); renderIslamicDayCountdown(); }
   if (name === 'stats') renderStats();
   if (name === 'quran') { _currentReaderContext = 'quran'; renderQuranHome(); }
+  // Leaving the Quran tab entirely (without pressing Back first) should also
+  // hide the floating text-size widget — it's reader-specific.
+  if (name !== 'quran') document.getElementById('quran-float-textsize').classList.remove('visible');
 }
 
 // The "Read Al-Kahf" shortcut lives inside the Quran tab's home view, not as
@@ -1428,6 +1439,7 @@ let _quranSurahList = null;
 function renderQuranHome() {
   document.getElementById('quran-reader-view').style.display = 'none';
   document.getElementById('quran-home-view').style.display = 'block';
+  document.getElementById('quran-float-textsize').classList.remove('visible');
   updateQuranContinueReading();
   if (_quranSurahList) { renderSurahListUI(_quranSurahList); return; }
 
@@ -1622,6 +1634,7 @@ function openSurah(number, scrollToAyah) {
   _scrollToAyahOnRender = scrollToAyah || (bm && bm.surah === number ? bm.ayah : null);
   updateScriptToggleUI();
   applyQuranTextScale();
+  document.getElementById('quran-float-textsize').classList.add('visible');
   loadSurahText(number);
 }
 
@@ -1770,6 +1783,7 @@ function renderSurahReader(data) {
 function closeSurahReader() {
   document.getElementById('quran-reader-view').style.display = 'none';
   document.getElementById('quran-home-view').style.display = 'block';
+  document.getElementById('quran-float-textsize').classList.remove('visible');
   _currentOpenSurah = null;
   _currentReaderContext = 'quran'; // back button always lands on the general surah list
 }
