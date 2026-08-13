@@ -104,12 +104,12 @@
   .surah-ayah-block.bookmarked { background:#FDF6E3; border-radius:8px; padding-left:8px; padding-right:8px; }
   .surah-ayah-block.ayah-flash { background:#F5E0A3; border-radius:8px; padding-left:8px; padding-right:8px; }
   .ayah-bookmark-btn { position:absolute; top:14px; left:0; border:none; background:none; font-size:18px; color:#B8860B; cursor:pointer; padding:2px 6px; line-height:1; }
-  .surah-ayah-arabic { direction:rtl; text-align:right; font-size:22px; line-height:2; color:var(--color-text-primary); margin-bottom:8px; }
+  .surah-ayah-arabic { direction:rtl; text-align:right; font-size:calc(22px * var(--quran-text-scale, 1)); line-height:2; color:var(--color-text-primary); margin-bottom:8px; }
   .surah-ayah-num { display:inline-block; font-size:11px; color:var(--color-text-tertiary); background:var(--color-background-secondary); border-radius:50%; width:20px; height:20px; text-align:center; line-height:20px; margin-left:6px; }
   .sajda-mark { color:#B8860B; font-size:22px; margin:0 4px; }
   .surah-ayah-block.has-sajda { background:#FDF6E3; border-radius:8px; padding-left:8px; padding-right:8px; border-bottom-color:#B8860B; }
   .sajda-badge { font-size:11px; font-weight:600; color:#8a6300; background:#FBEBB8; border-radius:6px; padding:3px 8px; display:inline-block; margin:4px 0; }
-  .surah-ayah-translation { font-size:13px; color:#117A65; line-height:1.6; }
+  .surah-ayah-translation { font-size:calc(13px * var(--quran-text-scale, 1)); color:#117A65; line-height:1.6; }
   .quran-frame { position:relative; border:3px double #B8860B; border-radius:12px; padding:22px 16px 16px; margin-top:4px; background:linear-gradient(180deg,#FFFDF7 0%,#FFFBF0 100%); }
   .quran-frame::before { content:''; position:absolute; top:6px; left:6px; right:6px; bottom:6px; border:1px solid #117A65; border-radius:8px; pointer-events:none; }
   .quran-corner { position:absolute; font-size:15px; color:#B8860B; line-height:1; background:#FFFDF7; padding:0 3px; }
@@ -117,7 +117,12 @@
   .quran-corner.tr { top:-9px; right:14px; }
   .quran-corner.bl { bottom:-9px; left:14px; }
   .quran-corner.br { bottom:-9px; right:14px; }
-  .surah-ayah-arabic.indopak { font-family:'Quran Naskh Full', serif; font-size:24px; line-height:2.3; }
+  .surah-ayah-arabic.indopak { font-family:'Quran Naskh Full', serif; font-size:calc(24px * var(--quran-text-scale, 1)); line-height:2.3; }
+  .quran-text-size-row { display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:.75rem; }
+  .quran-text-size-btn { border:1px solid var(--color-border-tertiary); background:var(--color-background-primary); color:var(--color-text-primary); border-radius:8px; width:34px; height:34px; font-weight:700; cursor:pointer; font-family:var(--font-sans); }
+  .quran-text-size-btn:first-child { font-size:13px; }
+  .quran-text-size-btn:last-child { font-size:19px; }
+  .quran-text-size-label { font-size:12px; color:var(--color-text-tertiary); min-width:40px; text-align:center; }
   .script-toggle { display:flex; gap:6px; margin-bottom:.75rem; }
   .script-toggle-btn { flex:1; font-size:12px; font-weight:600; padding:6px 10px; border-radius:8px; border:1px solid var(--color-border-tertiary); background:var(--color-background-primary); color:var(--color-text-secondary); cursor:pointer; font-family:var(--font-sans); }
   .script-toggle-btn.active { background:#B8860B; border-color:#B8860B; color:#fff; }
@@ -473,6 +478,11 @@
       <div class="script-toggle">
         <button class="script-toggle-btn" id="script-btn-uthmani" onclick="setQuranScript('uthmani')">Uthmani</button>
         <button class="script-toggle-btn" id="script-btn-indopak" onclick="setQuranScript('indopak')">IndoPak</button>
+      </div>
+      <div class="quran-text-size-row">
+        <button class="quran-text-size-btn" onclick="adjustQuranTextSize(-1)" aria-label="Smaller text">A</button>
+        <span class="quran-text-size-label" id="quran-text-size-label">100%</span>
+        <button class="quran-text-size-btn" onclick="adjustQuranTextSize(1)" aria-label="Larger text">A</button>
       </div>
       <div class="quran-frame">
         <span class="quran-corner tl">✦</span>
@@ -1452,11 +1462,24 @@ function normalizeSearchText(s) {
   return s.toLowerCase().replace(/['’`\-]/g, '').replace(/\s+/g, ' ').trim();
 }
 
+// The API's English transliterations double letters for long vowel sounds —
+// "Imraan", "Maaida", "An'aam" — but most people naturally type the simpler
+// spelling ("Imran", "Maida", "Anam"), which isn't a substring of the doubled
+// form. Collapsing repeated letters down to one turns "aaliimraan" into
+// "alimran", which the simpler spelling IS a substring of. Included alongside
+// (not instead of) the original in the search index, so both spellings work.
+function collapseRepeatedLetters(s) {
+  return s.replace(/(.)\1+/g, '$1');
+}
+
 function renderSurahListUI(surahs) {
   const list = document.getElementById('quran-surah-list');
   if (!list) return;
-  list.innerHTML = surahs.map(s => `
-    <div class="surah-item" data-surah-search="${normalizeSearchText(`${s.englishName} ${s.name} ${s.number} ${s.englishNameTranslation}`)}" onclick="openSurah(${s.number})">
+  list.innerHTML = surahs.map(s => {
+    const norm = normalizeSearchText(`${s.englishName} ${s.name} ${s.number} ${s.englishNameTranslation}`);
+    const searchIndex = `${norm} ${collapseRepeatedLetters(norm)}`;
+    return `
+    <div class="surah-item" data-surah-search="${searchIndex}" onclick="openSurah(${s.number})">
       <div class="surah-num">${s.number}</div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:600;font-size:14px;color:var(--color-text-primary)">${s.englishName}</div>
@@ -1464,7 +1487,8 @@ function renderSurahListUI(surahs) {
       </div>
       <div style="font-size:18px;color:var(--color-text-primary);direction:rtl">${s.name}</div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 function filterSurahList() {
@@ -1545,6 +1569,29 @@ function updateBookmarkIconsUI() {
   });
 }
 
+// Text size for the Quran reader (Arabic + translation together, since the
+// diacritics on the Arabic are what's usually hard to read small — scaling
+// only one and not the other would look inconsistent). Persisted so it
+// doesn't reset every time a surah is reopened.
+const QURAN_TEXT_SCALE_STEPS = [0.8, 0.9, 1, 1.15, 1.3, 1.5, 1.75];
+let _quranTextScale = parseFloat(localStorage.getItem('quran_text_scale') || '1');
+if (!QURAN_TEXT_SCALE_STEPS.includes(_quranTextScale)) _quranTextScale = 1;
+
+function applyQuranTextScale() {
+  const view = document.getElementById('quran-reader-view');
+  if (view) view.style.setProperty('--quran-text-scale', _quranTextScale);
+  const label = document.getElementById('quran-text-size-label');
+  if (label) label.textContent = Math.round(_quranTextScale * 100) + '%';
+}
+
+function adjustQuranTextSize(delta) {
+  const idx = QURAN_TEXT_SCALE_STEPS.indexOf(_quranTextScale);
+  const newIdx = Math.max(0, Math.min(QURAN_TEXT_SCALE_STEPS.length - 1, idx + delta));
+  _quranTextScale = QURAN_TEXT_SCALE_STEPS[newIdx];
+  try { localStorage.setItem('quran_text_scale', _quranTextScale); } catch (e) {}
+  applyQuranTextScale();
+}
+
 let _quranScript = localStorage.getItem('quran_script_pref') || 'uthmani';
 let _currentOpenSurah = null;
 
@@ -1574,6 +1621,7 @@ function openSurah(number, scrollToAyah) {
   const bm = scrollToAyah ? null : getBookmark();
   _scrollToAyahOnRender = scrollToAyah || (bm && bm.surah === number ? bm.ayah : null);
   updateScriptToggleUI();
+  applyQuranTextScale();
   loadSurahText(number);
 }
 
