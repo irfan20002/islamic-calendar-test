@@ -1444,11 +1444,25 @@ function renderQuranHome() {
     });
 }
 
+// Strips apostrophes, hyphens, and extra whitespace, then collapses repeated
+// vowels so search matches regardless of transliteration spelling — e.g.
+// "araf", "araaf", and "a'raaf" should all match "Al-A'raf". Stripping
+// punctuation handles the apostrophe; collapsing doubled vowels (aa->a,
+// ii->i, etc.) handles the long-vowel spelling variants transliterations
+// commonly use interchangeably.
+function normalizeSearchText(s) {
+  return s.toLowerCase()
+    .replace(/['’`\-]/g, '')
+    .replace(/([aeiou])\1+/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function renderSurahListUI(surahs) {
   const list = document.getElementById('quran-surah-list');
   if (!list) return;
   list.innerHTML = surahs.map(s => `
-    <div class="surah-item" data-surah-search="${s.englishName.toLowerCase()} ${s.name} ${s.number} ${s.englishNameTranslation.toLowerCase()}" onclick="openSurah(${s.number})">
+    <div class="surah-item" data-surah-search="${normalizeSearchText(`${s.englishName} ${s.name} ${s.number} ${s.englishNameTranslation}`)}" onclick="openSurah(${s.number})">
       <div class="surah-num">${s.number}</div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:600;font-size:14px;color:var(--color-text-primary)">${s.englishName}</div>
@@ -1460,7 +1474,7 @@ function renderSurahListUI(surahs) {
 }
 
 function filterSurahList() {
-  const q = document.getElementById('quran-search').value.trim().toLowerCase();
+  const q = normalizeSearchText(document.getElementById('quran-search').value.trim());
   document.querySelectorAll('#quran-surah-list .surah-item').forEach(el => {
     el.style.display = el.dataset.surahSearch.includes(q) ? 'flex' : 'none';
   });
