@@ -93,6 +93,33 @@
   .tab[data-tab="calendar"].active { background: #2E86C1; border-bottom-color: #2E86C1; }
   .tab[data-tab="guide"].active { background: #8E44AD; border-bottom-color: #8E44AD; }
   .tab[data-tab="stats"].active { background: #E67E22; border-bottom-color: #E67E22; }
+  .tab[data-tab="quran"].active { background: #B8860B; border-bottom-color: #B8860B; }
+  .kahf-shortcut { display:flex; align-items:center; justify-content:center; gap:8px; background:#117A65; color:#fff; font-weight:700; font-size:14px; padding:10px 14px; border-radius:var(--border-radius-md); cursor:pointer; margin-bottom:.75rem; border:none; width:100%; font-family:var(--font-sans); }
+  .kahf-shortcut.friday-rainbow { animation: rainbow 3s linear infinite; }
+  .surah-item { display:flex; align-items:center; gap:12px; padding:10px 8px; border-bottom:1px solid var(--color-border-tertiary); cursor:pointer; }
+  .surah-item:hover { background: var(--color-background-secondary); }
+  .surah-num { width:28px; height:28px; border-radius:50%; background:var(--color-background-secondary); color:var(--color-text-secondary); font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .surah-ayah-block { padding:14px 0; border-bottom:1px solid var(--color-border-tertiary); position:relative; transition:background-color 0.3s ease; scroll-margin-top:16px; }
+  .surah-ayah-block.bookmarked { background:#FDF6E3; border-radius:8px; padding-left:8px; padding-right:8px; }
+  .surah-ayah-block.ayah-flash { background:#F5E0A3; border-radius:8px; padding-left:8px; padding-right:8px; }
+  .ayah-bookmark-btn { position:absolute; top:14px; left:0; border:none; background:none; font-size:18px; color:#B8860B; cursor:pointer; padding:2px 6px; line-height:1; }
+  .surah-ayah-arabic { direction:rtl; text-align:right; font-size:22px; line-height:2; color:var(--color-text-primary); margin-bottom:8px; }
+  .surah-ayah-num { display:inline-block; font-size:11px; color:var(--color-text-tertiary); background:var(--color-background-secondary); border-radius:50%; width:20px; height:20px; text-align:center; line-height:20px; margin-left:6px; }
+  .sajda-mark { color:#B8860B; font-size:22px; margin:0 4px; }
+  .surah-ayah-block.has-sajda { background:#FDF6E3; border-radius:8px; padding-left:8px; padding-right:8px; border-bottom-color:#B8860B; }
+  .sajda-badge { font-size:11px; font-weight:600; color:#8a6300; background:#FBEBB8; border-radius:6px; padding:3px 8px; display:inline-block; margin:4px 0; }
+  .surah-ayah-translation { font-size:13px; color:#117A65; line-height:1.6; }
+  .quran-frame { position:relative; border:3px double #B8860B; border-radius:12px; padding:22px 16px 16px; margin-top:4px; background:linear-gradient(180deg,#FFFDF7 0%,#FFFBF0 100%); }
+  .quran-frame::before { content:''; position:absolute; top:6px; left:6px; right:6px; bottom:6px; border:1px solid #117A65; border-radius:8px; pointer-events:none; }
+  .quran-corner { position:absolute; font-size:15px; color:#B8860B; line-height:1; background:#FFFDF7; padding:0 3px; }
+  .quran-corner.tl { top:-9px; left:14px; }
+  .quran-corner.tr { top:-9px; right:14px; }
+  .quran-corner.bl { bottom:-9px; left:14px; }
+  .quran-corner.br { bottom:-9px; right:14px; }
+  .surah-ayah-arabic.indopak { font-family:'Quran Naskh Full', serif; font-size:24px; line-height:2.3; }
+  .script-toggle { display:flex; gap:6px; margin-bottom:.75rem; }
+  .script-toggle-btn { flex:1; font-size:12px; font-weight:600; padding:6px 10px; border-radius:8px; border:1px solid var(--color-border-tertiary); background:var(--color-background-primary); color:var(--color-text-secondary); cursor:pointer; font-family:var(--font-sans); }
+  .script-toggle-btn.active { background:#B8860B; border-color:#B8860B; color:#fff; }
   .tab:hover:not(.active) { color: var(--color-text-primary); background: var(--color-background-secondary); }
   .section { margin-bottom: 1.5rem; }
   .section-title { font-size: 15px; font-weight: 700; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .75rem; }
@@ -235,6 +262,15 @@
   /* Prayer card */
   .dashboard-right { background: var(--color-background-primary); border: 1.5px solid #1D9E75; border-radius: var(--border-radius-lg); padding: .5rem .75rem; min-width: 0; }
   .prayer-error { font-size: 12px; color: var(--color-text-secondary); text-align: center; padding: .4rem; }
+  /* Only downloaded once an ayah actually uses this font-family — i.e. only when the
+     IndoPak script toggle in the Quran tab is used. Verified against the edition's own
+     docs (fawazahmed0/quran-api), which recommend a "-full" suffix font for complete
+     Arabic Extended-A Unicode coverage; without it, IndoPak diacritics render as tofu. */
+  @font-face {
+    font-family: 'Quran Naskh Full';
+    src: url('https://cdn.jsdelivr.net/gh/fawazahmed0/quran-api@1/fonts/noto-naskh-arabic-regular-full.woff2') format('woff2');
+    font-display: swap;
+  }
 </style>
 </head>
 <body>
@@ -341,6 +377,7 @@
     <button class="tab" data-tab="calendar" onclick="showTab('calendar')">Calendar</button>
     <button class="tab" data-tab="guide" onclick="showTab('guide')">Guide</button>
     <button class="tab" data-tab="stats" onclick="showTab('stats')">Stats</button>
+    <button class="tab" data-tab="quran" onclick="showTab('quran')">Quran</button>
   </div>
 
   <div id="tab-upcoming">
@@ -411,6 +448,38 @@
     <div class="section">
       <div class="section-title">Monthly archive</div>
       <div id="stats-list"></div>
+    </div>
+  </div>
+
+  <div id="tab-quran" style="display:none">
+    <div class="section" id="quran-home-view">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;gap:8px">
+        <div class="section-title" style="margin-bottom:0">Quran</div>
+        <div id="quran-continue-reading" style="font-size:12px;color:#B8860B;font-weight:600;cursor:pointer;white-space:nowrap"></div>
+      </div>
+      <button class="kahf-shortcut" id="kahf-shortcut-btn" onclick="openKahf()">🕌 Read Al-Kahf</button>
+      <input type="text" id="quran-search" placeholder="Search surah by name or number..." oninput="filterSurahList()"
+        style="width:100%;box-sizing:border-box;padding:9px 12px;border-radius:var(--border-radius-md);border:1px solid var(--color-border-tertiary);font-size:14px;margin-bottom:.75rem;font-family:var(--font-sans);color:var(--color-text-primary);background:var(--color-background-primary)">
+      <div id="quran-surah-list" style="max-height:480px;overflow-y:auto">
+        <div style="text-align:center;padding:20px;color:var(--color-text-tertiary);font-size:13px">Loading surahs…</div>
+      </div>
+    </div>
+    <div class="section" id="quran-reader-view" style="display:none">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:.75rem">
+        <button onclick="closeSurahReader()" style="border:none;background:var(--color-background-secondary);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:13px;color:var(--color-text-primary);font-family:var(--font-sans)">&larr; Back</button>
+        <div id="quran-reader-title" style="font-weight:700;font-size:15px;color:var(--color-text-primary)"></div>
+      </div>
+      <div class="script-toggle">
+        <button class="script-toggle-btn" id="script-btn-uthmani" onclick="setQuranScript('uthmani')">Uthmani</button>
+        <button class="script-toggle-btn" id="script-btn-indopak" onclick="setQuranScript('indopak')">IndoPak</button>
+      </div>
+      <div class="quran-frame">
+        <span class="quran-corner tl">✦</span>
+        <span class="quran-corner tr">✦</span>
+        <span class="quran-corner bl">✦</span>
+        <span class="quran-corner br">✦</span>
+        <div id="quran-reader-content"></div>
+      </div>
     </div>
   </div>
 
@@ -1308,7 +1377,7 @@ function prevMonth() { viewMonth--; if (viewMonth < 0)  { viewMonth = 11; viewYe
 function nextMonth() { viewMonth++; if (viewMonth > 11) { viewMonth = 0;  viewYear++; } renderCalendar(); }
 
 function showTab(name) {
-  ['upcoming', 'calendar', 'guide', 'stats'].forEach(t => {
+  ['upcoming', 'calendar', 'guide', 'stats', 'quran'].forEach(t => {
     document.getElementById('tab-' + t).style.display = t === name ? 'block' : 'none';
   });
   document.querySelectorAll('.tab').forEach(btn => {
@@ -1316,7 +1385,362 @@ function showTab(name) {
   });
   if (name === 'calendar') { renderCalendar(); renderIslamicDayCountdown(); }
   if (name === 'stats') renderStats();
+  if (name === 'quran') { _currentReaderContext = 'quran'; renderQuranHome(); }
 }
+
+// The "Read Al-Kahf" shortcut lives inside the Quran tab's home view, not as
+// its own top-level tab — jumps straight into the same reader on surah 18.
+function openKahf() {
+  _currentReaderContext = 'kahf';
+  openSurah(18);
+}
+
+// Al-Kahf shortcut shimmers rainbow on Fridays (Jummah) — reuses the same
+// rainbow keyframe animation used elsewhere in the app (title, Hijri badge).
+function updateKahfFridayStyle() {
+  const btn = document.getElementById('kahf-shortcut-btn');
+  if (btn) btn.classList.toggle('friday-rainbow', getToday().getDay() === 5);
+}
+updateKahfFridayStyle();
+
+// ── Quran reader ──────────────────────────────────────────────────────────
+// Text/translation come from api.alquran.cloud (free, no key). Surah list and
+// individual surah text are cached in localStorage — the Quran text never
+// changes, so there's no reason to refetch once cached. This stays fully
+// isolated from the prayer/Hijri logic above; the only place it could ever
+// touch that is a future "verse tied to the Hijri date" feature, which should
+// read getTodayHijriAdjusted() rather than computing its own date.
+let _quranSurahList = null;
+
+function renderQuranHome() {
+  document.getElementById('quran-reader-view').style.display = 'none';
+  document.getElementById('quran-home-view').style.display = 'block';
+  updateQuranContinueReading();
+  if (_quranSurahList) { renderSurahListUI(_quranSurahList); return; }
+
+  try {
+    const cached = localStorage.getItem('quran_surah_list');
+    if (cached) {
+      _quranSurahList = JSON.parse(cached);
+      renderSurahListUI(_quranSurahList);
+      return;
+    }
+  } catch (e) {}
+
+  fetch('https://api.alquran.cloud/v1/surah')
+    .then(r => r.json())
+    .then(data => {
+      if (data.code !== 200 || !data.data) throw new Error('bad response');
+      _quranSurahList = data.data;
+      try { localStorage.setItem('quran_surah_list', JSON.stringify(_quranSurahList)); } catch (e) {}
+      renderSurahListUI(_quranSurahList);
+    })
+    .catch(() => {
+      const list = document.getElementById('quran-surah-list');
+      if (list) list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--color-text-tertiary);font-size:13px">Could not load surah list. Check your connection and reopen this tab.</div>';
+    });
+}
+
+function renderSurahListUI(surahs) {
+  const list = document.getElementById('quran-surah-list');
+  if (!list) return;
+  list.innerHTML = surahs.map(s => `
+    <div class="surah-item" data-surah-search="${s.englishName.toLowerCase()} ${s.name} ${s.number} ${s.englishNameTranslation.toLowerCase()}" onclick="openSurah(${s.number})">
+      <div class="surah-num">${s.number}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:14px;color:var(--color-text-primary)">${s.englishName}</div>
+        <div style="font-size:11px;color:var(--color-text-tertiary)">${s.englishNameTranslation} · ${s.numberOfAyahs} ayahs · ${s.revelationType}</div>
+      </div>
+      <div style="font-size:18px;color:var(--color-text-primary);direction:rtl">${s.name}</div>
+    </div>
+  `).join('');
+}
+
+function filterSurahList() {
+  const q = document.getElementById('quran-search').value.trim().toLowerCase();
+  document.querySelectorAll('#quran-surah-list .surah-item').forEach(el => {
+    el.style.display = el.dataset.surahSearch.includes(q) ? 'flex' : 'none';
+  });
+}
+
+function updateQuranContinueReading() {
+  const el = document.getElementById('quran-continue-reading');
+  if (!el) return;
+  // Always the regular reading bookmark, never the ephemeral Al-Kahf one —
+  // this link lives on the Quran home screen, not the Al-Kahf shortcut.
+  try {
+    const bm = JSON.parse(localStorage.getItem('quran_bookmark') || 'null');
+    if (bm && bm.surahName) {
+      el.textContent = `Continue: ${bm.surahName} ${bm.ayah} →`;
+      el.onclick = () => { _currentReaderContext = 'quran'; openSurah(bm.surah, bm.ayah); };
+      return;
+    }
+  } catch (e) {}
+  el.textContent = '';
+  el.onclick = null;
+}
+
+// Which reader entry point is currently active: 'quran' (regular reading,
+// bookmark persists indefinitely) or 'kahf' (the Friday shortcut — its
+// bookmark is same-day only, cleared at midnight in refreshForNewDay, so
+// touching a verse this Jummah never carries over to next Jummah). Default
+// is 'quran'; showTab('kahf') overrides it just before opening surah 18.
+let _currentReaderContext = 'quran';
+
+function bookmarkKey() {
+  return _currentReaderContext === 'kahf' ? 'quran_bookmark_kahf' : 'quran_bookmark';
+}
+
+function todayDateStr() {
+  const d = getToday();
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+
+function getBookmark() {
+  try {
+    const bm = JSON.parse(localStorage.getItem(bookmarkKey()) || 'null');
+    if (!bm) return null;
+    // Al-Kahf bookmark is only valid for the day it was set — if a stale one
+    // slipped through without the midnight cleanup firing, treat it as gone.
+    if (_currentReaderContext === 'kahf' && bm.dateSet !== todayDateStr()) {
+      localStorage.removeItem('quran_bookmark_kahf');
+      return null;
+    }
+    return bm;
+  } catch (e) { return null; }
+}
+
+function toggleAyahBookmark(surahNumber, ayahNumber, surahName) {
+  const current = getBookmark();
+  const isSame = current && current.surah === surahNumber && current.ayah === ayahNumber;
+  if (isSame) {
+    try { localStorage.removeItem(bookmarkKey()); } catch (e) {}
+  } else {
+    const entry = { surah: surahNumber, surahName, ayah: ayahNumber };
+    if (_currentReaderContext === 'kahf') entry.dateSet = todayDateStr();
+    try { localStorage.setItem(bookmarkKey(), JSON.stringify(entry)); } catch (e) {}
+  }
+  updateQuranContinueReading();
+  updateBookmarkIconsUI();
+}
+
+function updateBookmarkIconsUI() {
+  const bm = getBookmark();
+  document.querySelectorAll('#quran-reader-content .surah-ayah-block').forEach(block => {
+    const isBm = bm && block.dataset.surah == bm.surah && block.dataset.ayah == bm.ayah;
+    block.classList.toggle('bookmarked', !!isBm);
+    const icon = block.querySelector('.ayah-bookmark-btn');
+    if (icon) icon.textContent = isBm ? '★' : '☆';
+  });
+}
+
+let _quranScript = localStorage.getItem('quran_script_pref') || 'uthmani';
+let _currentOpenSurah = null;
+
+function updateScriptToggleUI() {
+  const uBtn = document.getElementById('script-btn-uthmani');
+  const iBtn = document.getElementById('script-btn-indopak');
+  if (uBtn) uBtn.classList.toggle('active', _quranScript === 'uthmani');
+  if (iBtn) iBtn.classList.toggle('active', _quranScript === 'indopak');
+}
+
+function setQuranScript(script) {
+  if (script === _quranScript) return;
+  _quranScript = script;
+  try { localStorage.setItem('quran_script_pref', script); } catch (e) {}
+  updateScriptToggleUI();
+  if (_currentOpenSurah != null) loadSurahText(_currentOpenSurah);
+}
+
+function openSurah(number, scrollToAyah) {
+  document.getElementById('quran-home-view').style.display = 'none';
+  const readerView = document.getElementById('quran-reader-view');
+  readerView.style.display = 'block';
+  _currentOpenSurah = number;
+  // If the caller didn't ask for a specific ayah, jump to this context's own
+  // bookmark (if any) — e.g. opening Al-Kahf on a Friday resumes right where
+  // you left off earlier that same day.
+  const bm = scrollToAyah ? null : getBookmark();
+  _scrollToAyahOnRender = scrollToAyah || (bm && bm.surah === number ? bm.ayah : null);
+  updateScriptToggleUI();
+  loadSurahText(number);
+}
+
+let _scrollToAyahOnRender = null;
+
+function loadSurahText(number) {
+  const content = document.getElementById('quran-reader-content');
+  const title = document.getElementById('quran-reader-title');
+  title.textContent = 'Loading…';
+  content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--color-text-tertiary);font-size:13px">Loading surah…</div>';
+
+  const cacheKey = `quran_surah_${number}_${_quranScript}`;
+  try {
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) { renderSurahReader(JSON.parse(cached)); return; }
+  } catch (e) {}
+
+  if (_quranScript === 'uthmani') {
+    Promise.all([
+      fetch(`https://api.alquran.cloud/v1/surah/${number}/quran-uthmani`).then(r => r.json()),
+      fetch(`https://api.alquran.cloud/v1/surah/${number}/en.sahih`).then(r => r.json())
+    ]).then(([ar, en]) => {
+      if (ar.code !== 200 || en.code !== 200) throw new Error('bad response');
+      const combined = {
+        number: ar.data.number,
+        englishName: ar.data.englishName,
+        englishNameTranslation: ar.data.englishNameTranslation,
+        script: 'uthmani',
+        ayahs: ar.data.ayahs.map((a, i) => ({
+          numberInSurah: a.numberInSurah,
+          arabic: a.text,
+          translation: en.data.ayahs[i] ? en.data.ayahs[i].text : ''
+        }))
+      };
+      try { localStorage.setItem(cacheKey, JSON.stringify(combined)); } catch (e) {}
+      renderSurahReader(combined);
+    }).catch(() => {
+      title.textContent = 'Could not load';
+      content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--color-text-tertiary);font-size:13px">Could not load this surah. Check your connection and try again.</div>';
+    });
+  } else {
+    // IndoPak script isn't offered by alquran.cloud. UmmahAPI's ?script=indopak was tried
+    // first, but verified (by direct fetch, not docs) to be a no-op — it returns identical
+    // text regardless of that param. Using fawazahmed0/quran-api instead: verified directly
+    // against its raw JSON, this is genuine IndoPak text (distinct diacritic conventions,
+    // matches the real Nastaleeq/IndoPak mushaf spelling, not standard Uthmani rasm).
+    // That file holds the whole Quran (~1.5MB) as a flat [{chapter, verse, text}] array, so
+    // it's fetched once and cached whole, then sliced per-surah — avoids re-downloading it
+    // for every surah opened. Translation is reused from the alquran.cloud en.sahih fetch,
+    // since translation text doesn't depend on which Arabic script is displayed.
+    Promise.all([
+      getIndopakFullText(),
+      fetch(`https://api.alquran.cloud/v1/surah/${number}/en.sahih`).then(r => r.json())
+    ]).then(([indopakFull, en]) => {
+      if (en.code !== 200) throw new Error('bad response');
+      const meta = _quranSurahList ? _quranSurahList.find(s => s.number === number) : null;
+      const verses = indopakFull.filter(v => v.chapter === number);
+      if (!verses.length) throw new Error('no verses found');
+      const combined = {
+        number: number,
+        englishName: (meta && meta.englishName) || '',
+        englishNameTranslation: (meta && meta.englishNameTranslation) || '',
+        script: 'indopak',
+        ayahs: verses.map((v, i) => ({
+          numberInSurah: v.verse,
+          arabic: v.text,
+          translation: en.data.ayahs[i] ? en.data.ayahs[i].text : ''
+        }))
+      };
+      try { localStorage.setItem(cacheKey, JSON.stringify(combined)); } catch (e) {}
+      renderSurahReader(combined);
+    }).catch(() => {
+      title.textContent = 'Could not load';
+      content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--color-text-tertiary);font-size:13px">Could not load IndoPak text. Check your connection and try again.</div>';
+    });
+  }
+}
+
+// The full IndoPak Quran JSON (~1.5MB) is fetched once per session and cached in
+// localStorage — the text never changes, so there's no reason to refetch it every
+// time a surah is opened, or even every session.
+let _indopakFullPromise = null;
+function getIndopakFullText() {
+  if (_indopakFullPromise) return _indopakFullPromise;
+  try {
+    const cached = localStorage.getItem('quran_indopak_full');
+    if (cached) { _indopakFullPromise = Promise.resolve(JSON.parse(cached)); return _indopakFullPromise; }
+  } catch (e) {}
+  _indopakFullPromise = fetch('https://cdn.jsdelivr.net/gh/fawazahmed0/quran-api@1/editions/ara-quranindopak.min.json')
+    .then(r => r.json())
+    .then(data => {
+      const verses = data.quran;
+      try { localStorage.setItem('quran_indopak_full', JSON.stringify(verses)); } catch (e) {}
+      return verses;
+    })
+    .catch(err => { _indopakFullPromise = null; throw err; });
+  return _indopakFullPromise;
+}
+
+// The 15 verses requiring Sajdah al-Tilawah (recitation prostration) —
+// the full union list across all madhabs (like a printed mushaf, this marks
+// every traditionally recognized location; it doesn't take a position on
+// which are obligatory vs recommended, since that varies by madhab).
+// Verified directly against fawazahmed0/quran-api's per-verse sajda metadata
+// (Tanzil-sourced, same numbering convention as the alquran.cloud text used
+// here) rather than trusted from inconsistent web listicles.
+const SAJDA_VERSES = new Set([
+  '7:206', '13:15', '16:50', '17:109', '19:58', '22:18', '22:77',
+  '25:60', '27:26', '32:15', '38:24', '41:38', '53:62', '84:21', '96:19'
+]);
+
+function renderSurahReader(data) {
+  const title = document.getElementById('quran-reader-title');
+  const content = document.getElementById('quran-reader-content');
+  title.innerHTML = `${data.number}. ${data.englishName} <span style="font-weight:400;color:var(--color-text-tertiary);font-size:12px">— ${data.englishNameTranslation}</span>`;
+  const arabicClass = data.script === 'indopak' ? 'surah-ayah-arabic indopak' : 'surah-ayah-arabic';
+  const safeName = data.englishName.replace(/'/g, "\\'");
+  content.innerHTML = data.ayahs.map(a => {
+    const isSajda = SAJDA_VERSES.has(`${data.number}:${a.numberInSurah}`);
+    const sajdaMark = isSajda ? '<span class="sajda-mark" title="Sajdah al-Tilawah">۩</span>' : '';
+    const sajdaBadge = isSajda ? '<div class="sajda-badge">۩ Sajdah al-Tilawah — recitation prostration</div>' : '';
+    return `
+    <div class="surah-ayah-block${isSajda ? ' has-sajda' : ''}" id="ayah-${data.number}-${a.numberInSurah}" data-surah="${data.number}" data-ayah="${a.numberInSurah}">
+      <div class="${arabicClass}">${a.arabic}${sajdaMark}<span class="surah-ayah-num">${a.numberInSurah}</span></div>
+      ${sajdaBadge}
+      <div class="surah-ayah-translation">${a.translation}</div>
+      <button class="ayah-bookmark-btn" onclick="toggleAyahBookmark(${data.number}, ${a.numberInSurah}, '${safeName}')" aria-label="Bookmark this ayah">☆</button>
+    </div>
+  `;
+  }).join('');
+  updateBookmarkIconsUI();
+
+  if (_scrollToAyahOnRender != null) {
+    const target = document.getElementById(`ayah-${data.number}-${_scrollToAyahOnRender}`);
+    _scrollToAyahOnRender = null;
+    if (target) {
+      setTimeout(() => {
+        target.scrollIntoView({ block: 'start' });
+        target.classList.add('ayah-flash');
+        setTimeout(() => target.classList.remove('ayah-flash'), 1800);
+      }, 50);
+    }
+  }
+}
+
+function closeSurahReader() {
+  document.getElementById('quran-reader-view').style.display = 'none';
+  document.getElementById('quran-home-view').style.display = 'block';
+  _currentOpenSurah = null;
+  _currentReaderContext = 'quran'; // back button always lands on the general surah list
+}
+
+// Auto-snap back to the bookmarked verse once scrolling stops (not on every
+// scroll event — that would fight momentum scrolling and never let the page
+// settle). Debounced: waits for scrolling to actually pause, then, if the
+// currently open surah has a bookmark and it's not already near the top,
+// smooth-scrolls back to it. _isSnappingBack guards against the snap's own
+// scroll motion re-triggering itself.
+let _scrollSnapDebounce = null;
+let _isSnappingBack = false;
+window.addEventListener('scroll', () => {
+  if (_isSnappingBack) return;
+  clearTimeout(_scrollSnapDebounce);
+  _scrollSnapDebounce = setTimeout(() => {
+    const readerView = document.getElementById('quran-reader-view');
+    if (!readerView || readerView.style.display === 'none') return;
+    if (_currentOpenSurah == null) return;
+    const bm = getBookmark();
+    if (!bm || bm.surah !== _currentOpenSurah) return;
+    const target = document.getElementById(`ayah-${bm.surah}-${bm.ayah}`);
+    if (!target) return;
+    const rect = target.getBoundingClientRect();
+    if (Math.abs(rect.top) < 30) return; // already there, nothing to do
+    _isSnappingBack = true;
+    target.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    setTimeout(() => { _isSnappingBack = false; }, 600);
+  }, 500);
+});
 
 function renderStats() {
   const wrap = document.getElementById('stats-list');
@@ -2558,6 +2982,8 @@ function refreshForNewDay() {
   renderUpcoming();
   calcScore(); updateSpecialBanner();
   if (window._cachedLat !== undefined) loadPrayers(window._cachedLat, window._cachedLon, window._cachedCity || 'Your location');
+  updateKahfFridayStyle();
+  try { localStorage.removeItem('quran_bookmark_kahf'); } catch (e) {} // same-day only — gone by next Jummah
 }
 
 (function scheduleMidnightRefresh() {
