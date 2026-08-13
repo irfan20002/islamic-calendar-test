@@ -1454,6 +1454,19 @@ function renderPrayers(times, city) {
   window._ishaTime       = parseTime(times.Isha);
   window._ishaWarnStart  = new Date(parseTime(times.Isha).getTime() - 15 * 60000);
 
+  // renderPrayers() rebuilds prayer-box.innerHTML below, which resets the
+  // weather spans to "--" placeholders. fetchWeather() only fires from the
+  // initial geolocation callback and its own 15-min interval, so every other
+  // renderPrayers() call (cache-hit render, background refetch, retry, day
+  // refresh) was wiping the weather display and leaving it blank until the
+  // interval happened to tick. Re-fetch here so it self-heals every render.
+  if (window._cachedLat !== undefined && window._cachedLon !== undefined) {
+    fetchWeather(window._cachedLat, window._cachedLon);
+  }
+  // City name rarely changes, so just restore the last known value instead
+  // of re-hitting the geocoding API on every render.
+  const _cachedCityName = window._cachedCity && window._cachedCity !== 'Your location' ? window._cachedCity : null;
+
   const box = document.getElementById('prayer-box');
   box.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;gap:8px">
@@ -1472,7 +1485,7 @@ function renderPrayers(times, city) {
             <span style="font-size:13px;font-weight:700;color:#cc0000;font-variant-numeric:tabular-nums" id="clock-countdown">--</span>
           </span>
           <span style="display:flex;flex-direction:column;align-items:flex-start;line-height:1.05;gap:0px;margin-left:4px">
-            <span style="font-size:9px;font-weight:700;color:#c41e3a;white-space:nowrap" id="weather-city">--</span>
+            <span style="font-size:9px;font-weight:700;color:#c41e3a;white-space:nowrap" id="weather-city">${_cachedCityName || '--'}</span>
             <span style="font-size:13px" id="weather-icon">--</span>
             <span style="font-size:13px;font-weight:700;color:var(--color-text-secondary);font-variant-numeric:tabular-nums" id="weather-temp">--</span>
           </span>
@@ -2354,6 +2367,7 @@ function fetchCityName(lat, lon) {
     .then(r => r.json())
     .then(data => {
       const name = data && (data.city || data.locality || data.principalSubdivision);
+      if (name) window._cachedCity = name;
       const el = document.getElementById('weather-city');
       if (name && el) el.textContent = name;
     })
@@ -2508,20 +2522,43 @@ function updateSpecialBanner() {
   }
 }
 
-// ── Midnight rollover — refresh TODAY and all views ──────────────────────
+// ── Day refresh — refresh TODAY and all views ─────────────────────────────
+// Used both by the midnight setTimeout below AND by the visibilitychange
+// listener. The setTimeout alone isn't reliable: iOS suspends timers while
+// the PWA is backgrounded, so a midnight rollover that happens while the app
+// is in the background never fires until the OS decides to resume JS —
+// which can be hours later or not until the next foreground. That left
+// _today, and all the window._fajrTime/_ishaTime/etc prayer-window values,
+// stuck on a stale date (wrong Hijri date, "next prayer: Isha" shown at
+// Fajr time, etc.) until the user force-quit and relaunched. Calling this
+// on visibilitychange re-syncs everything the moment the app is foregrounded,
+// regardless of whether the midnight timer fired.
+function refreshForNewDay() {
+  const fresh = new Date(); fresh.setHours(0,0,0,0);
+  if (_today && fresh.getTime() === _today.getTime()) return; // no actual day change
+  _today = fresh;
+  _fastDateCache = null; // invalidate allFastDates cache
+  _parsedPrayerTimes = null;
+  renderUpcoming();
+  calcScore(); updateSpecialBanner();
+  if (window._cachedLat !== undefined) loadPrayers(window._cachedLat, window._cachedLon, window._cachedCity || 'Your location');
+}
+
 (function scheduleMidnightRefresh() {
   const now  = new Date();
   const msToMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1) - now;
   setTimeout(() => {
-    _today = new Date(); _today.setHours(0,0,0,0);
-    _fastDateCache = null; // invalidate allFastDates cache
-    _parsedPrayerTimes = null;
-    renderUpcoming();
-    calcScore(); updateSpecialBanner();
-    if (window._cachedLat !== undefined) loadPrayers(window._cachedLat, window._cachedLon, window._cachedCity || 'Your location');
+    refreshForNewDay();
     scheduleMidnightRefresh(); // reschedule for next midnight
   }, msToMidnight + 100);
 })();
+
+// Re-sync the moment the app is foregrounded — catches day rollovers that
+// happened while backgrounded and the midnight timer missed.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') refreshForNewDay();
+});
+window.addEventListener('pageshow', () => refreshForNewDay());
 
 // ── Re-render prayer box when the active prayer slot changes ─────────────
 setInterval(() => {
