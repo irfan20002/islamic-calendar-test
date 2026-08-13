@@ -694,6 +694,24 @@ function getAdjustedHijri(date) {
   adjusted.setDate(adjusted.getDate() + hijriOffset);
   return gToHCorrected(adjusted);
 }
+
+// getAdjustedHijri(getToday()) is meant to describe "today," but it recomputes
+// today's Hijri date a second, independent way (walking forward/backward from
+// the anchor). That recomputation can momentarily disagree with the header
+// badge — which is set directly from the raw API response — if it runs before
+// _today or the anchor's Gregorian reference has fully caught up to the real
+// day (e.g. right around a day rollover). That mismatch is what caused the
+// Fasting Tracker to show "Rab I" while the header correctly showed "30 Safar."
+// This reads the exact same three numbers the badge uses, so "today" can never
+// disagree with itself across the app. Only used where the date IS today —
+// arbitrary past/future dates (calendar grid, etc.) still need getAdjustedHijri.
+function getTodayHijriAdjusted() {
+  if (window._apiHijriYear == null) return getAdjustedHijri(getToday()); // before first API response
+  if (hijriOffset === 0) {
+    return { year: window._apiHijriYear, month: window._apiHijriMonth, day: window._apiHijriDay };
+  }
+  return getAdjustedHijri(getToday());
+}
 if (!window._apiHijriDay) { window._apiHijriDay = getAdjustedHijri(new Date()).day; }
 if (!window._apiHijriMonth) { window._apiHijriMonth = getAdjustedHijri(new Date()).month; }
 if (!window._apiHijriYear) { window._apiHijriYear = getAdjustedHijri(new Date()).year; }
@@ -779,8 +797,7 @@ function treeEmojiYear(n) {
 }
 
 function calcScore() {
-  const now = getToday();
-  const todayH = getAdjustedHijri(now);
+  const todayH = getTodayHijriAdjusted();
   const curHY  = todayH.year;
   const curHM  = todayH.month;
   const prevHM = curHM === 1 ? 12 : curHM - 1;
@@ -1257,7 +1274,7 @@ function renderIslamicDayCountdown() {
   ];
 
   // Use corrected Hijri for today — consistent with calendar and fast list
-  const todayH = getAdjustedHijri(getToday());
+  const todayH = getTodayHijriAdjusted();
 
   let next = null, minDays = Infinity;
   for (const hy of [todayH.year, todayH.year + 1]) {
@@ -1305,8 +1322,7 @@ function renderStats() {
   const wrap = document.getElementById('stats-list');
   if (!wrap) return;
 
-  const now = getToday();
-  const todayH = getAdjustedHijri(now);
+  const todayH = getTodayHijriAdjusted();
   const curHY  = todayH.year;
   const curHM  = todayH.month;
   const prevHM = curHM === 1 ? 12 : curHM - 1;
@@ -2470,7 +2486,7 @@ function updateDateDisplay() {
   const dlG = document.getElementById('prayer-date-greg');
   if (!dlH && !dlG) return;
 
-  const hd = getAdjustedHijri(now);
+  const hd = getTodayHijriAdjusted();
   if (dlH) dlH.textContent = `${hd.day} ${HIJRI_MONTHS[hd.month - 1]} ${hd.year}`;
   if (dlG) dlG.textContent = now.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -2609,7 +2625,7 @@ setInterval(() => {
 // at first install — never backfills older, pre-existing scattered data.
 (function recordInstallAnchor() {
   if (!localStorage.getItem('install_hijri_ym')) {
-    const h = getAdjustedHijri(getToday());
+    const h = getTodayHijriAdjusted();
     localStorage.setItem('install_hijri_ym', h.year + '-' + h.month);
   }
 })();
