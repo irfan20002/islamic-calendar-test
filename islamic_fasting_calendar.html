@@ -460,7 +460,7 @@
       </div>
       <button class="kahf-shortcut" id="kahf-shortcut-btn" onclick="openKahf()">🕌 Read Al-Kahf</button>
       <input type="text" id="quran-search" placeholder="Search surah by name or number..." oninput="filterSurahList()"
-        style="width:100%;box-sizing:border-box;padding:9px 12px;border-radius:var(--border-radius-md);border:1px solid var(--color-border-tertiary);font-size:14px;margin-bottom:.75rem;font-family:var(--font-sans);color:var(--color-text-primary);background:var(--color-background-primary)">
+        style="width:100%;box-sizing:border-box;padding:9px 12px;border-radius:var(--border-radius-md);border:1px solid var(--color-border-tertiary);font-size:16px;margin-bottom:.75rem;font-family:var(--font-sans);color:var(--color-text-primary);background:var(--color-background-primary)">
       <div id="quran-surah-list" style="max-height:480px;overflow-y:auto">
         <div style="text-align:center;padding:20px;color:var(--color-text-tertiary);font-size:13px">Loading surahs…</div>
       </div>
@@ -1444,18 +1444,12 @@ function renderQuranHome() {
     });
 }
 
-// Strips apostrophes, hyphens, and extra whitespace, then collapses repeated
-// vowels so search matches regardless of transliteration spelling — e.g.
-// "araf", "araaf", and "a'raaf" should all match "Al-A'raf". Stripping
-// punctuation handles the apostrophe; collapsing doubled vowels (aa->a,
-// ii->i, etc.) handles the long-vowel spelling variants transliterations
-// commonly use interchangeably.
+// Strips apostrophes, hyphens, and extra whitespace so search matches regardless
+// of transliteration punctuation — e.g. "araf" should match "Al-A'raf" even
+// though the raw string is "al-a'raf" (the apostrophe breaks a plain substring
+// match, since "araf" isn't literally contiguous in "a'raf").
 function normalizeSearchText(s) {
-  return s.toLowerCase()
-    .replace(/['’`\-]/g, '')
-    .replace(/([aeiou])\1+/g, '$1')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return s.toLowerCase().replace(/['’`\-]/g, '').replace(/\s+/g, ' ').trim();
 }
 
 function renderSurahListUI(surahs) {
