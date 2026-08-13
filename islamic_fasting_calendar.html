@@ -968,7 +968,7 @@ function renderUpcoming(doScrollToToday = true) {
     ? [{ name: todayDow === 1 ? 'Monday fast' : 'Thursday fast', dates: [new Date(getToday())], hijri: 'Weekly sunnah', icon: 'ti-repeat', note: todayDow === 1 ? 'Monday' : 'Thursday', weekly: true }]
     : [];
 
-  const todayH         = gToH(getToday());
+  const todayH         = getTodayHijriAdjusted();
   const startDate      = new Date(getToday()); startDate.setFullYear(startDate.getFullYear() - 1);
   const endOfHijriYear = hToG(todayH.year + 1, 12, 29);
 
