@@ -105,7 +105,7 @@
   .surah-ayah-block.ayah-flash { background:#F5E0A3; border-radius:8px; padding-left:8px; padding-right:8px; }
   .ayah-bookmark-btn { position:absolute; top:14px; left:0; border:none; background:none; font-size:18px; color:#B8860B; cursor:pointer; padding:2px 6px; line-height:1; }
   .surah-ayah-arabic { direction:rtl; text-align:right; font-size:calc(22px * var(--quran-text-scale, 1)); line-height:2; color:var(--color-text-primary); margin-bottom:8px; }
-  .surah-ayah-num { display:inline-block; font-size:11px; color:var(--color-text-tertiary); background:var(--color-background-secondary); border-radius:50%; width:20px; height:20px; text-align:center; line-height:20px; margin-left:6px; }
+  .surah-ayah-num { display:inline-block; font-size:11px; font-weight:700; color:#ffffff; background:#117A65; border-radius:50%; width:20px; height:20px; text-align:center; line-height:20px; margin-left:6px; }
   .sajda-mark { color:#B8860B; font-size:22px; margin:0 4px; }
   .surah-ayah-block.has-sajda { background:#FDF6E3; border-radius:8px; padding-left:8px; padding-right:8px; border-bottom-color:#B8860B; }
   .sajda-badge { font-size:11px; font-weight:600; color:#8a6300; background:#FBEBB8; border-radius:6px; padding:3px 8px; display:inline-block; margin:4px 0; }
@@ -117,7 +117,7 @@
   .quran-corner.tr { top:-9px; right:14px; }
   .quran-corner.bl { bottom:-9px; left:14px; }
   .quran-corner.br { bottom:-9px; right:14px; }
-  .surah-ayah-arabic.indopak { font-family:'Quran Naskh Full', serif; font-size:calc(24px * var(--quran-text-scale, 1)); line-height:2.3; }
+  .surah-ayah-arabic.indopak { font-family:'DigitalKhatt IndoPak', serif; font-size:calc(24px * var(--quran-text-scale, 1)); line-height:2.3; }
   .quran-text-size-row { display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:.75rem; }
   .quran-float-textsize { display:none; position:fixed; right:14px; bottom:24px; z-index:500; flex-direction:column; gap:8px; background:var(--color-background-primary); border:1px solid var(--color-border-tertiary); border-radius:14px; padding:6px; box-shadow:0 2px 10px rgba(0,0,0,0.15); }
   .quran-float-textsize.visible { display:flex; }
@@ -272,12 +272,15 @@
   .dashboard-right { background: var(--color-background-primary); border: 1.5px solid #1D9E75; border-radius: var(--border-radius-lg); padding: .5rem .75rem; min-width: 0; }
   .prayer-error { font-size: 12px; color: var(--color-text-secondary); text-align: center; padding: .4rem; }
   /* Only downloaded once an ayah actually uses this font-family — i.e. only when the
-     IndoPak script toggle in the Quran tab is used. Verified against the edition's own
-     docs (fawazahmed0/quran-api), which recommend a "-full" suffix font for complete
-     Arabic Extended-A Unicode coverage; without it, IndoPak diacritics render as tofu. */
+     IndoPak script toggle in the Quran tab is used. DigitalKhatt IndoPak is a
+     self-hosted local file (digital-khatt-indopak.otf, must sit alongside this HTML
+     file in the repo). Verified with fontTools: 1,141 glyphs, 91 Arabic-block
+     codepoints in cmap, and full Arabic shaping support (GSUB init/medi/fina/rlig/ccmp,
+     GPOS curs/mark/mkmk for cursive joining and diacritic positioning). Replaces the
+     previously CDN-hosted KFGQPC Nastaleeq (nastaleeq-v10-full.ttf). */
   @font-face {
-    font-family: 'Quran Naskh Full';
-    src: url('https://cdn.jsdelivr.net/gh/fawazahmed0/quran-api@1/fonts/noto-naskh-arabic-regular-full.woff2') format('woff2');
+    font-family: 'DigitalKhatt IndoPak';
+    src: url('./digital-khatt-indopak.otf') format('opentype');
     font-display: swap;
   }
 </style>
@@ -1787,33 +1790,6 @@ function closeSurahReader() {
   _currentOpenSurah = null;
   _currentReaderContext = 'quran'; // back button always lands on the general surah list
 }
-
-// Auto-snap back to the bookmarked verse once scrolling stops (not on every
-// scroll event — that would fight momentum scrolling and never let the page
-// settle). Debounced: waits for scrolling to actually pause, then, if the
-// currently open surah has a bookmark and it's not already near the top,
-// smooth-scrolls back to it. _isSnappingBack guards against the snap's own
-// scroll motion re-triggering itself.
-let _scrollSnapDebounce = null;
-let _isSnappingBack = false;
-window.addEventListener('scroll', () => {
-  if (_isSnappingBack) return;
-  clearTimeout(_scrollSnapDebounce);
-  _scrollSnapDebounce = setTimeout(() => {
-    const readerView = document.getElementById('quran-reader-view');
-    if (!readerView || readerView.style.display === 'none') return;
-    if (_currentOpenSurah == null) return;
-    const bm = getBookmark();
-    if (!bm || bm.surah !== _currentOpenSurah) return;
-    const target = document.getElementById(`ayah-${bm.surah}-${bm.ayah}`);
-    if (!target) return;
-    const rect = target.getBoundingClientRect();
-    if (Math.abs(rect.top) < 30) return; // already there, nothing to do
-    _isSnappingBack = true;
-    target.scrollIntoView({ block: 'start', behavior: 'smooth' });
-    setTimeout(() => { _isSnappingBack = false; }, 600);
-  }, 500);
-});
 
 function renderStats() {
   const wrap = document.getElementById('stats-list');
