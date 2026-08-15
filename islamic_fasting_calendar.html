@@ -121,7 +121,13 @@
      layered text-shadow as reinforcement (shadow doesn't touch glyph
      outlines at all, so it doesn't share the stroke's failure mode) for
      redundancy across engines. */
-  .surah-ayah-arabic { direction:rtl; text-align:right; font-size:calc(22px * var(--quran-text-scale, 1)); line-height:2; color:var(--color-text-primary); margin-bottom:8px; -webkit-text-stroke:0.9px currentColor; paint-order:stroke fill; text-shadow:0.6px 0 0 currentColor, -0.6px 0 0 currentColor, 0 0.6px 0 currentColor, 0 -0.6px 0 currentColor; }
+  .surah-ayah-arabic { direction:rtl; text-align:right; font-size:calc(22px * var(--quran-text-scale, 1)); line-height:2; color:var(--color-text-primary); margin-bottom:8px; }
+  /* Applied via a toggleable parent class (.quran-bold-arabic), not baked into
+     .surah-ayah-arabic directly, so it can be switched on/off. paint-order
+     fixes a WebKit stroke/fill compositing quirk with dynamically-loaded
+     complex-script fonts; the layered text-shadow is redundant reinforcement
+     since it doesn't share that failure mode. */
+  .quran-bold-arabic .surah-ayah-arabic { -webkit-text-stroke:0.9px currentColor; paint-order:stroke fill; text-shadow:0.6px 0 0 currentColor, -0.6px 0 0 currentColor, 0 0.6px 0 currentColor, 0 -0.6px 0 currentColor; }
   .surah-ayah-num { display:inline-block; font-size:11px; font-weight:700; color:#ffffff; background:#117A65; border-radius:50%; width:20px; height:20px; text-align:center; line-height:20px; margin-left:6px; }
   .sajda-mark { color:#B8860B; font-size:22px; margin:0 4px; }
   .surah-ayah-block.has-sajda { background:#FDF6E3; border-radius:8px; padding-left:8px; padding-right:8px; border-bottom-color:#B8860B; }
@@ -557,6 +563,12 @@
       <div class="quran-translit-toggle-row" id="quran-translit-toggle-row">
         <button class="quran-translit-toggle" id="quran-translit-toggle-btn" onclick="toggleQuranTransliteration()" aria-label="Toggle transliteration"></button>
         <span>Transliteration</span>
+      </div>
+      <!-- Bold also only applies to the continuous reader — Mushaf mode uses
+           page-glyph fonts where this toggle wouldn't do anything anyway. -->
+      <div class="quran-translit-toggle-row" id="quran-bold-toggle-row">
+        <button class="quran-translit-toggle" id="quran-bold-toggle-btn" onclick="toggleQuranBoldArabic()" aria-label="Toggle bold Arabic text"></button>
+        <span>Bold Arabic text</span>
       </div>
 
       <!-- Continuous reader (Uthmani / IndoPak) -->
@@ -3544,6 +3556,7 @@ function updateScriptToggleUI() {
   document.getElementById('quran-reader-continuous').style.display = _quranScript === 'mushaf' ? 'none' : 'block';
   document.getElementById('quran-reader-mushaf').style.display = _quranScript === 'mushaf' ? 'block' : 'none';
   updateTranslitToggleUI();
+  updateBoldToggleUI();
 }
 
 function setQuranScript(script) {
@@ -3824,6 +3837,29 @@ function toggleQuranTransliteration() {
   });
 }
 
+// Whether Arabic text in the continuous reader is bolded. Defaults ON,
+// matching how it already looked before this became a toggle. Applied via a
+// class on the reader container (.quran-bold-arabic) rather than per-element,
+// since it's just one class toggle instead of touching every ayah's markup.
+let _quranBoldArabic = localStorage.getItem('quran_bold_arabic') !== '0';
+
+function updateBoldToggleUI() {
+  const btn = document.getElementById('quran-bold-toggle-btn');
+  if (btn) btn.classList.toggle('on', _quranBoldArabic);
+  const row = document.getElementById('quran-bold-toggle-row');
+  // Mushaf mode's page-glyph fonts don't respond to this toggle at all —
+  // hide it there rather than show a control that visibly does nothing.
+  if (row) row.style.display = _quranScript === 'mushaf' ? 'none' : 'flex';
+  const container = document.getElementById('quran-reader-continuous');
+  if (container) container.classList.toggle('quran-bold-arabic', _quranBoldArabic);
+}
+
+function toggleQuranBoldArabic() {
+  _quranBoldArabic = !_quranBoldArabic;
+  try { localStorage.setItem('quran_bold_arabic', _quranBoldArabic ? '1' : '0'); } catch (e) {}
+  updateBoldToggleUI();
+}
+
 // The 15 verses requiring Sajdah al-Tilawah (recitation prostration) —
 // the full union list across all madhabs (like a printed mushaf, this marks
 // every traditionally recognized location; it doesn't take a position on
@@ -3872,6 +3908,7 @@ function renderSurahReader(data) {
   }).join('');
   updateBookmarkIconsUI();
   updateTranslitToggleUI();
+  updateBoldToggleUI();
 
   if (_scrollToAyahOnRender != null) {
     const target = document.getElementById(`ayah-${data.number}-${_scrollToAyahOnRender}`);
