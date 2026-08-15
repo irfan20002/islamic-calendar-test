@@ -145,10 +145,10 @@
      the bug that made words render in the wrong order. Do not add row-reverse here. */
   .mushaf-line { display:flex; flex-direction:row; justify-content:space-between; align-items:baseline; gap:0; line-height:2.15; flex-wrap:nowrap; }
   .mushaf-line.mushaf-line-center { justify-content:center; gap:4px; }
-  .mushaf-word { white-space:nowrap; font-size:calc(21px * var(--quran-text-scale, 1)); color:#1b1b1b; }
+  .mushaf-word { white-space:nowrap; font-size:calc(21px * var(--mushaf-scale, 1)); color:#1b1b1b; }
   .mushaf-word.mushaf-word-end { color:#117A65; }
   .mushaf-surah-banner { display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#FDF6E3 0%,#FBEBB8 100%); border:1px solid #B8860B; border-radius:8px; padding:8px 4px; margin:4px 0 8px; }
-  .mushaf-surah-banner .mushaf-word { font-size:calc(19px * var(--quran-text-scale, 1)); color:#8a6300; }
+  .mushaf-surah-banner .mushaf-word { font-size:calc(19px * var(--mushaf-scale, 1)); color:#8a6300; }
   .mushaf-bismillah-line { justify-content:center !important; margin-bottom:4px; }
   .mushaf-footer { display:flex; align-items:center; justify-content:space-between; padding:8px 6px 2px; font-size:11px; color:var(--color-text-tertiary); font-family:var(--font-sans); }
   .mushaf-page-loading { text-align:center; padding:40px 10px; color:var(--color-text-tertiary); font-size:13px; }
@@ -3409,29 +3409,73 @@ function updateBookmarkIconsUI() {
   });
 }
 
-// Text size for the Quran reader (Arabic + translation together, since the
-// diacritics on the Arabic are what's usually hard to read small — scaling
-// only one and not the other would look inconsistent). Shared across all
-// three script modes (Uthmani / IndoPak / Mushaf) via the same CSS var, so
-// switching modes doesn't reset how large the text appears. Persisted so it
-// doesn't reset every time a surah is reopened.
+// Text size for the Quran reader. Uthmani/IndoPak (continuous, reflowable verse
+// text) and Mushaf (fixed page-width QCF glyphs, pre-stretched to fit the page
+// at their natural size) are NOT the same kind of layout, so they get separate
+// scale variables and separate persisted preferences — sharing one scale meant
+// a saved 175% from the continuous reader got applied to Mushaf glyphs that are
+// only designed to fit the page at 100%, causing lines to overflow the page
+// edges. Each mode remembers its own preference independently.
 const QURAN_TEXT_SCALE_STEPS = [0.8, 0.9, 1, 1.15, 1.3, 1.5, 1.75];
 let _quranTextScale = parseFloat(localStorage.getItem('quran_text_scale') || '1');
 if (!QURAN_TEXT_SCALE_STEPS.includes(_quranTextScale)) _quranTextScale = 1;
 
+// Mushaf's own scale steps are narrower and centered on 1 — since QCF lines are
+// pre-fit to the page width, there's much less headroom before a line would
+// need to shrink itself back down to still fit (see mushafFitLinesToWidth).
+const MUSHAF_TEXT_SCALE_STEPS = [0.75, 0.85, 1, 1.1, 1.2];
+let _mushafTextScale = parseFloat(localStorage.getItem('quran_mushaf_text_scale') || '1');
+if (!MUSHAF_TEXT_SCALE_STEPS.includes(_mushafTextScale)) _mushafTextScale = 1;
+
 function applyQuranTextScale() {
   const view = document.getElementById('quran-reader-view');
-  if (view) view.style.setProperty('--quran-text-scale', _quranTextScale);
   const label = document.getElementById('quran-text-size-label');
-  if (label) label.textContent = Math.round(_quranTextScale * 100) + '%';
+  if (_quranScript === 'mushaf') {
+    if (view) view.style.setProperty('--mushaf-scale', _mushafTextScale);
+    if (label) label.textContent = Math.round(_mushafTextScale * 100) + '%';
+  } else {
+    if (view) view.style.setProperty('--quran-text-scale', _quranTextScale);
+    if (label) label.textContent = Math.round(_quranTextScale * 100) + '%';
+  }
 }
 
 function adjustQuranTextSize(delta) {
+  if (_quranScript === 'mushaf') {
+    const idx = MUSHAF_TEXT_SCALE_STEPS.indexOf(_mushafTextScale);
+    const newIdx = Math.max(0, Math.min(MUSHAF_TEXT_SCALE_STEPS.length - 1, idx + delta));
+    _mushafTextScale = MUSHAF_TEXT_SCALE_STEPS[newIdx];
+    try { localStorage.setItem('quran_mushaf_text_scale', _mushafTextScale); } catch (e) {}
+    applyQuranTextScale();
+    mushafFitLinesToWidth();
+    return;
+  }
   const idx = QURAN_TEXT_SCALE_STEPS.indexOf(_quranTextScale);
   const newIdx = Math.max(0, Math.min(QURAN_TEXT_SCALE_STEPS.length - 1, idx + delta));
   _quranTextScale = QURAN_TEXT_SCALE_STEPS[newIdx];
   try { localStorage.setItem('quran_text_scale', _quranTextScale); } catch (e) {}
   applyQuranTextScale();
+}
+
+// Safety net on top of the scale steps above: even at 100% mushaf scale, exact
+// pixel width will vary slightly by device/browser font metrics. After a page
+// renders, measure every line against the available width and squeeze (scaleX)
+// only the ones that actually overflow — most lines need no adjustment at all,
+// since QCF glyphs are already fit to width by design. This guarantees no line
+// is ever cropped at the page edge, regardless of screen size or scale setting.
+function mushafFitLinesToWidth() {
+  const container = document.getElementById('mushaf-page-content');
+  if (!container) return;
+  const targetWidth = container.clientWidth;
+  if (!targetWidth) return;
+  container.querySelectorAll('.mushaf-line:not(.mushaf-line-center)').forEach(line => {
+    line.style.transform = '';
+    const natural = line.scrollWidth;
+    if (natural > targetWidth && natural > 0) {
+      const ratio = Math.max(0.72, targetWidth / natural);
+      line.style.transform = `scaleX(${ratio})`;
+      line.style.transformOrigin = 'center';
+    }
+  });
 }
 
 let _quranScript = localStorage.getItem('quran_script_pref') || 'uthmani';
@@ -3823,6 +3867,14 @@ function mushafGoPage(n) {
 
     updateMushafBookmarkUI();
     updateQuranContinueReading();
+    // Wait for the actual QCF glyphs to be applied (not just the fallback
+    // font) before measuring line widths — measuring too early would size
+    // against the wrong font's metrics and squeeze lines that don't need it.
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => requestAnimationFrame(mushafFitLinesToWidth));
+    } else {
+      setTimeout(mushafFitLinesToWidth, 150);
+    }
   }).catch(() => {
     container.innerHTML = '<div class="mushaf-page-loading">Could not load this page. Check your connection and try again.</div>';
   });
@@ -3872,6 +3924,15 @@ function updateMushafBookmarkUI() {
     else mushafGoPage(mushafCurrentPage() + 1);
   }, { passive: true });
 })();
+
+// Re-fit Mushaf lines on rotation/resize — a line that fit in portrait may
+// not fit the same way in landscape, or vice versa.
+let _mushafResizeTimer = null;
+window.addEventListener('resize', () => {
+  if (_quranScript !== 'mushaf') return;
+  clearTimeout(_mushafResizeTimer);
+  _mushafResizeTimer = setTimeout(mushafFitLinesToWidth, 150);
+});
 
 </script>
 </body>
