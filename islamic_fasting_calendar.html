@@ -87,103 +87,13 @@
     animation: sparkle linear infinite;
   }
   .header p { font-size: 13px; color: var(--color-text-secondary); margin-top: 2px; }
-  .tabs { display: flex; gap: 2px; margin-bottom: 0.75rem; border-bottom: 0.5px solid var(--color-border-tertiary); overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-  .tabs::-webkit-scrollbar { display: none; }
-  .tab { font-size: 12.5px; font-weight: 500; padding: 6px 7px; border: none; background: none; color: var(--color-text-secondary); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -0.5px; font-family: var(--font-sans); border-radius: 8px 8px 0 0; transition: all 0.15s; flex-shrink: 0; white-space: nowrap; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 0.75rem; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .tab { font-size: 15px; font-weight: 500; padding: 7px 16px; border: none; background: none; color: var(--color-text-secondary); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -0.5px; font-family: var(--font-sans); border-radius: 8px 8px 0 0; transition: all 0.15s; }
   .tab.active { color: #fff; background: #1D9E75; border-bottom: 2px solid #1D9E75; }
   .tab[data-tab="calendar"].active { background: #2E86C1; border-bottom-color: #2E86C1; }
   .tab[data-tab="guide"].active { background: #8E44AD; border-bottom-color: #8E44AD; }
   .tab[data-tab="stats"].active { background: #E67E22; border-bottom-color: #E67E22; }
-  .tab[data-tab="quran"].active { background: #B8860B; border-bottom-color: #B8860B; }
   .tab:hover:not(.active) { color: var(--color-text-primary); background: var(--color-background-secondary); }
-  .kahf-shortcut { display:flex; align-items:center; justify-content:center; gap:8px; background:#117A65; color:#fff; font-weight:700; font-size:14px; padding:10px 14px; border-radius:var(--border-radius-md); cursor:pointer; margin-bottom:.75rem; border:none; width:100%; font-family:var(--font-sans); }
-  .kahf-shortcut.friday-rainbow { animation: rainbow 3s linear infinite; }
-  .surah-item { display:flex; align-items:center; gap:12px; padding:10px 8px; border-bottom:1px solid var(--color-border-tertiary); cursor:pointer; }
-  .surah-item:hover { background: var(--color-background-secondary); }
-  .surah-num { width:28px; height:28px; border-radius:50%; background:var(--color-background-secondary); color:var(--color-text-secondary); font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  .surah-ayah-block { padding:14px 0; border-bottom:1px solid var(--color-border-tertiary); position:relative; transition:background-color 0.3s ease; scroll-margin-top:16px; }
-  .surah-ayah-block.bookmarked { background:#FDF6E3; border-radius:8px; padding-left:8px; padding-right:8px; }
-  .surah-ayah-block.ayah-flash { background:#F5E0A3; border-radius:8px; padding-left:8px; padding-right:8px; }
-  .ayah-bookmark-btn { position:absolute; top:14px; left:0; border:none; background:none; font-size:18px; color:#B8860B; cursor:pointer; padding:2px 6px; line-height:1; }
-  /* font-weight:700 isn't enough — the actual Arabic fonts used (Uthmani
-     system font, and the self-hosted Nastaleeq/Naskh for IndoPak) only ship
-     a single weight, no real bold variant. Text-stroke alone and text-shadow
-     alone were each tried and reported as reverting to regular on iOS
-     Safari specifically — verified by actually rendering the real Nastaleeq
-     font (nastaleeq-v10-full.ttf) in a headless Chromium and screenshotting
-     the pixel output rather than guessing: both stroke and shadow DO
-     visibly thicken the real glyphs there, which means the technique itself
-     is sound — the failure was WebKit-specific. -webkit-text-stroke without
-     an explicit paint-order can render inconsistently in WebKit once a
-     dynamically-loaded webfont with complex Arabic shaping swaps in (a
-     known category of WebKit stroke/fill compositing quirk); paint-order:
-     stroke fill forces the correct compositing order. Combined with the
-     layered text-shadow as reinforcement (shadow doesn't touch glyph
-     outlines at all, so it doesn't share the stroke's failure mode) for
-     redundancy across engines. */
-  .surah-ayah-arabic { direction:rtl; text-align:right; font-size:calc(22px * var(--quran-text-scale, 1)); line-height:2; color:var(--color-text-primary); margin-bottom:8px; }
-  /* Applied via a toggleable parent class (.quran-bold-arabic), not baked into
-     .surah-ayah-arabic directly, so it can be switched on/off. paint-order
-     fixes a WebKit stroke/fill compositing quirk with dynamically-loaded
-     complex-script fonts; the layered text-shadow is redundant reinforcement
-     since it doesn't share that failure mode. */
-  .quran-bold-arabic .surah-ayah-arabic { -webkit-text-stroke:0.9px currentColor; paint-order:stroke fill; text-shadow:0.6px 0 0 currentColor, -0.6px 0 0 currentColor, 0 0.6px 0 currentColor, 0 -0.6px 0 currentColor; }
-  .surah-ayah-num { display:inline-block; font-size:11px; font-weight:700; color:#ffffff; background:#117A65; border-radius:50%; width:20px; height:20px; text-align:center; line-height:20px; margin-left:6px; }
-  .sajda-mark { color:#B8860B; font-size:22px; margin:0 4px; }
-  .surah-ayah-block.has-sajda { background:#FDF6E3; border-radius:8px; padding-left:8px; padding-right:8px; border-bottom-color:#B8860B; }
-  .surah-bismillah-block { padding:10px 0 16px; text-align:center; border-bottom:1px solid var(--color-border-tertiary); }
-  .surah-bismillah-block .surah-ayah-arabic { text-align:center; margin-bottom:6px; }
-  .surah-bismillah-block .surah-ayah-translit { text-align:center; }
-  .sajda-badge { font-size:11px; font-weight:600; color:#8a6300; background:#FBEBB8; border-radius:6px; padding:3px 8px; display:inline-block; margin:4px 0; }
-  .surah-ayah-translation { font-size:calc(13px * var(--quran-text-scale, 1)); color:#117A65; line-height:1.6; }
-  .surah-ayah-translit { font-size:calc(12.5px * var(--quran-text-scale, 1)); color:var(--color-text-tertiary); font-style:italic; line-height:1.5; margin-bottom:2px; }
-  .quran-translit-toggle-row { display:flex; align-items:center; gap:8px; margin-bottom:.5rem; font-size:12px; color:var(--color-text-secondary); font-family:var(--font-sans); }
-  .quran-translit-toggle { position:relative; width:34px; height:20px; border-radius:10px; background:var(--color-border-tertiary); border:none; cursor:pointer; flex-shrink:0; }
-  .quran-translit-toggle::after { content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:#fff; transition:transform .15s; }
-  .quran-translit-toggle.on { background:#B8860B; }
-  .quran-translit-toggle.on::after { transform:translateX(14px); }
-  .quran-frame { position:relative; border:3px double #B8860B; border-radius:12px; padding:22px 16px 16px; margin-top:4px; background:linear-gradient(180deg,#FFFDF7 0%,#FFFBF0 100%); }
-  .quran-frame::before { content:''; position:absolute; top:6px; left:6px; right:6px; bottom:6px; border:1px solid #117A65; border-radius:8px; pointer-events:none; }
-  .quran-corner { position:absolute; font-size:15px; color:#B8860B; line-height:1; background:#FFFDF7; padding:0 3px; }
-  .quran-corner.tl { top:-9px; left:14px; }
-  .quran-corner.tr { top:-9px; right:14px; }
-  .quran-corner.bl { bottom:-9px; left:14px; }
-  .quran-corner.br { bottom:-9px; right:14px; }
-  .surah-ayah-arabic.indopak { font-family:'Quran Naskh Full', serif; font-size:calc(24px * var(--quran-text-scale, 1)); line-height:2.3; }
-  .quran-text-size-row { display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:.75rem; }
-  .quran-float-textsize { display:none; position:fixed; right:14px; bottom:24px; z-index:500; flex-direction:column; gap:8px; background:var(--color-background-primary); border:1px solid var(--color-border-tertiary); border-radius:14px; padding:6px; box-shadow:0 2px 10px rgba(0,0,0,0.15); }
-  .quran-float-textsize.visible { display:flex; }
-  .quran-float-textsize .quran-text-size-btn { width:38px; height:38px; }
-  .quran-text-size-btn { border:1px solid var(--color-border-tertiary); background:var(--color-background-primary); color:var(--color-text-primary); border-radius:8px; width:34px; height:34px; font-weight:700; cursor:pointer; font-family:var(--font-sans); }
-  .quran-text-size-btn:first-child { font-size:13px; }
-  .quran-text-size-btn:last-child { font-size:19px; }
-  .quran-text-size-label { font-size:12px; color:var(--color-text-tertiary); min-width:40px; text-align:center; }
-  .script-toggle { display:flex; gap:6px; margin-bottom:.75rem; }
-  .script-toggle-btn { flex:1; font-size:12px; font-weight:600; padding:6px 10px; border-radius:8px; border:1px solid var(--color-border-tertiary); background:var(--color-background-primary); color:var(--color-text-secondary); cursor:pointer; font-family:var(--font-sans); }
-  .script-toggle-btn.active { background:#B8860B; border-color:#B8860B; color:#fff; }
-  /* ── Mushaf (Madinah page-accurate) reader ─────────────────────────────── */
-  .mushaf-header-bar { display:flex; align-items:center; justify-content:space-between; direction:rtl; background:linear-gradient(135deg,#c9d6ec 0%,#dbe4f3 50%,#c9d6ec 100%); border:1px solid #9fb3d6; border-radius:10px 10px 0 0; padding:8px 12px; }
-  .mushaf-header-pill { background:#fff; border:1px solid #9fb3d6; border-radius:14px; padding:4px 14px; text-align:center; font-family:var(--font-sans); }
-  .mushaf-header-pill .juz-label { font-size:11px; font-weight:700; color:#33415c; display:block; }
-  .mushaf-header-pill .surah-label { font-size:13px; font-weight:700; color:#1b2740; display:block; }
-  .mushaf-nav-btn { border:none; background:rgba(255,255,255,.6); color:#33415c; width:30px; height:30px; border-radius:50%; font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-family:var(--font-sans); }
-  .mushaf-nav-btn:disabled { opacity:.35; cursor:default; }
-  .mushaf-page { background:#FFFDF7; border:1px solid #9fb3d6; border-top:none; border-radius:0 0 10px 10px; padding:18px 14px 10px; min-height:340px; direction:rtl; }
-  /* .mushaf-page (ancestor) already sets direction:rtl, which alone makes flex's
-     main-start the right edge — so plain flex-direction:row already lays words out
-     right-to-left in correct reading order. Adding row-reverse on top of that
-     compounds with the inherited RTL and flips it back to left-to-right, which is
-     the bug that made words render in the wrong order. Do not add row-reverse here. */
-  .mushaf-line { display:flex; flex-direction:row; justify-content:space-between; align-items:baseline; gap:0; line-height:2.15; flex-wrap:nowrap; }
-  .mushaf-line.mushaf-line-center { justify-content:center; gap:4px; }
-  .mushaf-word { white-space:nowrap; font-size:calc(21px * var(--mushaf-scale, 1)); color:#1b1b1b; }
-  .mushaf-word.mushaf-word-end { color:#117A65; }
-  .mushaf-surah-banner { display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#FDF6E3 0%,#FBEBB8 100%); border:1px solid #B8860B; border-radius:8px; padding:8px 4px; margin:4px 0 8px; }
-  .mushaf-surah-banner .mushaf-word { font-size:calc(19px * var(--mushaf-scale, 1)); color:#8a6300; }
-  .mushaf-bismillah-line { justify-content:center !important; margin-bottom:4px; }
-  .mushaf-footer { display:flex; align-items:center; justify-content:space-between; padding:8px 6px 2px; font-size:11px; color:var(--color-text-tertiary); font-family:var(--font-sans); }
-  .mushaf-page-loading { text-align:center; padding:40px 10px; color:var(--color-text-tertiary); font-size:13px; }
-  .mushaf-bookmark-star { border:none; background:none; font-size:18px; color:#B8860B; cursor:pointer; padding:2px 6px; }
   .section { margin-bottom: 1.5rem; }
   .section-title { font-size: 15px; font-weight: 700; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .75rem; }
   .section-title-rainbow { animation: rainbow 5s linear infinite; }
@@ -325,33 +235,6 @@
   /* Prayer card */
   .dashboard-right { background: var(--color-background-primary); border: 1.5px solid #1D9E75; border-radius: var(--border-radius-lg); padding: .5rem .75rem; min-width: 0; }
   .prayer-error { font-size: 12px; color: var(--color-text-secondary); text-align: center; padding: .4rem; }
-  /* Only downloaded once an ayah actually uses this font-family — i.e. only when the
-     IndoPak script toggle in the Quran tab is used. KFGQPC Nastaleeq is the official
-     King Fahd Glorious Quran Printing Complex Nastaleeq font — reverted here after
-     digital-khatt-indopak.otf (tried first) turned out to have two real problems:
-     (1) its calligraphic hand didn't match the reference IndoPak style being compared
-     against, and (2) it's a CFF2 variable font, a format with known cursive-attachment
-     (GPOS 'curs') positioning bugs on iOS Safari/WebKit — confirmed via direct HarfBuzz
-     shaping that its glyph *selection* was correct (proper init/medi/fina contextual
-     forms), which points at WebKit failing to position those forms into connection,
-     not bad font data. Nastaleeq is a plain static TrueType (no variable font tables),
-     lower risk, and was already confirmed rendering correctly and joined on-device. */
-  @font-face {
-    font-family: 'Quran Naskh Full';
-    src: url('https://cdn.jsdelivr.net/gh/fawazahmed0/quran-api@1/fonts/nastaleeq-v10-full.ttf') format('truetype');
-    /* block (not swap): eliminates the fallback-font-then-real-font visual
-       transition entirely — text is briefly invisible (up to ~3s) rather
-       than rendering in a generic serif first and then swapping. Removes
-       any chance of the bold styling looking like it "reverts" partway
-       through, since there's only ever one font shown, not two. */
-    font-display: block;
-  }
-  /* Mushaf (Madinah page-accurate) QCF4 fonts are NOT declared here — there are
-     48 of them (47 page-range fonts + 1 header/bismillah font, ~36MB total) and
-     declaring them all statically would mean the browser evaluates 48 @font-face
-     rules on every load. Instead they're injected one at a time, only for the
-     font a given mushaf page actually needs, by injectMushafFontFace() in the
-     script below — see the "Mushaf reader" section. */
 </style>
 </head>
 <body>
@@ -458,7 +341,6 @@
     <button class="tab" data-tab="calendar" onclick="showTab('calendar')">Calendar</button>
     <button class="tab" data-tab="guide" onclick="showTab('guide')">Guide</button>
     <button class="tab" data-tab="stats" onclick="showTab('stats')">Stats</button>
-    <button class="tab" data-tab="quran" onclick="showTab('quran')">Quran</button>
   </div>
 
   <div id="tab-upcoming">
@@ -528,79 +410,7 @@
   <div id="tab-stats" style="display:none">
     <div class="section">
       <div class="section-title">Monthly archive</div>
-      <div id="stats-archive-info" style="font-size:11px;color:var(--color-text-tertiary);margin:-4px 0 .6rem"></div>
       <div id="stats-list"></div>
-    </div>
-  </div>
-
-  <div id="tab-quran" style="display:none">
-    <div class="section" id="quran-home-view">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;gap:8px">
-        <div class="section-title" style="margin-bottom:0">Quran</div>
-        <div id="quran-continue-reading" style="font-size:12px;color:#B8860B;font-weight:600;cursor:pointer;white-space:nowrap"></div>
-      </div>
-      <button class="kahf-shortcut" id="kahf-shortcut-btn" onclick="openKahf()">🕌 Read Al-Kahf</button>
-      <input type="text" id="quran-search" placeholder="Search surah by name or number..." oninput="filterSurahList()"
-        style="width:100%;box-sizing:border-box;padding:9px 12px;border-radius:var(--border-radius-md);border:1px solid var(--color-border-tertiary);font-size:16px;margin-bottom:.75rem;font-family:var(--font-sans);color:var(--color-text-primary);background:var(--color-background-primary)">
-      <div id="quran-surah-list" style="max-height:480px;overflow-y:auto">
-        <div style="text-align:center;padding:20px;color:var(--color-text-tertiary);font-size:13px">Loading surahs…</div>
-      </div>
-    </div>
-    <div class="section" id="quran-reader-view" style="display:none">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:.75rem">
-        <button onclick="closeSurahReader()" style="border:none;background:var(--color-background-secondary);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:13px;color:var(--color-text-primary);font-family:var(--font-sans)">&larr; Back</button>
-        <div id="quran-reader-title" style="font-weight:700;font-size:15px;color:var(--color-text-primary)"></div>
-      </div>
-      <div class="script-toggle">
-        <button class="script-toggle-btn" id="script-btn-uthmani" onclick="setQuranScript('uthmani')">Uthmani</button>
-        <button class="script-toggle-btn" id="script-btn-indopak" onclick="setQuranScript('indopak')">IndoPak</button>
-        <button class="script-toggle-btn" id="script-btn-mushaf" onclick="setQuranScript('mushaf')">Mushaf</button>
-      </div>
-
-      <!-- Transliteration only applies to the continuous reader (Uthmani/IndoPak) —
-           Mushaf mode is rendered from page-glyph fonts, not plain text, so there's
-           no verse-text line to attach a transliteration to there. -->
-      <div class="quran-translit-toggle-row" id="quran-translit-toggle-row">
-        <button class="quran-translit-toggle" id="quran-translit-toggle-btn" onclick="toggleQuranTransliteration()" aria-label="Toggle transliteration"></button>
-        <span>Transliteration</span>
-      </div>
-      <!-- Bold also only applies to the continuous reader — Mushaf mode uses
-           page-glyph fonts where this toggle wouldn't do anything anyway. -->
-      <div class="quran-translit-toggle-row" id="quran-bold-toggle-row">
-        <button class="quran-translit-toggle" id="quran-bold-toggle-btn" onclick="toggleQuranBoldArabic()" aria-label="Toggle bold Arabic text"></button>
-        <span>Bold Arabic text</span>
-      </div>
-
-      <!-- Continuous reader (Uthmani / IndoPak) -->
-      <div id="quran-reader-continuous">
-        <div class="quran-frame">
-          <span class="quran-corner tl">✦</span>
-          <span class="quran-corner tr">✦</span>
-          <span class="quran-corner bl">✦</span>
-          <span class="quran-corner br">✦</span>
-          <div id="quran-reader-content"></div>
-        </div>
-      </div>
-
-      <!-- Mushaf (Madinah page-accurate) reader -->
-      <div id="quran-reader-mushaf" style="display:none">
-        <div class="mushaf-header-bar">
-          <button class="mushaf-nav-btn" id="mushaf-prev-btn" onclick="mushafGoPage(mushafCurrentPage() - 1)" aria-label="Previous page">&#9654;</button>
-          <div class="mushaf-header-pill">
-            <span class="juz-label" id="mushaf-juz-label">Juz 1</span>
-            <span class="surah-label" id="mushaf-surah-label">Al-Fatihah</span>
-          </div>
-          <button class="mushaf-nav-btn" id="mushaf-next-btn" onclick="mushafGoPage(mushafCurrentPage() + 1)" aria-label="Next page">&#9664;</button>
-        </div>
-        <div class="mushaf-page" id="mushaf-page-content">
-          <div class="mushaf-page-loading">Loading page…</div>
-        </div>
-        <div class="mushaf-footer">
-          <button class="mushaf-bookmark-star" id="mushaf-bookmark-btn" onclick="toggleMushafPageBookmark()" aria-label="Bookmark this page">☆</button>
-          <span id="mushaf-page-label">Page 1 of 604</span>
-          <span></span>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -611,16 +421,6 @@
   </div>
 
 </div><!-- /app -->
-
-<!-- Floating text-size control for the Quran reader — fixed position so it
-     stays reachable while scrolled deep into a chapter, instead of requiring
-     a scroll back to the top where the reader's own header controls live. -->
-<div id="quran-float-textsize" class="quran-float-textsize">
-  <button class="quran-text-size-btn" onclick="adjustQuranTextSize(1)" aria-label="Larger text">A</button>
-  <span class="quran-text-size-label" id="quran-text-size-label">100%</span>
-  <button class="quran-text-size-btn" onclick="adjustQuranTextSize(-1)" aria-label="Smaller text">A</button>
-</div>
-
 <!-- Monthly Prayer Schedule Modal -->
 <div id="monthly-prayer-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);align-items:flex-end;justify-content:center" onclick="if(event.target===this)this.style.display='none'">
   <div style="background:var(--color-background-primary);border-radius:16px 16px 0 0;width:100%;max-width:480px;max-height:85vh;overflow:hidden;display:flex;flex-direction:column">
@@ -894,24 +694,6 @@ function getAdjustedHijri(date) {
   adjusted.setDate(adjusted.getDate() + hijriOffset);
   return gToHCorrected(adjusted);
 }
-
-// getAdjustedHijri(getToday()) is meant to describe "today," but it recomputes
-// today's Hijri date a second, independent way (walking forward/backward from
-// the anchor). That recomputation can momentarily disagree with the header
-// badge — which is set directly from the raw API response — if it runs before
-// _today or the anchor's Gregorian reference has fully caught up to the real
-// day (e.g. right around a day rollover). That mismatch is what caused the
-// Fasting Tracker to show "Rab I" while the header correctly showed "30 Safar."
-// This reads the exact same three numbers the badge uses, so "today" can never
-// disagree with itself across the app. Only used where the date IS today —
-// arbitrary past/future dates (calendar grid, etc.) still need getAdjustedHijri.
-function getTodayHijriAdjusted() {
-  if (window._apiHijriYear == null) return getAdjustedHijri(getToday()); // before first API response
-  if (hijriOffset === 0) {
-    return { year: window._apiHijriYear, month: window._apiHijriMonth, day: window._apiHijriDay };
-  }
-  return getAdjustedHijri(getToday());
-}
 if (!window._apiHijriDay) { window._apiHijriDay = getAdjustedHijri(new Date()).day; }
 if (!window._apiHijriMonth) { window._apiHijriMonth = getAdjustedHijri(new Date()).month; }
 if (!window._apiHijriYear) { window._apiHijriYear = getAdjustedHijri(new Date()).year; }
@@ -997,7 +779,8 @@ function treeEmojiYear(n) {
 }
 
 function calcScore() {
-  const todayH = getTodayHijriAdjusted();
+  const now = getToday();
+  const todayH = getAdjustedHijri(now);
   const curHY  = todayH.year;
   const curHM  = todayH.month;
   const prevHM = curHM === 1 ? 12 : curHM - 1;
@@ -1168,7 +951,7 @@ function renderUpcoming(doScrollToToday = true) {
     ? [{ name: todayDow === 1 ? 'Monday fast' : 'Thursday fast', dates: [new Date(getToday())], hijri: 'Weekly sunnah', icon: 'ti-repeat', note: todayDow === 1 ? 'Monday' : 'Thursday', weekly: true }]
     : [];
 
-  const todayH         = getTodayHijriAdjusted();
+  const todayH         = gToH(getToday());
   const startDate      = new Date(getToday()); startDate.setFullYear(startDate.getFullYear() - 1);
   const endOfHijriYear = hToG(todayH.year + 1, 12, 29);
 
@@ -1474,7 +1257,7 @@ function renderIslamicDayCountdown() {
   ];
 
   // Use corrected Hijri for today — consistent with calendar and fast list
-  const todayH = getTodayHijriAdjusted();
+  const todayH = getAdjustedHijri(getToday());
 
   let next = null, minDays = Infinity;
   for (const hy of [todayH.year, todayH.year + 1]) {
@@ -1508,27 +1291,22 @@ function prevMonth() { viewMonth--; if (viewMonth < 0)  { viewMonth = 11; viewYe
 function nextMonth() { viewMonth++; if (viewMonth > 11) { viewMonth = 0;  viewYear++; } renderCalendar(); }
 
 function showTab(name) {
-  ['upcoming', 'calendar', 'guide', 'stats', 'quran'].forEach(t => {
+  ['upcoming', 'calendar', 'guide', 'stats'].forEach(t => {
     document.getElementById('tab-' + t).style.display = t === name ? 'block' : 'none';
   });
   document.querySelectorAll('.tab').forEach(btn => {
-    const isActive = btn.dataset.tab === name;
-    btn.classList.toggle('active', isActive);
-    if (isActive) btn.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+    btn.classList.toggle('active', btn.dataset.tab === name);
   });
   if (name === 'calendar') { renderCalendar(); renderIslamicDayCountdown(); }
   if (name === 'stats') renderStats();
-  if (name === 'quran') { _currentReaderContext = 'quran'; renderQuranHome(); }
-  // Leaving the Quran tab entirely (without pressing Back first) should also
-  // hide the floating text-size widget — it's reader-specific.
-  if (name !== 'quran') document.getElementById('quran-float-textsize').classList.remove('visible');
 }
 
 function renderStats() {
   const wrap = document.getElementById('stats-list');
   if (!wrap) return;
 
-  const todayH = getTodayHijriAdjusted();
+  const now = getToday();
+  const todayH = getAdjustedHijri(now);
   const curHY  = todayH.year;
   const curHM  = todayH.month;
   const prevHM = curHM === 1 ? 12 : curHM - 1;
@@ -1551,26 +1329,18 @@ function renderStats() {
     _seen.add(s); return true;
   });
 
-  // Group counts by Hijri year-month, excluding only the current and
-  // previous month (those are still shown live in the Fasting Tracker tiles
-  // above). This used to also exclude anything before an "install anchor"
-  // month, meant to avoid backfilling stray pre-existing data — but that
-  // anchor gets set to whatever month is "current" the first time this
-  // specific field is ever recorded, which isn't reliably the same as when
-  // real tracking began (e.g. it's per-origin, so a fresh deployment or a
-  // new browser profile gets a brand-new, recent anchor even if genuine
-  // historical fast_ data already exists). In practice this was hiding real
-  // tracked history rather than protecting against scattered noise, so it's
-  // removed — every real fast you've recorded should be able to reach the
-  // archive once it's no longer the current or previous month.
-  const infoEl = document.getElementById('stats-archive-info');
-  if (infoEl) infoEl.textContent = '';
+  // Group counts by Hijri year-month, excluding the current and previous
+  // month (those are still shown live in the Fasting Tracker tiles above),
+  // and excluding anything before the install anchor month.
+  const anchorRaw = localStorage.getItem('install_hijri_ym');
+  const [anchorHY, anchorHM] = anchorRaw ? anchorRaw.split('-').map(Number) : [curHY, curHM];
 
   const counts = {}; // key "hy-hm" -> count
   doneDates.forEach(d => {
     const h = gToHCorrected(d);
     if (h.year === curHY && h.month === curHM) return;
     if (h.year === prevHMY && h.month === prevHM) return;
+    if (h.year < anchorHY || (h.year === anchorHY && h.month < anchorHM)) return;
     const key = h.year + '-' + h.month;
     counts[key] = (counts[key] || 0) + 1;
   });
@@ -1684,19 +1454,6 @@ function renderPrayers(times, city) {
   window._ishaTime       = parseTime(times.Isha);
   window._ishaWarnStart  = new Date(parseTime(times.Isha).getTime() - 15 * 60000);
 
-  // renderPrayers() rebuilds prayer-box.innerHTML below, which resets the
-  // weather spans to "--" placeholders. fetchWeather() only fires from the
-  // initial geolocation callback and its own 15-min interval, so every other
-  // renderPrayers() call (cache-hit render, background refetch, retry, day
-  // refresh) was wiping the weather display and leaving it blank until the
-  // interval happened to tick. Re-fetch here so it self-heals every render.
-  if (window._cachedLat !== undefined && window._cachedLon !== undefined) {
-    fetchWeather(window._cachedLat, window._cachedLon);
-  }
-  // City name rarely changes, so just restore the last known value instead
-  // of re-hitting the geocoding API on every render.
-  const _cachedCityName = window._cachedCity && window._cachedCity !== 'Your location' ? window._cachedCity : null;
-
   const box = document.getElementById('prayer-box');
   box.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;gap:8px">
@@ -1715,7 +1472,7 @@ function renderPrayers(times, city) {
             <span style="font-size:13px;font-weight:700;color:#cc0000;font-variant-numeric:tabular-nums" id="clock-countdown">--</span>
           </span>
           <span style="display:flex;flex-direction:column;align-items:flex-start;line-height:1.05;gap:0px;margin-left:4px">
-            <span style="font-size:9px;font-weight:700;color:#c41e3a;white-space:nowrap" id="weather-city">${_cachedCityName || '--'}</span>
+            <span style="font-size:9px;font-weight:700;color:#c41e3a;white-space:nowrap" id="weather-city">--</span>
             <span style="font-size:13px" id="weather-icon">--</span>
             <span style="font-size:13px;font-weight:700;color:var(--color-text-secondary);font-variant-numeric:tabular-nums" id="weather-temp">--</span>
           </span>
@@ -2597,7 +2354,6 @@ function fetchCityName(lat, lon) {
     .then(r => r.json())
     .then(data => {
       const name = data && (data.city || data.locality || data.principalSubdivision);
-      if (name) window._cachedCity = name;
       const el = document.getElementById('weather-city');
       if (name && el) el.textContent = name;
     })
@@ -2700,7 +2456,7 @@ function updateDateDisplay() {
   const dlG = document.getElementById('prayer-date-greg');
   if (!dlH && !dlG) return;
 
-  const hd = getTodayHijriAdjusted();
+  const hd = getAdjustedHijri(now);
   if (dlH) dlH.textContent = `${hd.day} ${HIJRI_MONTHS[hd.month - 1]} ${hd.year}`;
   if (dlG) dlG.textContent = now.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -2752,58 +2508,20 @@ function updateSpecialBanner() {
   }
 }
 
-// ── Day refresh — refresh TODAY and all views ─────────────────────────────
-// Used both by the midnight setTimeout below AND by the visibilitychange
-// listener. The setTimeout alone isn't reliable: iOS suspends timers while
-// the PWA is backgrounded, so a midnight rollover that happens while the app
-// is in the background never fires until the OS decides to resume JS —
-// which can be hours later or not until the next foreground. That left
-// _today, and all the window._fajrTime/_ishaTime/etc prayer-window values,
-// stuck on a stale date (wrong Hijri date, "next prayer: Isha" shown at
-// Fajr time, etc.) until the user force-quit and relaunched. Calling this
-// on visibilitychange re-syncs everything the moment the app is foregrounded,
-// regardless of whether the midnight timer fired.
-function refreshForNewDay() {
-  const fresh = new Date(); fresh.setHours(0,0,0,0);
-  if (_today && fresh.getTime() === _today.getTime()) return; // no actual day change
-  _today = fresh;
-  _fastDateCache = null; // invalidate allFastDates cache
-  _parsedPrayerTimes = null;
-  renderUpcoming();
-  calcScore(); updateSpecialBanner();
-  // Refreshing the Hijri anchor here is what lets a month that just ended
-  // "age out" of the live dashboard tiles into the Stats archive — without
-  // this, curHM/prevHM in renderStats() stay pinned to whatever they were
-  // at last page load, so a completed month can never appear in Stats until
-  // the app is fully reloaded. Previously this was gated behind
-  // window._cachedLat being set, which is in-memory only (not persisted) —
-  // if that was ever unset for any reason mid-session, the Hijri anchor
-  // would silently stop refreshing at every subsequent midnight. Falling
-  // back to initPrayers() (which sets _cachedLat itself, Houston default
-  // first, then real geolocation) guarantees this always actually runs.
-  if (window._cachedLat !== undefined) {
-    loadPrayers(window._cachedLat, window._cachedLon, window._cachedCity || 'Your location');
-  } else {
-    initPrayers();
-  }
-  if (document.getElementById('tab-stats') && document.getElementById('tab-stats').style.display !== 'none') renderStats();
-}
-
+// ── Midnight rollover — refresh TODAY and all views ──────────────────────
 (function scheduleMidnightRefresh() {
   const now  = new Date();
   const msToMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1) - now;
   setTimeout(() => {
-    refreshForNewDay();
+    _today = new Date(); _today.setHours(0,0,0,0);
+    _fastDateCache = null; // invalidate allFastDates cache
+    _parsedPrayerTimes = null;
+    renderUpcoming();
+    calcScore(); updateSpecialBanner();
+    if (window._cachedLat !== undefined) loadPrayers(window._cachedLat, window._cachedLon, window._cachedCity || 'Your location');
     scheduleMidnightRefresh(); // reschedule for next midnight
   }, msToMidnight + 100);
 })();
-
-// Re-sync the moment the app is foregrounded — catches day rollovers that
-// happened while backgrounded and the midnight timer missed.
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') refreshForNewDay();
-});
-window.addEventListener('pageshow', () => refreshForNewDay());
 
 // ── Re-render prayer box when the active prayer slot changes ─────────────
 setInterval(() => {
@@ -2848,6 +2566,15 @@ setInterval(() => {
       localStorage.removeItem(k);
     }
   });
+})();
+// ── Install anchor for Stats archive ─────────────────────────────────────
+// The archive only shows months from whichever Hijri month was "current"
+// at first install — never backfills older, pre-existing scattered data.
+(function recordInstallAnchor() {
+  if (!localStorage.getItem('install_hijri_ym')) {
+    const h = getAdjustedHijri(getToday());
+    localStorage.setItem('install_hijri_ym', h.year + '-' + h.month);
+  }
 })();
 renderUpcoming();
 calcScore(); updateSpecialBanner();
@@ -3303,873 +3030,6 @@ function _cycleAllahName() {
 }
 _cycleAllahName();
 setInterval(_cycleAllahName, 2000);
-
-// ── Quran reader ──────────────────────────────────────────────────────────
-// Text/translation come from api.alquran.cloud (free, no key). Surah list and
-// individual surah text are cached in localStorage — the Quran text never
-// changes, so there's no reason to refetch once cached. This stays fully
-// isolated from the prayer/Hijri logic above; the only place it could ever
-// touch that is a future "verse tied to the Hijri date" feature, which should
-// read getTodayHijriAdjusted() rather than computing its own date.
-let _quranSurahList = null;
-
-function renderQuranHome() {
-  document.getElementById('quran-reader-view').style.display = 'none';
-  document.getElementById('quran-home-view').style.display = 'block';
-  document.getElementById('quran-float-textsize').classList.remove('visible');
-  updateQuranContinueReading();
-  if (_quranSurahList) { renderSurahListUI(_quranSurahList); return; }
-
-  try {
-    const cached = localStorage.getItem('quran_surah_list');
-    if (cached) {
-      _quranSurahList = JSON.parse(cached);
-      renderSurahListUI(_quranSurahList);
-      return;
-    }
-  } catch (e) {}
-
-  fetch('https://api.alquran.cloud/v1/surah')
-    .then(r => r.json())
-    .then(data => {
-      if (data.code !== 200 || !data.data) throw new Error('bad response');
-      _quranSurahList = data.data;
-      try { localStorage.setItem('quran_surah_list', JSON.stringify(_quranSurahList)); } catch (e) {}
-      renderSurahListUI(_quranSurahList);
-    })
-    .catch(() => {
-      const list = document.getElementById('quran-surah-list');
-      if (list) list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--color-text-tertiary);font-size:13px">Could not load surah list. Check your connection and reopen this tab.</div>';
-    });
-}
-
-// Strips apostrophes, hyphens, and extra whitespace so search matches regardless
-// of transliteration punctuation — e.g. "araf" should match "Al-A'raf" even
-// though the raw string is "al-a'raf" (the apostrophe breaks a plain substring
-// match, since "araf" isn't literally contiguous in "a'raf").
-function normalizeSearchText(s) {
-  return s.toLowerCase().replace(/['’`\-]/g, '').replace(/\s+/g, ' ').trim();
-}
-
-// The API's English transliterations double letters for long vowel sounds —
-// "Imraan", "Maaida", "An'aam" — but most people naturally type the simpler
-// spelling ("Imran", "Maida", "Anam"), which isn't a substring of the doubled
-// form. Collapsing repeated letters down to one turns "aaliimraan" into
-// "alimran", which the simpler spelling IS a substring of. Included alongside
-// (not instead of) the original in the search index, so both spellings work.
-function collapseRepeatedLetters(s) {
-  return s.replace(/(.)\1+/g, '$1');
-}
-
-function renderSurahListUI(surahs) {
-  const list = document.getElementById('quran-surah-list');
-  if (!list) return;
-  list.innerHTML = surahs.map(s => {
-    const norm = normalizeSearchText(`${s.englishName} ${s.name} ${s.number} ${s.englishNameTranslation}`);
-    const searchIndex = `${norm} ${collapseRepeatedLetters(norm)}`;
-    return `
-    <div class="surah-item" data-surah-search="${searchIndex}" onclick="openSurah(${s.number})">
-      <div class="surah-num">${s.number}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:14px;color:var(--color-text-primary)">${s.englishName}</div>
-        <div style="font-size:11px;color:var(--color-text-tertiary)">${s.englishNameTranslation} · ${s.numberOfAyahs} ayahs · ${s.revelationType}</div>
-      </div>
-      <div style="font-size:18px;color:var(--color-text-primary);direction:rtl">${s.name}</div>
-    </div>
-  `;
-  }).join('');
-}
-
-function filterSurahList() {
-  const q = normalizeSearchText(document.getElementById('quran-search').value.trim());
-  document.querySelectorAll('#quran-surah-list .surah-item').forEach(el => {
-    el.style.display = el.dataset.surahSearch.includes(q) ? 'flex' : 'none';
-  });
-}
-
-function updateQuranContinueReading() {
-  const el = document.getElementById('quran-continue-reading');
-  if (!el) return;
-  // Mushaf mode tracks progress by page, not ayah — show whichever kind of
-  // progress matches the script currently selected, so "Continue reading"
-  // always resumes in the mode you were last actually reading in.
-  if (_quranScript === 'mushaf') {
-    try {
-      const p = parseInt(localStorage.getItem('quran_mushaf_last_page') || '', 10);
-      if (p) {
-        el.textContent = `Continue: Page ${p} →`;
-        el.onclick = () => { _currentReaderContext = 'quran'; openMushafReaderAt(p); };
-        return;
-      }
-    } catch (e) {}
-    el.textContent = '';
-    el.onclick = null;
-    return;
-  }
-  // Always the regular reading bookmark, never the ephemeral Al-Kahf one —
-  // this link lives on the Quran home screen, not the Al-Kahf shortcut.
-  try {
-    const bm = JSON.parse(localStorage.getItem('quran_bookmark') || 'null');
-    if (bm && bm.surahName) {
-      el.textContent = `Continue: ${bm.surahName} ${bm.ayah} →`;
-      el.onclick = () => { _currentReaderContext = 'quran'; openSurah(bm.surah, bm.ayah); };
-      return;
-    }
-  } catch (e) {}
-  el.textContent = '';
-  el.onclick = null;
-}
-
-// Which reader entry point is currently active: 'quran' (regular reading,
-// bookmark persists indefinitely) or 'kahf' (the Friday shortcut — its
-// bookmark is same-day only, cleared at midnight in refreshForNewDay, so
-// touching a verse this Jummah never carries over to next Jummah). Default
-// is 'quran'; showTab('kahf') overrides it just before opening surah 18.
-let _currentReaderContext = 'quran';
-
-function bookmarkKey() {
-  return _currentReaderContext === 'kahf' ? 'quran_bookmark_kahf' : 'quran_bookmark';
-}
-
-function todayDateStr() {
-  const d = getToday();
-  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-}
-
-function getBookmark() {
-  try {
-    const bm = JSON.parse(localStorage.getItem(bookmarkKey()) || 'null');
-    if (!bm) return null;
-    // Al-Kahf bookmark is only valid for the day it was set — if a stale one
-    // slipped through without the midnight cleanup firing, treat it as gone.
-    if (_currentReaderContext === 'kahf' && bm.dateSet !== todayDateStr()) {
-      localStorage.removeItem('quran_bookmark_kahf');
-      return null;
-    }
-    return bm;
-  } catch (e) { return null; }
-}
-
-function toggleAyahBookmark(surahNumber, ayahNumber, surahName) {
-  const current = getBookmark();
-  const isSame = current && current.surah === surahNumber && current.ayah === ayahNumber;
-  if (isSame) {
-    try { localStorage.removeItem(bookmarkKey()); } catch (e) {}
-  } else {
-    const entry = { surah: surahNumber, surahName, ayah: ayahNumber };
-    if (_currentReaderContext === 'kahf') entry.dateSet = todayDateStr();
-    try { localStorage.setItem(bookmarkKey(), JSON.stringify(entry)); } catch (e) {}
-  }
-  updateQuranContinueReading();
-  updateBookmarkIconsUI();
-}
-
-function updateBookmarkIconsUI() {
-  const bm = getBookmark();
-  document.querySelectorAll('#quran-reader-content .surah-ayah-block').forEach(block => {
-    const isBm = bm && block.dataset.surah == bm.surah && block.dataset.ayah == bm.ayah;
-    block.classList.toggle('bookmarked', !!isBm);
-    const icon = block.querySelector('.ayah-bookmark-btn');
-    if (icon) icon.textContent = isBm ? '★' : '☆';
-  });
-}
-
-// Text size for the Quran reader. Uthmani/IndoPak (continuous, reflowable verse
-// text) and Mushaf (fixed page-width QCF glyphs, pre-stretched to fit the page
-// at their natural size) are NOT the same kind of layout, so they get separate
-// scale variables and separate persisted preferences — sharing one scale meant
-// a saved 175% from the continuous reader got applied to Mushaf glyphs that are
-// only designed to fit the page at 100%, causing lines to overflow the page
-// edges. Each mode remembers its own preference independently.
-const QURAN_TEXT_SCALE_STEPS = [0.8, 0.9, 1, 1.15, 1.3, 1.5, 1.75];
-let _quranTextScale = parseFloat(localStorage.getItem('quran_text_scale') || '1');
-if (!QURAN_TEXT_SCALE_STEPS.includes(_quranTextScale)) _quranTextScale = 1;
-
-// Mushaf's own scale steps are narrower and centered on 1 — since QCF lines are
-// pre-fit to the page width, there's much less headroom before a line would
-// need to shrink itself back down to still fit (see mushafFitLinesToWidth).
-const MUSHAF_TEXT_SCALE_STEPS = [0.75, 0.85, 1, 1.1, 1.2];
-let _mushafTextScale = parseFloat(localStorage.getItem('quran_mushaf_text_scale') || '1');
-if (!MUSHAF_TEXT_SCALE_STEPS.includes(_mushafTextScale)) _mushafTextScale = 1;
-
-function applyQuranTextScale() {
-  const view = document.getElementById('quran-reader-view');
-  const label = document.getElementById('quran-text-size-label');
-  if (_quranScript === 'mushaf') {
-    if (view) view.style.setProperty('--mushaf-scale', _mushafTextScale);
-    if (label) label.textContent = Math.round(_mushafTextScale * 100) + '%';
-  } else {
-    if (view) view.style.setProperty('--quran-text-scale', _quranTextScale);
-    if (label) label.textContent = Math.round(_quranTextScale * 100) + '%';
-  }
-}
-
-function adjustQuranTextSize(delta) {
-  if (_quranScript === 'mushaf') {
-    const idx = MUSHAF_TEXT_SCALE_STEPS.indexOf(_mushafTextScale);
-    const newIdx = Math.max(0, Math.min(MUSHAF_TEXT_SCALE_STEPS.length - 1, idx + delta));
-    _mushafTextScale = MUSHAF_TEXT_SCALE_STEPS[newIdx];
-    try { localStorage.setItem('quran_mushaf_text_scale', _mushafTextScale); } catch (e) {}
-    applyQuranTextScale();
-    mushafFitLinesToWidth();
-    return;
-  }
-  const idx = QURAN_TEXT_SCALE_STEPS.indexOf(_quranTextScale);
-  const newIdx = Math.max(0, Math.min(QURAN_TEXT_SCALE_STEPS.length - 1, idx + delta));
-  _quranTextScale = QURAN_TEXT_SCALE_STEPS[newIdx];
-  try { localStorage.setItem('quran_text_scale', _quranTextScale); } catch (e) {}
-  applyQuranTextScale();
-}
-
-// Safety net on top of the scale steps above: even at 100% mushaf scale, exact
-// pixel width will vary slightly by device/browser font metrics. After a page
-// renders, measure every line against the available width and squeeze (scaleX)
-// only the ones that actually overflow — most lines need no adjustment at all,
-// since QCF glyphs are already fit to width by design. This guarantees no line
-// is ever cropped at the page edge, regardless of screen size or scale setting.
-function mushafFitLinesToWidth() {
-  const container = document.getElementById('mushaf-page-content');
-  if (!container) return;
-  const targetWidth = container.clientWidth;
-  if (!targetWidth) return;
-  container.querySelectorAll('.mushaf-line:not(.mushaf-line-center)').forEach(line => {
-    line.style.transform = '';
-    const natural = line.scrollWidth;
-    if (natural > targetWidth && natural > 0) {
-      const ratio = Math.max(0.72, targetWidth / natural);
-      line.style.transform = `scaleX(${ratio})`;
-      line.style.transformOrigin = 'center';
-    }
-  });
-}
-
-let _quranScript = localStorage.getItem('quran_script_pref') || 'uthmani';
-let _currentOpenSurah = null;
-
-function updateScriptToggleUI() {
-  const uBtn = document.getElementById('script-btn-uthmani');
-  const iBtn = document.getElementById('script-btn-indopak');
-  const mBtn = document.getElementById('script-btn-mushaf');
-  if (uBtn) uBtn.classList.toggle('active', _quranScript === 'uthmani');
-  if (iBtn) iBtn.classList.toggle('active', _quranScript === 'indopak');
-  if (mBtn) mBtn.classList.toggle('active', _quranScript === 'mushaf');
-  document.getElementById('quran-reader-continuous').style.display = _quranScript === 'mushaf' ? 'none' : 'block';
-  document.getElementById('quran-reader-mushaf').style.display = _quranScript === 'mushaf' ? 'block' : 'none';
-  updateTranslitToggleUI();
-  updateBoldToggleUI();
-}
-
-function setQuranScript(script) {
-  if (script === _quranScript) return;
-  const prevScript = _quranScript;
-  _quranScript = script;
-  try { localStorage.setItem('quran_script_pref', script); } catch (e) {}
-  updateScriptToggleUI();
-  if (script === 'mushaf') {
-    // Switching into Mushaf mode from a continuous surah: land on that
-    // surah's first page rather than losing the place entirely.
-    const target = _currentOpenSurah != null ? _currentOpenSurah : null;
-    if (target != null) {
-      mushafLoadIndex().then(() => {
-        const ch = MUSHAF_INDEX.chapters.find(c => c.id === target);
-        openMushafReaderAt(ch ? ch.pages[0] : mushafCurrentPage());
-      });
-    } else {
-      openMushafReaderAt(mushafCurrentPage());
-    }
-  } else if (prevScript === 'mushaf') {
-    // Switching out of Mushaf mode: open the surah the current page belongs to.
-    mushafLoadIndex().then(() => {
-      const n = mushafSurahForPage(mushafCurrentPage());
-      openSurah(n || 1);
-    });
-  } else if (_currentOpenSurah != null) {
-    loadSurahText(_currentOpenSurah);
-  }
-}
-
-function openSurah(number, scrollToAyah) {
-  document.getElementById('quran-home-view').style.display = 'none';
-  const readerView = document.getElementById('quran-reader-view');
-  readerView.style.display = 'block';
-  _currentOpenSurah = number;
-  updateScriptToggleUI();
-  applyQuranTextScale();
-  document.getElementById('quran-float-textsize').classList.add('visible');
-  if (_quranScript === 'mushaf') {
-    mushafLoadIndex().then(() => {
-      const ch = MUSHAF_INDEX.chapters.find(c => c.id === number);
-      openMushafReaderAt(ch ? ch.pages[0] : 1);
-    });
-    return;
-  }
-  // If the caller didn't ask for a specific ayah, jump to this context's own
-  // bookmark (if any) — e.g. opening Al-Kahf on a Friday resumes right where
-  // you left off earlier that same day.
-  const bm = scrollToAyah ? null : getBookmark();
-  _scrollToAyahOnRender = scrollToAyah || (bm && bm.surah === number ? bm.ayah : null);
-  loadSurahText(number);
-}
-
-let _scrollToAyahOnRender = null;
-
-// Bismillah handling: every chapter except Al-Fatihah (where it genuinely IS
-// ayah 1, one of its 7 verses) and At-Tawbah (which has none, for historical
-// reasons) traditionally opens with an unnumbered Bismillah heading — it is
-// NOT ayah "1" of that chapter. Checked directly against both data sources:
-// the alquran.cloud Uthmani edition embeds it as a prefix concatenated into
-// ayah 1's own text (so it was inheriting that ayah's "1" badge, which is
-// what looked wrong), while the IndoPak edition doesn't include it at all
-// (confirmed by fetching chapter 2 verse 1 directly: no Bismillah present).
-// Fix: always render our own separate, unnumbered Bismillah line for
-// chapters 2–8 and 10–114, and strip any embedded copy out of ayah 1's own
-// text first so it doesn't also appear (redundantly, wrongly numbered)
-// inside the ayah-1 block.
-const BISMILLAH_UTHMANI = 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ';
-const BISMILLAH_INDOPAK = 'بِسۡمِ اللّٰهِ الرَّحۡمٰنِ الرَّحِيۡمِ';
-const BISMILLAH_SKELETON = (() => {
-  // Computed from BISMILLAH_UTHMANI itself (same stripping rule used below)
-  // rather than hand-transcribed, so it's guaranteed self-consistent — an
-  // earlier hand-typed version had a dropped letter that silently broke
-  // every match.
-  let s = '';
-  for (const ch of BISMILLAH_UTHMANI) {
-    if (/[\u064B-\u065F\u0670\u06D6-\u06ED\s]/.test(ch)) continue;
-    s += /[إأآٱ]/.test(ch) ? 'ا' : (ch === 'ة' ? 'ه' : ch);
-  }
-  return s;
-})();
-
-// Compares only base letters (diacritics and alif variants stripped/normalized)
-// so it matches regardless of which exact diacritic marks a given API edition
-// uses for the Bismillah — those vary source to source, but the letters don't.
-function stripLeadingBismillah(text) {
-  let skeleton = '';
-  const idxMap = [];
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (/[\u064B-\u065F\u0670\u06D6-\u06ED\s]/.test(ch)) continue;
-    const norm = /[إأآٱ]/.test(ch) ? 'ا' : (ch === 'ة' ? 'ه' : ch);
-    skeleton += norm;
-    idxMap.push(i);
-    if (skeleton.length >= BISMILLAH_SKELETON.length) break;
-  }
-  if (skeleton === BISMILLAH_SKELETON) {
-    let cutAt = idxMap[idxMap.length - 1] + 1;
-    // Consume any trailing diacritic marks still attached to that last
-    // matched letter (e.g. a kasra) before handing back the remainder —
-    // otherwise a stray mark bleeds into the start of the real ayah text.
-    while (cutAt < text.length && /[\u064B-\u065F\u0670\u06D6-\u06ED]/.test(text[cutAt])) cutAt++;
-    return text.slice(cutAt).replace(/^\s+/, '');
-  }
-  return null;
-}
-
-function loadSurahText(number) {
-  const content = document.getElementById('quran-reader-content');
-  const title = document.getElementById('quran-reader-title');
-  title.textContent = 'Loading…';
-  content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--color-text-tertiary);font-size:13px">Loading surah…</div>';
-
-  // Versioned so a schema/content change (e.g. adding the translit field, or
-  // switching which transliteration edition it pulls from) can't get masked
-  // by an old cached entry — a stale cache would otherwise silently skip the
-  // network fetch and show old data forever, since this only reads from
-  // network on a cache miss.
-  const cacheKey = `quran_surah_${number}_${_quranScript}_v8`;
-  try {
-    const cached = localStorage.getItem(cacheKey);
-    if (cached) { renderSurahReader(JSON.parse(cached)); return; }
-  } catch (e) {}
-
-  if (_quranScript === 'uthmani') {
-    Promise.all([
-      fetch(`https://api.alquran.cloud/v1/surah/${number}/quran-uthmani`).then(r => r.json()),
-      fetch(`https://api.alquran.cloud/v1/surah/${number}/en.sahih`).then(r => r.json()),
-      getTransliterationData()
-    ]).then(([ar, en, translitData]) => {
-      if (ar.code !== 200 || en.code !== 200) throw new Error('bad response');
-      const combined = {
-        number: ar.data.number,
-        englishName: ar.data.englishName,
-        englishNameTranslation: ar.data.englishNameTranslation,
-        script: 'uthmani',
-        ayahs: ar.data.ayahs.map((a, i) => {
-          let arabic = a.text;
-          if (i === 0 && number !== 1 && number !== 9) {
-            const stripped = stripLeadingBismillah(arabic);
-            if (stripped !== null) arabic = stripped;
-          }
-          return {
-            numberInSurah: a.numberInSurah,
-            arabic,
-            translation: en.data.ayahs[i] ? en.data.ayahs[i].text : '',
-            translit: translitData[`${number}:${a.numberInSurah}`] || ''
-          };
-        })
-      };
-      try { localStorage.setItem(cacheKey, JSON.stringify(combined)); } catch (e) {}
-      renderSurahReader(combined);
-    }).catch(() => {
-      title.textContent = 'Could not load';
-      content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--color-text-tertiary);font-size:13px">Could not load this surah. Check your connection and try again.</div>';
-    });
-  } else {
-    // IndoPak script isn't offered by alquran.cloud. UmmahAPI's ?script=indopak was tried
-    // first, but verified (by direct fetch, not docs) to be a no-op — it returns identical
-    // text regardless of that param. Using fawazahmed0/quran-api instead: verified directly
-    // against its raw JSON, this is genuine IndoPak text (distinct diacritic conventions,
-    // matches the real Nastaleeq/IndoPak mushaf spelling, not standard Uthmani rasm).
-    // That file holds the whole Quran (~1.5MB) as a flat [{chapter, verse, text}] array, so
-    // it's fetched once and cached whole, then sliced per-surah — avoids re-downloading it
-    // for every surah opened. Translation is reused from the alquran.cloud en.sahih fetch.
-    // Transliteration comes from the same bundled reference data as Uthmani mode — it's
-    // keyed by chapter:verse, not tied to which Arabic script is on screen.
-    Promise.all([
-      getIndopakFullText(),
-      fetch(`https://api.alquran.cloud/v1/surah/${number}/en.sahih`).then(r => r.json()),
-      getTransliterationData()
-    ]).then(([indopakFull, en, translitData]) => {
-      if (en.code !== 200) throw new Error('bad response');
-      const meta = _quranSurahList ? _quranSurahList.find(s => s.number === number) : null;
-      const verses = indopakFull.filter(v => v.chapter === number);
-      if (!verses.length) throw new Error('no verses found');
-      const combined = {
-        number: number,
-        englishName: (meta && meta.englishName) || '',
-        englishNameTranslation: (meta && meta.englishNameTranslation) || '',
-        script: 'indopak',
-        ayahs: verses.map((v, i) => {
-          let arabic = v.text;
-          if (i === 0 && number !== 1 && number !== 9) {
-            const stripped = stripLeadingBismillah(arabic);
-            if (stripped !== null) arabic = stripped;
-          }
-          return {
-            numberInSurah: v.verse,
-            arabic,
-            translation: en.data.ayahs[i] ? en.data.ayahs[i].text : '',
-            translit: translitData[`${number}:${v.verse}`] || ''
-          };
-        })
-      };
-      try { localStorage.setItem(cacheKey, JSON.stringify(combined)); } catch (e) {}
-      renderSurahReader(combined);
-    }).catch(() => {
-      title.textContent = 'Could not load';
-      content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--color-text-tertiary);font-size:13px">Could not load IndoPak text. Check your connection and try again.</div>';
-    });
-  }
-}
-
-// The full IndoPak Quran JSON (~1.5MB) is fetched once per session and cached in
-// localStorage — the text never changes, so there's no reason to refetch it every
-// time a surah is opened, or even every session.
-let _indopakFullPromise = null;
-function getIndopakFullText() {
-  if (_indopakFullPromise) return _indopakFullPromise;
-  try {
-    const cached = localStorage.getItem('quran_indopak_full');
-    if (cached) { _indopakFullPromise = Promise.resolve(JSON.parse(cached)); return _indopakFullPromise; }
-  } catch (e) {}
-  _indopakFullPromise = fetch('https://cdn.jsdelivr.net/gh/fawazahmed0/quran-api@1/editions/ara-quranindopak.min.json')
-    .then(r => r.json())
-    .then(data => {
-      const verses = data.quran;
-      try { localStorage.setItem('quran_indopak_full', JSON.stringify(verses)); } catch (e) {}
-      return verses;
-    })
-    .catch(err => { _indopakFullPromise = null; throw err; });
-  return _indopakFullPromise;
-}
-
-// Transliteration data: "The Noble Quran In Roman Transliteration" (quran411.com),
-// supplied directly by the user as the exact reference/target style — matches
-// the popular widely-distributed transliteration convention (Zaalikal Kitaabu,
-// Allazeena yu'minoona, etc.) rather than an academic/diacritic scheme. This
-// replaces an earlier from-scratch letter-by-letter transliteration engine:
-// that engine was verified working correctly against test cases, but a real,
-// complete reference source (once available) is more reliable than any
-// generated approximation, however carefully built. Parsed from the source
-// PDF into a flat verse_key -> text JSON (6,236 verses, verified against the
-// canonical per-chapter verse counts — exact match, no gaps or duplicates),
-// stripped of structural annotations ("(section N)", "(End Juz N)",
-// "(make sajda)") that aren't part of the actual pronunciation.
-let _translitDataPromise = null;
-function getTransliterationData() {
-  if (_translitDataPromise) return _translitDataPromise;
-  try {
-    const cached = localStorage.getItem('quran_translit_data_v1');
-    if (cached) { _translitDataPromise = Promise.resolve(JSON.parse(cached)); return _translitDataPromise; }
-  } catch (e) {}
-  _translitDataPromise = fetch('./quran-translit/quran-translit.json')
-    .then(r => r.json())
-    .then(data => {
-      try { localStorage.setItem('quran_translit_data_v1', JSON.stringify(data)); } catch (e) {}
-      return data;
-    })
-    .catch(err => { _translitDataPromise = null; throw err; });
-  return _translitDataPromise;
-}
-
-
-// Whether the transliteration line is shown under each ayah in the continuous
-// reader. Defaults ON — this feature exists specifically to help someone who
-// doesn't yet read Arabic script.
-let _quranShowTranslit = localStorage.getItem('quran_show_translit') !== '0';
-
-function updateTranslitToggleUI() {
-  const btn = document.getElementById('quran-translit-toggle-btn');
-  if (btn) btn.classList.toggle('on', _quranShowTranslit);
-  const row = document.getElementById('quran-translit-toggle-row');
-  // Mushaf mode has no plain-text verse line to attach a transliteration to —
-  // it's rendered from page-glyph fonts — so the toggle only makes sense for
-  // the continuous reader.
-  if (row) row.style.display = _quranScript === 'mushaf' ? 'none' : 'flex';
-}
-
-function toggleQuranTransliteration() {
-  _quranShowTranslit = !_quranShowTranslit;
-  try { localStorage.setItem('quran_show_translit', _quranShowTranslit ? '1' : '0'); } catch (e) {}
-  updateTranslitToggleUI();
-  document.querySelectorAll('#quran-reader-content .surah-ayah-translit').forEach(el => {
-    el.style.display = _quranShowTranslit ? 'block' : 'none';
-  });
-}
-
-// Whether Arabic text in the continuous reader is bolded. Defaults ON,
-// matching how it already looked before this became a toggle. Applied via a
-// class on the reader container (.quran-bold-arabic) rather than per-element,
-// since it's just one class toggle instead of touching every ayah's markup.
-let _quranBoldArabic = localStorage.getItem('quran_bold_arabic') !== '0';
-
-function updateBoldToggleUI() {
-  const btn = document.getElementById('quran-bold-toggle-btn');
-  if (btn) btn.classList.toggle('on', _quranBoldArabic);
-  const row = document.getElementById('quran-bold-toggle-row');
-  // Mushaf mode's page-glyph fonts don't respond to this toggle at all —
-  // hide it there rather than show a control that visibly does nothing.
-  if (row) row.style.display = _quranScript === 'mushaf' ? 'none' : 'flex';
-  const container = document.getElementById('quran-reader-continuous');
-  if (container) container.classList.toggle('quran-bold-arabic', _quranBoldArabic);
-}
-
-function toggleQuranBoldArabic() {
-  _quranBoldArabic = !_quranBoldArabic;
-  try { localStorage.setItem('quran_bold_arabic', _quranBoldArabic ? '1' : '0'); } catch (e) {}
-  updateBoldToggleUI();
-}
-
-// The 15 verses requiring Sajdah al-Tilawah (recitation prostration) —
-// the full union list across all madhabs (like a printed mushaf, this marks
-// every traditionally recognized location; it doesn't take a position on
-// which are obligatory vs recommended, since that varies by madhab).
-// Verified directly against fawazahmed0/quran-api's per-verse sajda metadata
-// (Tanzil-sourced, same numbering convention as the alquran.cloud text used
-// here) rather than trusted from inconsistent web listicles.
-const SAJDA_VERSES = new Set([
-  '7:206', '13:15', '16:50', '17:109', '19:58', '22:18', '22:77',
-  '25:60', '27:26', '32:15', '38:24', '41:38', '53:62', '84:21', '96:19'
-]);
-
-function renderSurahReader(data) {
-  const title = document.getElementById('quran-reader-title');
-  const content = document.getElementById('quran-reader-content');
-  title.innerHTML = `${data.number}. ${data.englishName} <span style="font-weight:400;color:var(--color-text-tertiary);font-size:12px">— ${data.englishNameTranslation}</span>`;
-  const arabicClass = data.script === 'indopak' ? 'surah-ayah-arabic indopak' : 'surah-ayah-arabic';
-  const safeName = data.englishName.replace(/'/g, "\\'");
-
-  // Unnumbered Bismillah heading — every chapter except Al-Fatihah (where it
-  // truly is ayah 1) and At-Tawbah (which has none).
-  let bismillahHtml = '';
-  if (data.number !== 1 && data.number !== 9) {
-    const bismillahArabic = data.script === 'indopak' ? BISMILLAH_INDOPAK : BISMILLAH_UTHMANI;
-    bismillahHtml = `
-    <div class="surah-bismillah-block">
-      <div class="${arabicClass}">${bismillahArabic}</div>
-      <div class="surah-ayah-translit" style="display:${_quranShowTranslit ? 'block' : 'none'}">Bismillaahir Rahmaanir Raheem</div>
-    </div>
-  `;
-  }
-
-  content.innerHTML = bismillahHtml + data.ayahs.map(a => {
-    const isSajda = SAJDA_VERSES.has(`${data.number}:${a.numberInSurah}`);
-    const sajdaMark = isSajda ? '<span class="sajda-mark" title="Sajdah al-Tilawah">۩</span>' : '';
-    const sajdaBadge = isSajda ? '<div class="sajda-badge">۩ Sajdah al-Tilawah — recitation prostration</div>' : '';
-    return `
-    <div class="surah-ayah-block${isSajda ? ' has-sajda' : ''}" id="ayah-${data.number}-${a.numberInSurah}" data-surah="${data.number}" data-ayah="${a.numberInSurah}">
-      <div class="${arabicClass}">${a.arabic}${sajdaMark}<span class="surah-ayah-num">${a.numberInSurah}</span></div>
-      ${sajdaBadge}
-      <div class="surah-ayah-translit" style="display:${_quranShowTranslit ? 'block' : 'none'}">${a.translit || ''}</div>
-      <div class="surah-ayah-translation">${a.translation}</div>
-      <button class="ayah-bookmark-btn" onclick="toggleAyahBookmark(${data.number}, ${a.numberInSurah}, '${safeName}')" aria-label="Bookmark this ayah">☆</button>
-    </div>
-  `;
-  }).join('');
-  updateBookmarkIconsUI();
-  updateTranslitToggleUI();
-  updateBoldToggleUI();
-
-  if (_scrollToAyahOnRender != null) {
-    const target = document.getElementById(`ayah-${data.number}-${_scrollToAyahOnRender}`);
-    _scrollToAyahOnRender = null;
-    if (target) {
-      setTimeout(() => {
-        target.scrollIntoView({ block: 'start' });
-        target.classList.add('ayah-flash');
-        setTimeout(() => target.classList.remove('ayah-flash'), 1800);
-      }, 50);
-    }
-  }
-}
-
-function closeSurahReader() {
-  document.getElementById('quran-reader-view').style.display = 'none';
-  document.getElementById('quran-home-view').style.display = 'block';
-  document.getElementById('quran-float-textsize').classList.remove('visible');
-  _currentOpenSurah = null;
-  _currentReaderContext = 'quran'; // back button always lands on the general surah list
-}
-
-// The "Read Al-Kahf" shortcut lives inside the Quran tab's home view, not as
-// its own top-level tab — jumps straight into the same reader on surah 18.
-function openKahf() {
-  _currentReaderContext = 'kahf';
-  openSurah(18);
-}
-
-// Al-Kahf shortcut shimmers rainbow on Fridays (Jummah) — reuses the same
-// rainbow keyframe animation used elsewhere in the app (title, Hijri badge).
-function updateKahfFridayStyle() {
-  const btn = document.getElementById('kahf-shortcut-btn');
-  if (btn) btn.classList.toggle('friday-rainbow', getToday().getDay() === 5);
-}
-updateKahfFridayStyle();
-
-// ── Mushaf (Madinah page-accurate) reader ───────────────────────────────────
-// Renders the actual King Fahd Quran Complex QCF4 Madinah Mushaf: 604 pages,
-// each with the exact same line breaks and word placement as the physical
-// printed mushaf. Every page's calligraphy is baked into a page-range-specific
-// font (47 fonts cover all 604 pages, plus one header/bismillah font, QBSML) —
-// each glyph is a whole word stretched to fit that exact print line, which is
-// how this achieves pixel-identical layout to the printed book. This is a
-// fundamentally different rendering model from the Uthmani/IndoPak continuous
-// verse-flow above: no plain Unicode Arabic text, no CSS reflow — each word is
-// a specific glyph code in a specific page's font, positioned line-by-line
-// exactly as the page JSON says.
-//
-// Assets live in ./mushaf/ alongside this HTML file on GitHub Pages:
-//   mushaf/pages/NNN.json   — one file per page (line/word/glyph data)
-//   mushaf/fonts/*.woff2    — 47 page-range fonts + QCF4_QBSML (header font)
-//   mushaf/font-map.json    — page number → font name
-//   mushaf/index.json       — chapter metadata + page ranges + schema meta
-//   mushaf/verses.json      — verse key → page/line lookup
-// Source: MohamadHajjRabee/quran-qcf4 (MIT-licensed JSON/schema). The QCF4
-// font files themselves are the King Fahd Quran Complex's Madinah Mushaf
-// (1441 AH, calligraphy by Uthman Taha) — provided for Quranic rendering
-// purposes, the same convention used across the open-source Quran app
-// ecosystem (quran.com and others self-host the same font family).
-const MUSHAF_TOTAL_PAGES = 604;
-let MUSHAF_INDEX = null;      // mushaf/index.json (chapters + meta)
-let MUSHAF_FONT_MAP = null;   // mushaf/font-map.json (page → font name)
-let MUSHAF_VERSES = null;     // mushaf/verses.json (verse key → page/line), loaded lazily
-let _mushafIndexPromise = null;
-let _mushafPageCache = new Map(); // in-memory only for this session — page JSON is
-                                   // small enough (~33KB avg) that re-fetching on next
-                                   // visit is fine, and the browser/service-worker HTTP
-                                   // cache already avoids re-downloading over the network.
-let _mushafInjectedFonts = new Set();
-let _mushafCurrentPage = parseInt(localStorage.getItem('quran_mushaf_last_page') || '1', 10) || 1;
-
-function mushafCurrentPage() { return _mushafCurrentPage; }
-
-function mushafLoadIndex() {
-  if (_mushafIndexPromise) return _mushafIndexPromise;
-  _mushafIndexPromise = Promise.all([
-    fetch('./mushaf/index.json').then(r => r.json()),
-    fetch('./mushaf/font-map.json').then(r => r.json())
-  ]).then(([idx, fontMap]) => {
-    MUSHAF_INDEX = idx;
-    MUSHAF_FONT_MAP = fontMap;
-  }).catch(err => { _mushafIndexPromise = null; throw err; });
-  return _mushafIndexPromise;
-}
-
-function mushafLoadVerses() {
-  if (MUSHAF_VERSES) return Promise.resolve(MUSHAF_VERSES);
-  return fetch('./mushaf/verses.json').then(r => r.json()).then(v => { MUSHAF_VERSES = v; return v; });
-}
-
-// Standard 30 Juz starting verses — fixed by scholarly convention, independent
-// of which mushaf edition's pagination is used. Page numbers for each Juz are
-// then resolved at runtime from the actual verses.json lookup rather than
-// hardcoded, so they stay exactly correct for this specific dataset.
-const JUZ_START_VERSES = [
-  '1:1','2:142','2:253','3:93','4:24','4:148','5:82','6:111','7:88','8:41',
-  '9:93','11:6','12:53','15:1','17:1','18:75','21:1','23:1','25:21','27:56',
-  '29:46','33:31','36:28','39:32','41:47','46:1','51:31','58:1','67:1','78:1'
-];
-let _mushafJuzStartPages = null;
-function mushafJuzStartPages() {
-  if (_mushafJuzStartPages) return _mushafJuzStartPages;
-  _mushafJuzStartPages = JUZ_START_VERSES.map(vk => (MUSHAF_VERSES[vk] || {}).page || 1);
-  return _mushafJuzStartPages;
-}
-
-function mushafJuzForPage(page) {
-  const starts = mushafJuzStartPages();
-  let juz = 1;
-  for (let i = 0; i < starts.length; i++) {
-    if (page >= starts[i]) juz = i + 1; else break;
-  }
-  return juz;
-}
-
-function mushafSurahForPage(page) {
-  if (!MUSHAF_INDEX) return null;
-  const ch = MUSHAF_INDEX.chapters.find(c => page >= c.pages[0] && page <= c.pages[1]);
-  return ch ? ch.id : null;
-}
-
-// Injects an @font-face rule for a QCF4 font family the first time a page
-// actually needs it — so a session that only ever opens a few surahs never
-// downloads more than the 1–2 font files (of the 48 total, ~36MB combined)
-// those specific pages require.
-function injectMushafFontFace(fontFamily) {
-  if (_mushafInjectedFonts.has(fontFamily)) return;
-  _mushafInjectedFonts.add(fontFamily);
-  const filename = fontFamily === 'QCF4_QBSML' ? 'QCF4_QBSML.woff2' : `${fontFamily}_W.woff2`;
-  const style = document.createElement('style');
-  style.textContent = `@font-face { font-family: '${fontFamily}'; src: url('./mushaf/fonts/${filename}') format('woff2'); font-display: swap; }`;
-  document.head.appendChild(style);
-}
-
-function mushafFetchPage(n) {
-  if (_mushafPageCache.has(n)) return Promise.resolve(_mushafPageCache.get(n));
-  const nnn = String(n).padStart(3, '0');
-  return fetch(`./mushaf/pages/${nnn}.json`).then(r => r.json()).then(data => {
-    _mushafPageCache.set(n, data);
-    return data;
-  });
-}
-
-function openMushafReaderAt(page) {
-  document.getElementById('quran-home-view').style.display = 'none';
-  const readerView = document.getElementById('quran-reader-view');
-  readerView.style.display = 'block';
-  _quranScript = 'mushaf';
-  try { localStorage.setItem('quran_script_pref', 'mushaf'); } catch (e) {}
-  updateScriptToggleUI();
-  applyQuranTextScale();
-  document.getElementById('quran-float-textsize').classList.add('visible');
-  mushafGoPage(page);
-}
-
-function mushafGoPage(n) {
-  n = Math.max(1, Math.min(MUSHAF_TOTAL_PAGES, n));
-  _mushafCurrentPage = n;
-  try { localStorage.setItem('quran_mushaf_last_page', String(n)); } catch (e) {}
-  const container = document.getElementById('mushaf-page-content');
-  const prevBtn = document.getElementById('mushaf-prev-btn');
-  const nextBtn = document.getElementById('mushaf-next-btn');
-  if (prevBtn) prevBtn.disabled = n <= 1;
-  if (nextBtn) nextBtn.disabled = n >= MUSHAF_TOTAL_PAGES;
-  document.getElementById('mushaf-page-label').textContent = `Page ${n} of ${MUSHAF_TOTAL_PAGES}`;
-  container.innerHTML = '<div class="mushaf-page-loading">Loading page…</div>';
-
-  Promise.all([mushafLoadIndex(), mushafLoadVerses(), mushafFetchPage(n)]).then(([, , pageData]) => {
-    const fontFamily = MUSHAF_FONT_MAP[String(n)];
-    if (fontFamily) injectMushafFontFace(fontFamily);
-    injectMushafFontFace('QCF4_QBSML');
-
-    const surahId = mushafSurahForPage(n);
-    const chapter = MUSHAF_INDEX.chapters.find(c => c.id === surahId);
-    document.getElementById('mushaf-surah-label').textContent = chapter ? `${chapter.name_arabic} — ${chapter.name}` : '';
-    document.getElementById('mushaf-juz-label').textContent = `Juz ${mushafJuzForPage(n)}`;
-
-    container.innerHTML = pageData.lines.map(line => {
-      const w = line.words;
-      if (w.length === 1 && w[0].type === 'surah_header') {
-        return `<div class="mushaf-surah-banner"><span class="mushaf-word" style="font-family:'${w[0].font}'">${String.fromCharCode(w[0].code)}</span></div>`;
-      }
-      if (w.length === 1 && w[0].type === 'bismillah') {
-        return `<div class="mushaf-line mushaf-line-center mushaf-bismillah-line"><span class="mushaf-word" style="font-family:'${w[0].font}'">${String.fromCharCode(w[0].code)}</span></div>`;
-      }
-      const wordsHtml = w.map(word => {
-        const cls = word.type === 'end' ? 'mushaf-word mushaf-word-end' : 'mushaf-word';
-        return `<span class="${cls}" style="font-family:'${word.font}'" data-verse-key="${word.verse_key || ''}">${String.fromCharCode(word.code)}</span>`;
-      }).join('');
-      return `<div class="mushaf-line">${wordsHtml}</div>`;
-    }).join('');
-
-    updateMushafBookmarkUI();
-    updateQuranContinueReading();
-    // Wait for the actual QCF glyphs to be applied (not just the fallback
-    // font) before measuring line widths — measuring too early would size
-    // against the wrong font's metrics and squeeze lines that don't need it.
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(() => requestAnimationFrame(mushafFitLinesToWidth));
-    } else {
-      setTimeout(mushafFitLinesToWidth, 150);
-    }
-  }).catch(() => {
-    container.innerHTML = '<div class="mushaf-page-loading">Could not load this page. Check your connection and try again.</div>';
-  });
-}
-
-function toggleMushafPageBookmark() {
-  const n = mushafCurrentPage();
-  try {
-    const bm = parseInt(localStorage.getItem('quran_mushaf_bookmark') || '', 10);
-    if (bm === n) localStorage.removeItem('quran_mushaf_bookmark');
-    else localStorage.setItem('quran_mushaf_bookmark', String(n));
-  } catch (e) {}
-  updateMushafBookmarkUI();
-}
-
-function updateMushafBookmarkUI() {
-  const btn = document.getElementById('mushaf-bookmark-btn');
-  if (!btn) return;
-  try {
-    const bm = parseInt(localStorage.getItem('quran_mushaf_bookmark') || '', 10);
-    btn.textContent = bm === mushafCurrentPage() ? '★' : '☆';
-  } catch (e) { btn.textContent = '☆'; }
-}
-
-// Swipe navigation for the Mushaf page view — swipe left/right on the page
-// itself, in addition to the header's prev/next buttons. Simple horizontal
-// swipe detection (no library): a swipe is any touch move whose horizontal
-// distance clearly beats its vertical distance, past a small threshold, so it
-// doesn't fire on ordinary vertical scrolling.
-(function setupMushafSwipe() {
-  let startX = null, startY = null;
-  document.addEventListener('touchstart', e => {
-    const page = e.target.closest && e.target.closest('#mushaf-page-content');
-    if (!page) return;
-    startX = e.touches[0].clientX;
-    startY = e.touches[0].clientY;
-  }, { passive: true });
-  document.addEventListener('touchend', e => {
-    if (startX == null) return;
-    const dx = (e.changedTouches[0].clientX - startX);
-    const dy = (e.changedTouches[0].clientY - startY);
-    startX = null; startY = null;
-    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-    // Swipe right (dx > 0) moves toward the previous page; swipe left moves
-    // toward the next page — matching the right-to-left flow of the mushaf.
-    if (dx > 0) mushafGoPage(mushafCurrentPage() - 1);
-    else mushafGoPage(mushafCurrentPage() + 1);
-  }, { passive: true });
-})();
-
-// Re-fit Mushaf lines on rotation/resize — a line that fit in portrait may
-// not fit the same way in landscape, or vice versa.
-let _mushafResizeTimer = null;
-window.addEventListener('resize', () => {
-  if (_quranScript !== 'mushaf') return;
-  clearTimeout(_mushafResizeTimer);
-  _mushafResizeTimer = setTimeout(mushafFitLinesToWidth, 150);
-});
 
 </script>
 </body>
