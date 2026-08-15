@@ -118,7 +118,7 @@
   .quran-corner.tr { top:-9px; right:14px; }
   .quran-corner.bl { bottom:-9px; left:14px; }
   .quran-corner.br { bottom:-9px; right:14px; }
-  .surah-ayah-arabic.indopak { font-family:'DigitalKhatt IndoPak', serif; font-size:calc(24px * var(--quran-text-scale, 1)); line-height:2.3; }
+  .surah-ayah-arabic.indopak { font-family:'Quran Naskh Full', serif; font-size:calc(24px * var(--quran-text-scale, 1)); line-height:2.3; }
   .quran-text-size-row { display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:.75rem; }
   .quran-float-textsize { display:none; position:fixed; right:14px; bottom:24px; z-index:500; flex-direction:column; gap:8px; background:var(--color-background-primary); border:1px solid var(--color-border-tertiary); border-radius:14px; padding:6px; box-shadow:0 2px 10px rgba(0,0,0,0.15); }
   .quran-float-textsize.visible { display:flex; }
@@ -295,14 +295,19 @@
   .dashboard-right { background: var(--color-background-primary); border: 1.5px solid #1D9E75; border-radius: var(--border-radius-lg); padding: .5rem .75rem; min-width: 0; }
   .prayer-error { font-size: 12px; color: var(--color-text-secondary); text-align: center; padding: .4rem; }
   /* Only downloaded once an ayah actually uses this font-family — i.e. only when the
-     IndoPak script toggle in the Quran tab is used. DigitalKhatt IndoPak is a
-     self-hosted local file (digital-khatt-indopak.otf, must sit alongside this HTML
-     file in the repo). Verified with fontTools: 1,141 glyphs, 91 Arabic-block
-     codepoints in cmap, and full Arabic shaping support (GSUB init/medi/fina/rlig/ccmp,
-     GPOS curs/mark/mkmk for cursive joining and diacritic positioning). */
+     IndoPak script toggle in the Quran tab is used. KFGQPC Nastaleeq is the official
+     King Fahd Glorious Quran Printing Complex Nastaleeq font — reverted here after
+     digital-khatt-indopak.otf (tried first) turned out to have two real problems:
+     (1) its calligraphic hand didn't match the reference IndoPak style being compared
+     against, and (2) it's a CFF2 variable font, a format with known cursive-attachment
+     (GPOS 'curs') positioning bugs on iOS Safari/WebKit — confirmed via direct HarfBuzz
+     shaping that its glyph *selection* was correct (proper init/medi/fina contextual
+     forms), which points at WebKit failing to position those forms into connection,
+     not bad font data. Nastaleeq is a plain static TrueType (no variable font tables),
+     lower risk, and was already confirmed rendering correctly and joined on-device. */
   @font-face {
-    font-family: 'DigitalKhatt IndoPak';
-    src: url('./digital-khatt-indopak.otf') format('opentype');
+    font-family: 'Quran Naskh Full';
+    src: url('https://cdn.jsdelivr.net/gh/fawazahmed0/quran-api@1/fonts/nastaleeq-v10-full.ttf') format('truetype');
     font-display: swap;
   }
   /* Mushaf (Madinah page-accurate) QCF4 fonts are NOT declared here — there are
