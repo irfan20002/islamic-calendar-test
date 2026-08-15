@@ -1518,25 +1518,26 @@ function renderStats() {
     _seen.add(s); return true;
   });
 
-  // Group counts by Hijri year-month, excluding the current and previous
-  // month (those are still shown live in the Fasting Tracker tiles above),
-  // and excluding anything before the install anchor month.
-  const anchorRaw = localStorage.getItem('install_hijri_ym');
-  const [anchorHY, anchorHM] = anchorRaw ? anchorRaw.split('-').map(Number) : [curHY, curHM];
-
+  // Group counts by Hijri year-month, excluding only the current and
+  // previous month (those are still shown live in the Fasting Tracker tiles
+  // above). This used to also exclude anything before an "install anchor"
+  // month, meant to avoid backfilling stray pre-existing data — but that
+  // anchor gets set to whatever month is "current" the first time this
+  // specific field is ever recorded, which isn't reliably the same as when
+  // real tracking began (e.g. it's per-origin, so a fresh deployment or a
+  // new browser profile gets a brand-new, recent anchor even if genuine
+  // historical fast_ data already exists). In practice this was hiding real
+  // tracked history rather than protecting against scattered noise, so it's
+  // removed — every real fast you've recorded should be able to reach the
+  // archive once it's no longer the current or previous month.
   const infoEl = document.getElementById('stats-archive-info');
-  if (infoEl) {
-    infoEl.textContent = anchorRaw
-      ? `Archive shows history from ${HIJRI_MONTHS[anchorHM - 1]} ${anchorHY} AH onward (excludes anything before that, and the current/previous month, which are still shown live above).`
-      : '';
-  }
+  if (infoEl) infoEl.textContent = '';
 
   const counts = {}; // key "hy-hm" -> count
   doneDates.forEach(d => {
     const h = gToHCorrected(d);
     if (h.year === curHY && h.month === curHM) return;
     if (h.year === prevHMY && h.month === prevHM) return;
-    if (h.year < anchorHY || (h.year === anchorHY && h.month < anchorHM)) return;
     const key = h.year + '-' + h.month;
     counts[key] = (counts[key] || 0) + 1;
   });
@@ -2814,15 +2815,6 @@ setInterval(() => {
       localStorage.removeItem(k);
     }
   });
-})();
-// ── Install anchor for Stats archive ─────────────────────────────────────
-// The archive only shows months from whichever Hijri month was "current"
-// at first install — never backfills older, pre-existing scattered data.
-(function recordInstallAnchor() {
-  if (!localStorage.getItem('install_hijri_ym')) {
-    const h = getTodayHijriAdjusted();
-    localStorage.setItem('install_hijri_ym', h.year + '-' + h.month);
-  }
 })();
 renderUpcoming();
 calcScore(); updateSpecialBanner();
