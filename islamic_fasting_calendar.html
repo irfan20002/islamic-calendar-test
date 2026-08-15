@@ -501,6 +501,7 @@
   <div id="tab-stats" style="display:none">
     <div class="section">
       <div class="section-title">Monthly archive</div>
+      <div id="stats-archive-info" style="font-size:11px;color:var(--color-text-tertiary);margin:-4px 0 .6rem"></div>
       <div id="stats-list"></div>
     </div>
   </div>
@@ -1522,6 +1523,13 @@ function renderStats() {
   // and excluding anything before the install anchor month.
   const anchorRaw = localStorage.getItem('install_hijri_ym');
   const [anchorHY, anchorHM] = anchorRaw ? anchorRaw.split('-').map(Number) : [curHY, curHM];
+
+  const infoEl = document.getElementById('stats-archive-info');
+  if (infoEl) {
+    infoEl.textContent = anchorRaw
+      ? `Archive shows history from ${HIJRI_MONTHS[anchorHM - 1]} ${anchorHY} AH onward (excludes anything before that, and the current/previous month, which are still shown live above).`
+      : '';
+  }
 
   const counts = {}; // key "hy-hm" -> count
   doneDates.forEach(d => {
@@ -2729,7 +2737,22 @@ function refreshForNewDay() {
   _parsedPrayerTimes = null;
   renderUpcoming();
   calcScore(); updateSpecialBanner();
-  if (window._cachedLat !== undefined) loadPrayers(window._cachedLat, window._cachedLon, window._cachedCity || 'Your location');
+  // Refreshing the Hijri anchor here is what lets a month that just ended
+  // "age out" of the live dashboard tiles into the Stats archive — without
+  // this, curHM/prevHM in renderStats() stay pinned to whatever they were
+  // at last page load, so a completed month can never appear in Stats until
+  // the app is fully reloaded. Previously this was gated behind
+  // window._cachedLat being set, which is in-memory only (not persisted) —
+  // if that was ever unset for any reason mid-session, the Hijri anchor
+  // would silently stop refreshing at every subsequent midnight. Falling
+  // back to initPrayers() (which sets _cachedLat itself, Houston default
+  // first, then real geolocation) guarantees this always actually runs.
+  if (window._cachedLat !== undefined) {
+    loadPrayers(window._cachedLat, window._cachedLon, window._cachedCity || 'Your location');
+  } else {
+    initPrayers();
+  }
+  if (document.getElementById('tab-stats') && document.getElementById('tab-stats').style.display !== 'none') renderStats();
 }
 
 (function scheduleMidnightRefresh() {
