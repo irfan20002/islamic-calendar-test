@@ -107,19 +107,21 @@
   .ayah-bookmark-btn { position:absolute; top:14px; left:0; border:none; background:none; font-size:18px; color:#B8860B; cursor:pointer; padding:2px 6px; line-height:1; }
   /* font-weight:700 isn't enough — the actual Arabic fonts used (Uthmani
      system font, and the self-hosted Nastaleeq/Naskh for IndoPak) only ship
-     a single weight, no real bold variant. That's what caused the "flashes
-     bold then reverts" bug: the generic fallback font (briefly shown while
-     the real font loads) DOES have a bold weight and renders correctly, but
-     once the real single-weight font swaps in, it falls back to its only
-     weight. A follow-up attempt using -webkit-text-stroke also didn't hold:
-     stroke-based faux-bold interacts badly with Arabic's complex script
-     shaping (cursive joining) and can get silently dropped once real glyph
-     shaping applies, unlike on simpler Latin fallback glyphs. Switched to a
-     layered text-shadow instead — it doesn't touch glyph outlines or
-     shaping at all, just overlays four slightly-offset copies of the same
-     normal-weight render to visually thicken it, which is far more reliably
-     supported across engines and complex scripts than either of the above. */
-  .surah-ayah-arabic { direction:rtl; text-align:right; font-size:calc(22px * var(--quran-text-scale, 1)); line-height:2; color:var(--color-text-primary); margin-bottom:8px; text-shadow:0.4px 0 0 currentColor, -0.4px 0 0 currentColor, 0 0.4px 0 currentColor, 0 -0.4px 0 currentColor; }
+     a single weight, no real bold variant. Text-stroke alone and text-shadow
+     alone were each tried and reported as reverting to regular on iOS
+     Safari specifically — verified by actually rendering the real Nastaleeq
+     font (nastaleeq-v10-full.ttf) in a headless Chromium and screenshotting
+     the pixel output rather than guessing: both stroke and shadow DO
+     visibly thicken the real glyphs there, which means the technique itself
+     is sound — the failure was WebKit-specific. -webkit-text-stroke without
+     an explicit paint-order can render inconsistently in WebKit once a
+     dynamically-loaded webfont with complex Arabic shaping swaps in (a
+     known category of WebKit stroke/fill compositing quirk); paint-order:
+     stroke fill forces the correct compositing order. Combined with the
+     layered text-shadow as reinforcement (shadow doesn't touch glyph
+     outlines at all, so it doesn't share the stroke's failure mode) for
+     redundancy across engines. */
+  .surah-ayah-arabic { direction:rtl; text-align:right; font-size:calc(22px * var(--quran-text-scale, 1)); line-height:2; color:var(--color-text-primary); margin-bottom:8px; -webkit-text-stroke:0.9px currentColor; paint-order:stroke fill; text-shadow:0.6px 0 0 currentColor, -0.6px 0 0 currentColor, 0 0.6px 0 currentColor, 0 -0.6px 0 currentColor; }
   .surah-ayah-num { display:inline-block; font-size:11px; font-weight:700; color:#ffffff; background:#117A65; border-radius:50%; width:20px; height:20px; text-align:center; line-height:20px; margin-left:6px; }
   .sajda-mark { color:#B8860B; font-size:22px; margin:0 4px; }
   .surah-ayah-block.has-sajda { background:#FDF6E3; border-radius:8px; padding-left:8px; padding-right:8px; border-bottom-color:#B8860B; }
@@ -331,7 +333,12 @@
   @font-face {
     font-family: 'Quran Naskh Full';
     src: url('https://cdn.jsdelivr.net/gh/fawazahmed0/quran-api@1/fonts/nastaleeq-v10-full.ttf') format('truetype');
-    font-display: swap;
+    /* block (not swap): eliminates the fallback-font-then-real-font visual
+       transition entirely — text is briefly invisible (up to ~3s) rather
+       than rendering in a generic serif first and then swapping. Removes
+       any chance of the bold styling looking like it "reverts" partway
+       through, since there's only ever one font shown, not two. */
+    font-display: block;
   }
   /* Mushaf (Madinah page-accurate) QCF4 fonts are NOT declared here — there are
      48 of them (47 page-range fonts + 1 header/bismillah font, ~36MB total) and
