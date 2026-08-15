@@ -105,17 +105,21 @@
   .surah-ayah-block.bookmarked { background:#FDF6E3; border-radius:8px; padding-left:8px; padding-right:8px; }
   .surah-ayah-block.ayah-flash { background:#F5E0A3; border-radius:8px; padding-left:8px; padding-right:8px; }
   .ayah-bookmark-btn { position:absolute; top:14px; left:0; border:none; background:none; font-size:18px; color:#B8860B; cursor:pointer; padding:2px 6px; line-height:1; }
-  /* font-weight:700 alone isn't enough here — the actual Arabic fonts used
-     (Uthmani system font, and the self-hosted Nastaleeq/Naskh for IndoPak)
-     only ship a single weight, no real bold variant. That's what caused the
-     "flashes bold then reverts" bug: the generic fallback font (shown
-     briefly while the real font loads) DOES have a bold weight and renders
-     it correctly, but once the real single-weight font swaps in, there's no
-     bold face for it to use, so it falls back to its only weight. Faking the
-     bold via a text-stroke (thickens the glyph outline regardless of which
-     weights the font actually has) instead of relying on font-weight fixes
-     this for any font, loaded or not. */
-  .surah-ayah-arabic { direction:rtl; text-align:right; font-size:calc(22px * var(--quran-text-scale, 1)); line-height:2; color:var(--color-text-primary); margin-bottom:8px; font-weight:700; -webkit-text-stroke:0.45px currentColor; text-stroke:0.45px currentColor; }
+  /* font-weight:700 isn't enough — the actual Arabic fonts used (Uthmani
+     system font, and the self-hosted Nastaleeq/Naskh for IndoPak) only ship
+     a single weight, no real bold variant. That's what caused the "flashes
+     bold then reverts" bug: the generic fallback font (briefly shown while
+     the real font loads) DOES have a bold weight and renders correctly, but
+     once the real single-weight font swaps in, it falls back to its only
+     weight. A follow-up attempt using -webkit-text-stroke also didn't hold:
+     stroke-based faux-bold interacts badly with Arabic's complex script
+     shaping (cursive joining) and can get silently dropped once real glyph
+     shaping applies, unlike on simpler Latin fallback glyphs. Switched to a
+     layered text-shadow instead — it doesn't touch glyph outlines or
+     shaping at all, just overlays four slightly-offset copies of the same
+     normal-weight render to visually thicken it, which is far more reliably
+     supported across engines and complex scripts than either of the above. */
+  .surah-ayah-arabic { direction:rtl; text-align:right; font-size:calc(22px * var(--quran-text-scale, 1)); line-height:2; color:var(--color-text-primary); margin-bottom:8px; text-shadow:0.4px 0 0 currentColor, -0.4px 0 0 currentColor, 0 0.4px 0 currentColor, 0 -0.4px 0 currentColor; }
   .surah-ayah-num { display:inline-block; font-size:11px; font-weight:700; color:#ffffff; background:#117A65; border-radius:50%; width:20px; height:20px; text-align:center; line-height:20px; margin-left:6px; }
   .sajda-mark { color:#B8860B; font-size:22px; margin:0 4px; }
   .surah-ayah-block.has-sajda { background:#FDF6E3; border-radius:8px; padding-left:8px; padding-right:8px; border-bottom-color:#B8860B; }
