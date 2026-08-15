@@ -138,7 +138,12 @@
   .mushaf-nav-btn { border:none; background:rgba(255,255,255,.6); color:#33415c; width:30px; height:30px; border-radius:50%; font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-family:var(--font-sans); }
   .mushaf-nav-btn:disabled { opacity:.35; cursor:default; }
   .mushaf-page { background:#FFFDF7; border:1px solid #9fb3d6; border-top:none; border-radius:0 0 10px 10px; padding:18px 14px 10px; min-height:340px; direction:rtl; }
-  .mushaf-line { display:flex; flex-direction:row-reverse; justify-content:space-between; align-items:baseline; gap:0; line-height:2.15; flex-wrap:nowrap; }
+  /* .mushaf-page (ancestor) already sets direction:rtl, which alone makes flex's
+     main-start the right edge — so plain flex-direction:row already lays words out
+     right-to-left in correct reading order. Adding row-reverse on top of that
+     compounds with the inherited RTL and flips it back to left-to-right, which is
+     the bug that made words render in the wrong order. Do not add row-reverse here. */
+  .mushaf-line { display:flex; flex-direction:row; justify-content:space-between; align-items:baseline; gap:0; line-height:2.15; flex-wrap:nowrap; }
   .mushaf-line.mushaf-line-center { justify-content:center; gap:4px; }
   .mushaf-word { white-space:nowrap; font-size:calc(21px * var(--quran-text-scale, 1)); color:#1b1b1b; }
   .mushaf-word.mushaf-word-end { color:#117A65; }
