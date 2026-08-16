@@ -175,13 +175,24 @@
   .mushaf-header-pill .surah-label { font-size:13px; font-weight:700; color:#1b2740; display:block; }
   .mushaf-nav-btn { border:none; background:rgba(255,255,255,.6); color:#33415c; width:30px; height:30px; border-radius:50%; font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-family:var(--font-sans); }
   .mushaf-nav-btn:disabled { opacity:.35; cursor:default; }
-  /* overflow:hidden is a genuine safety net, not just cosmetic — scaleX() on
-     a line only shrinks how it PAINTS, not its actual layout box width, so a
-     line whose natural width still exceeds the container even after the
-     capped shrink in mushafFitLinesToWidth() would otherwise visibly spill
-     past this border (seen at higher zoom levels) instead of being clipped
-     to it. */
+  /* zoom lives on .mushaf-page-inner (the content wrapper), not .mushaf-page
+     itself — zooming the card's own border/background/padding would
+     misalign it with .mushaf-header-bar above, which doesn't zoom. Keeping
+     the outer card frame fixed and zooming only the text content inside it
+     keeps the card's outer edges aligned with the header regardless of
+     zoom level. */
   .mushaf-page { background:#FFFDF7; border:1px solid #9fb3d6; border-top:none; border-radius:0 0 10px 10px; padding:18px 14px 10px; min-height:340px; direction:rtl; overflow:hidden; }
+  /* zoom (not transform:scale, not font-size scaling) scales the ENTIRE
+     content wrapper — text AND its effective width — as one proportional
+     unit, the way pinch-zooming a photo works. This replaces an earlier
+     approach that only scaled .mushaf-word's font-size while the container
+     stayed a fixed physical width: that meant zooming out left every line
+     under-filling its line (gaps), and zooming in made every line overflow
+     — both are just symptoms of the "canvas" not zooming along with the
+     content. zoom changes actual layout size (unlike transform), so the
+     content and its effective container scale together and their
+     proportions never change relative to each other, at any zoom level. */
+  .mushaf-page-inner { zoom:var(--mushaf-scale, 1); width:calc(100% / var(--mushaf-scale, 1)); }
   /* .mushaf-page (ancestor) already sets direction:rtl, which alone makes flex's
      main-start the right edge — so plain flex-direction:row already lays words out
      right-to-left in correct reading order. Adding row-reverse on top of that
@@ -198,10 +209,10 @@
      gap. Trusting the font's own pre-fit widths avoids this entirely. */
   .mushaf-line { display:flex; flex-direction:row; justify-content:flex-start; align-items:baseline; gap:0; line-height:2.15; flex-wrap:nowrap; }
   .mushaf-line.mushaf-line-center { justify-content:center; gap:4px; }
-  .mushaf-word { white-space:nowrap; font-size:calc(21px * var(--mushaf-scale, 1)); color:#1b1b1b; }
+  .mushaf-word { white-space:nowrap; font-size:21px; color:#1b1b1b; }
   .mushaf-word.mushaf-word-end { color:#117A65; }
   .mushaf-surah-banner { display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#FDF6E3 0%,#FBEBB8 100%); border:1px solid #B8860B; border-radius:8px; padding:8px 4px; margin:4px 0 8px; }
-  .mushaf-surah-banner .mushaf-word { font-size:calc(19px * var(--mushaf-scale, 1)); color:#8a6300; }
+  .mushaf-surah-banner .mushaf-word { font-size:19px; color:#8a6300; }
   .mushaf-bismillah-line { justify-content:center !important; margin-bottom:4px; }
   .mushaf-footer { display:flex; align-items:center; justify-content:space-between; padding:8px 6px 2px; font-size:11px; color:var(--color-text-tertiary); font-family:var(--font-sans); }
   .mushaf-page-loading { text-align:center; padding:40px 10px; color:var(--color-text-tertiary); font-size:13px; }
@@ -4163,7 +4174,7 @@ function mushafGoPage(n) {
     document.getElementById('mushaf-surah-label').textContent = chapter ? `${chapter.name_arabic} — ${chapter.name}` : '';
     document.getElementById('mushaf-juz-label').textContent = `Juz ${mushafJuzForPage(n)}`;
 
-    container.innerHTML = pageData.lines.map(line => {
+    container.innerHTML = '<div class="mushaf-page-inner">' + pageData.lines.map(line => {
       const w = line.words;
       if (w.length === 1 && w[0].type === 'surah_header') {
         return `<div class="mushaf-surah-banner"><span class="mushaf-word" style="font-family:'${w[0].font}'">${String.fromCharCode(w[0].code)}</span></div>`;
@@ -4176,7 +4187,7 @@ function mushafGoPage(n) {
         return `<span class="${cls}" style="font-family:'${word.font}'" data-verse-key="${word.verse_key || ''}">${String.fromCharCode(word.code)}</span>`;
       }).join('');
       return `<div class="mushaf-line">${wordsHtml}</div>`;
-    }).join('');
+    }).join('') + '</div>';
 
     updateMushafBookmarkUI();
     updateQuranContinueReading();
