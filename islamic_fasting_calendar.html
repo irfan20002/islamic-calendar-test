@@ -192,6 +192,16 @@
   .mushaf-header-pill .juz-label { font-size:11px; font-weight:700; color:#33415c; display:block; }
   .mushaf-header-pill .surah-label { font-size:13px; font-weight:700; color:#1b2740; display:block; }
   .mushaf-nav-btn { border:none; background:rgba(255,255,255,.6); color:#33415c; width:30px; height:30px; border-radius:50%; font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-family:var(--font-sans); }
+  /* "Play chapter" continuous-playback button — sits right next to the
+     Juz/Surah pill in either reader header. Same visual language as the
+     prev/next page arrows it sits beside. */
+  .continuous-play-btn { border:none; background:rgba(255,255,255,.6); color:#117A65; width:30px; height:30px; border-radius:50%; font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-family:var(--font-sans); flex-shrink:0; }
+  .continuous-play-btn.active { background:#117A65; color:#fff; }
+  /* Highlights the word(s) belonging to the verse currently playing during
+     Mushaf continuous playback — Mushaf has no per-ayah block to highlight
+     the way the continuous reader does (it's individual glyph spans), so
+     this targets every span sharing that verse's data-verse-key instead. */
+  .mushaf-word.playing-verse { background:rgba(17,122,101,0.18); border-radius:4px; }
   .mushaf-nav-btn:disabled { opacity:.35; cursor:default; }
   /* overflow:hidden is a genuine safety net, not just cosmetic — scaleX() on
      a line only shrinks how it PAINTS, not its actual layout box width, so a
@@ -617,9 +627,12 @@
       <div id="quran-reader-continuous">
         <div class="mushaf-header-bar">
           <button class="mushaf-nav-btn" id="continuous-prev-btn" onclick="continuousGoPage(mushafCurrentPage() - 1)" aria-label="Previous page">&#9654;</button>
-          <div class="mushaf-header-pill" onclick="openGoToPanel()" style="cursor:pointer" role="button" aria-label="Go to surah or ayah">
-            <span class="juz-label" id="continuous-juz-label">Juz 1</span>
-            <span class="surah-label" id="continuous-surah-label">Al-Fatihah</span>
+          <div style="display:flex;align-items:center;gap:6px;min-width:0">
+            <div class="mushaf-header-pill" onclick="openGoToPanel()" style="cursor:pointer" role="button" aria-label="Go to surah or ayah">
+              <span class="juz-label" id="continuous-juz-label">Juz 1</span>
+              <span class="surah-label" id="continuous-surah-label">Al-Fatihah</span>
+            </div>
+            <button class="continuous-play-btn" onclick="toggleContinuousPlayback()" aria-label="Play whole chapter">&#9654;</button>
           </div>
           <button class="mushaf-nav-btn" id="continuous-next-btn" onclick="continuousGoPage(mushafCurrentPage() + 1)" aria-label="Next page">&#9664;</button>
         </div>
@@ -641,9 +654,12 @@
       <div id="quran-reader-mushaf" style="display:none">
         <div class="mushaf-header-bar">
           <button class="mushaf-nav-btn" id="mushaf-prev-btn" onclick="mushafGoPage(mushafCurrentPage() - 1)" aria-label="Previous page">&#9654;</button>
-          <div class="mushaf-header-pill" onclick="openGoToPanel()" style="cursor:pointer" role="button" aria-label="Go to surah or ayah">
-            <span class="juz-label" id="mushaf-juz-label">Juz 1</span>
-            <span class="surah-label" id="mushaf-surah-label">Al-Fatihah</span>
+          <div style="display:flex;align-items:center;gap:6px;min-width:0">
+            <div class="mushaf-header-pill" onclick="openGoToPanel()" style="cursor:pointer" role="button" aria-label="Go to surah or ayah">
+              <span class="juz-label" id="mushaf-juz-label">Juz 1</span>
+              <span class="surah-label" id="mushaf-surah-label">Al-Fatihah</span>
+            </div>
+            <button class="continuous-play-btn" onclick="toggleContinuousPlayback()" aria-label="Play whole chapter">&#9654;</button>
           </div>
           <button class="mushaf-nav-btn" id="mushaf-next-btn" onclick="mushafGoPage(mushafCurrentPage() + 1)" aria-label="Next page">&#9664;</button>
         </div>
@@ -3797,7 +3813,7 @@ function updateScriptToggleUI() {
 
 function setQuranScript(script) {
   if (script === _quranScript) return;
-  if (typeof stopAyahPlayback === 'function') stopAyahPlayback();
+  if (typeof stopContinuousPlayback === 'function') stopContinuousPlayback();
   _quranScript = script;
   try { localStorage.setItem('quran_script_pref', script); } catch (e) {}
   updateScriptToggleUI();
@@ -4169,6 +4185,7 @@ function stopAyahPlayback() {
       if (btn) btn.textContent = '▶';
     }
   }
+  clearMushafVerseHighlight();
   _currentPlayingAyahKey = null;
 }
 
@@ -4183,11 +4200,11 @@ function speakText(text) {
   });
 }
 
-function playAyahAudio(surah, ayah, evt) {
+function playAyahAudio(surah, ayah, evt, onComplete) {
   if (evt) evt.stopPropagation();
   const key = `${surah}:${ayah}`;
 
-  if (_currentPlayingAyahKey === key) {
+  if (!onComplete && _currentPlayingAyahKey === key) {
     stopAyahPlayback(); // tapping the currently-playing ayah again stops it
     return;
   }
@@ -4203,33 +4220,174 @@ function playAyahAudio(surah, ayah, evt) {
     _speechPrimed = true;
   }
 
-  stopAyahPlayback(); // stop whatever else was playing first
+  if (!onComplete) stopAyahPlayback(); // single-ayah tap: stop whatever else was playing first
+  else if (_currentPlayingAyahKey && _currentPlayingAyahKey !== key) {
+    // Continuous mode advancing to a new ayah: clear the PREVIOUS ayah's own
+    // button/highlight (its block still exists on screen if we're still on
+    // the same page) without calling the full stopAyahPlayback — that would
+    // also cancel speech/audio state we're actively transitioning out of.
+    const [ps, pa] = _currentPlayingAyahKey.split(':');
+    const prevBlock = document.getElementById(`ayah-${ps}-${pa}`);
+    if (prevBlock) {
+      prevBlock.classList.remove('ayah-flash');
+      const prevBtn = prevBlock.querySelector('.ayah-play-btn');
+      if (prevBtn) prevBtn.textContent = '▶';
+    }
+  }
   _currentPlayingAyahKey = key;
 
   const block = document.getElementById(`ayah-${surah}-${ayah}`);
   const btn = block ? block.querySelector('.ayah-play-btn') : null;
   if (btn) btn.textContent = '⏸';
-  if (block) block.classList.add('ayah-flash');
+  if (block) {
+    block.classList.add('ayah-flash');
+    // If a page turn happened as part of continuous playback, the newly
+    // rendered ayah may be off-screen — bring it into view automatically so
+    // the visible content keeps following the audio.
+    if (onComplete) block.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+  if (_quranScript === 'mushaf') highlightMushafVerse(surah, ayah);
 
   const audio = getAudioPlayerEl();
   audio.src = `https://everyayah.com/data/Alafasy_128kbps/${pad3(surah)}${pad3(ayah)}.mp3`;
 
+  const finishUp = () => {
+    if (onComplete) { onComplete(); return; }
+    if (_currentPlayingAyahKey === key) stopAyahPlayback();
+  };
+
   const afterRecitation = () => {
     if (_currentPlayingAyahKey !== key) return; // superseded by a newer tap
+    // Mushaf mode has no translation text on screen at all — recitation only,
+    // matching what's actually displayed there. Uthmani/IndoPak read the
+    // translation too, same as single-ayah playback already did.
+    if (_quranScript === 'mushaf') { finishUp(); return; }
     getSurahData(surah).then(sd => {
-      if (_currentPlayingAyahKey !== key) return;
+      if (_currentPlayingAyahKey !== key) { return; }
       const a = sd.ayahs.find(x => x.numberInSurah === ayah);
-      speakText(a ? a.translation : '').then(() => {
-        if (_currentPlayingAyahKey === key) stopAyahPlayback();
-      });
-    }).catch(() => { if (_currentPlayingAyahKey === key) stopAyahPlayback(); });
+      speakText(a ? a.translation : '').then(finishUp);
+    }).catch(finishUp);
   };
 
   audio.onended = afterRecitation;
-  // Still speak the translation even if the recitation file itself fails to
-  // load/play — partial playback is better than silently doing nothing.
+  // Still continue (translation, or the next ayah in continuous mode) even
+  // if the recitation file itself fails to load/play — partial playback is
+  // better than silently stalling.
   audio.onerror = afterRecitation;
   audio.play().catch(afterRecitation);
+}
+
+// Mushaf mode has no per-ayah block to highlight (it's word-glyph spans, not
+// ayah divs) — highlight every word span belonging to the currently-playing
+// verse instead, matching the data-verse-key already embedded in each word.
+function highlightMushafVerse(surah, ayah) {
+  document.querySelectorAll('.mushaf-word.playing-verse').forEach(el => el.classList.remove('playing-verse'));
+  document.querySelectorAll(`.mushaf-word[data-verse-key="${surah}:${ayah}"]`).forEach(el => el.classList.add('playing-verse'));
+}
+function clearMushafVerseHighlight() {
+  document.querySelectorAll('.mushaf-word.playing-verse').forEach(el => el.classList.remove('playing-verse'));
+}
+
+// "Play chapter" continuous playback — auto-advances ayah by ayah through
+// the currently open chapter (Arabic + translation for Uthmani/IndoPak,
+// Arabic only for Mushaf, matching what single-ayah playback already does
+// per mode), turning pages automatically as it crosses page boundaries so
+// the visible page always matches what's currently playing. Stops at the
+// end of the chapter, or immediately if the user navigates manually
+// (swipe, prev/next arrows, back, script switch — anything that already
+// calls stopContinuousPlayback/stopAyahPlayback).
+let _continuousPlaybackActive = false;
+let _continuousPlaybackToken = null;
+
+function toggleContinuousPlayback() {
+  if (_continuousPlaybackActive) { stopContinuousPlayback(); return; }
+  if (!_currentOpenSurah) return;
+  // Start from whichever ayah is first visible on the current page, so
+  // playback picks up from roughly where you're already looking rather
+  // than always restarting the chapter from ayah 1. Scoped to whichever
+  // reader mode is actually active — #quran-reader-content and
+  // #mushaf-page-content are DOM siblings (one just hidden via
+  // display:none depending on mode), so an unscoped query could match an
+  // element from the hidden one instead.
+  let startAyah = 1;
+  if (_quranScript === 'mushaf') {
+    const firstWord = document.querySelector('#mushaf-page-content .mushaf-word[data-verse-key]');
+    const vk = firstWord ? firstWord.dataset.verseKey : null;
+    if (vk) {
+      const [s, a] = vk.split(':').map(Number);
+      if (s === _currentOpenSurah) startAyah = a;
+    }
+  } else {
+    const firstBlock = document.querySelector('#quran-reader-content .surah-ayah-block');
+    if (firstBlock && Number(firstBlock.dataset.surah) === _currentOpenSurah) {
+      startAyah = Number(firstBlock.dataset.ayah);
+    }
+  }
+  startContinuousPlayback(_currentOpenSurah, startAyah);
+}
+
+function startContinuousPlayback(surah, ayah) {
+  stopAyahPlayback(); // clean slate — clears any single-ayah playback state first
+  _continuousPlaybackActive = true;
+  const token = {};
+  _continuousPlaybackToken = token;
+  updateContinuousPlayBtnUI();
+  continuousPlayStep(surah, ayah, token);
+}
+
+function stopContinuousPlayback() {
+  if (!_continuousPlaybackActive) return;
+  _continuousPlaybackActive = false;
+  _continuousPlaybackToken = null;
+  stopAyahPlayback();
+  clearMushafVerseHighlight();
+  updateContinuousPlayBtnUI();
+}
+
+function updateContinuousPlayBtnUI() {
+  document.querySelectorAll('.continuous-play-btn').forEach(btn => {
+    btn.textContent = _continuousPlaybackActive ? '⏹' : '▶';
+    btn.classList.toggle('active', _continuousPlaybackActive);
+  });
+}
+
+function continuousPlayStep(surah, ayah, token) {
+  if (_continuousPlaybackToken !== token) return; // stopped or superseded
+  Promise.all([mushafLoadIndex(), mushafLoadVerses()]).then(() => {
+    if (_continuousPlaybackToken !== token) return;
+    const vkey = `${surah}:${ayah}`;
+    const targetPage = (MUSHAF_VERSES[vkey] || {}).page;
+    const pageChangeNeeded = targetPage && targetPage !== mushafCurrentPage();
+
+    const proceed = () => {
+      if (_continuousPlaybackToken !== token) return;
+      playAyahAudio(surah, ayah, null, () => {
+        if (_continuousPlaybackToken !== token) return;
+        const next = getNextAyahInChapter(surah, ayah);
+        if (!next) { stopContinuousPlayback(); return; }
+        continuousPlayStep(next.surah, next.ayah, token);
+      });
+    };
+
+    if (pageChangeNeeded) {
+      const goPage = _quranScript === 'mushaf' ? (n) => mushafGoPage(n, true) : (n) => renderContinuousPage(n, true);
+      goPage(targetPage).then(() => {
+        if (_continuousPlaybackToken === token) proceed();
+      }).catch(() => stopContinuousPlayback());
+    } else {
+      proceed();
+    }
+  }).catch(() => stopContinuousPlayback());
+}
+
+// Next ayah within the SAME chapter only — continuous playback is scoped to
+// "play this chapter", not the whole Quran, so it stops (rather than
+// rolling into the next surah) once the current chapter's last ayah finishes.
+function getNextAyahInChapter(surah, ayah) {
+  const chapterMeta = MUSHAF_INDEX ? MUSHAF_INDEX.chapters.find(c => c.id === surah) : null;
+  const maxAyah = chapterMeta ? chapterMeta.verses_count : null;
+  if (maxAyah && ayah < maxAyah) return { surah, ayah: ayah + 1 };
+  return null;
 }
 
 function buildAyahBlockHtml(surahData, a, arabicClass) {
@@ -4264,9 +4422,12 @@ function surahsOnPage(n) {
 // Mushaf mode navigate the same underlying page space (_mushafCurrentPage,
 // shared), just rendering it differently: plain text + translation here,
 // the page-glyph font there.
-function renderContinuousPage(n) {
+function renderContinuousPage(n, preserveAudio) {
   n = Math.max(1, Math.min(MUSHAF_TOTAL_PAGES, n));
-  if (typeof stopAyahPlayback === 'function') stopAyahPlayback(); // don't keep playing across a page change
+  // Continuous "play chapter" playback turns pages itself as it advances —
+  // that internal page change must NOT stop its own playback. Only a
+  // user-initiated page change (swipe, tap the arrows) should stop it.
+  if (!preserveAudio && typeof stopContinuousPlayback === 'function') stopContinuousPlayback();
   _mushafCurrentPage = n;
   try { localStorage.setItem('quran_mushaf_last_page', String(n)); } catch (e) {}
 
@@ -4280,7 +4441,7 @@ function renderContinuousPage(n) {
   if (pageLabelEl) pageLabelEl.textContent = `Page ${n} of ${MUSHAF_TOTAL_PAGES}`;
   content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--color-text-tertiary);font-size:13px">Loading page…</div>';
 
-  mushafLoadIndex().then(() => mushafLoadVerses()).then(() => {
+  return mushafLoadIndex().then(() => mushafLoadVerses()).then(() => {
     const surahIds = surahsOnPage(n);
     if (surahIds.length) _currentOpenSurah = surahIds[0];
 
@@ -4340,7 +4501,7 @@ function continuousGoPage(n) {
 }
 
 function closeSurahReader() {
-  if (typeof stopAyahPlayback === 'function') stopAyahPlayback();
+  if (typeof stopContinuousPlayback === 'function') stopContinuousPlayback();
   document.getElementById('quran-reader-view').style.display = 'none';
   document.getElementById('quran-home-view').style.display = 'block';
   document.getElementById('quran-float-textsize').classList.remove('visible');
@@ -4482,8 +4643,12 @@ function openMushafReaderAt(page) {
   mushafGoPage(page);
 }
 
-function mushafGoPage(n) {
+function mushafGoPage(n, preserveAudio) {
   n = Math.max(1, Math.min(MUSHAF_TOTAL_PAGES, n));
+  // Continuous "play chapter" playback turns Mushaf pages itself as it
+  // advances — that internal page change must NOT stop its own playback.
+  // Only a user-initiated page change (swipe, tap the arrows) should stop it.
+  if (!preserveAudio && typeof stopContinuousPlayback === 'function') stopContinuousPlayback();
   _mushafCurrentPage = n;
   try { localStorage.setItem('quran_mushaf_last_page', String(n)); } catch (e) {}
   const container = document.getElementById('mushaf-page-content');
@@ -4494,7 +4659,7 @@ function mushafGoPage(n) {
   document.getElementById('mushaf-page-label').textContent = `Page ${n} of ${MUSHAF_TOTAL_PAGES}`;
   container.innerHTML = '<div class="mushaf-page-loading">Loading page…</div>';
 
-  Promise.all([mushafLoadIndex(), mushafLoadVerses(), mushafFetchPage(n)]).then(([, , pageData]) => {
+  return Promise.all([mushafLoadIndex(), mushafLoadVerses(), mushafFetchPage(n)]).then(([, , pageData]) => {
     const fontFamily = MUSHAF_FONT_MAP[String(n)];
     if (fontFamily) injectMushafFontFace(fontFamily);
     injectMushafFontFace('QCF4_QBSML');
