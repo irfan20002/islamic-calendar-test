@@ -569,25 +569,26 @@
         <button class="script-toggle-btn" id="script-btn-indopak" onclick="setQuranScript('indopak')">IndoPak</button>
         <button class="script-toggle-btn" id="script-btn-mushaf" onclick="setQuranScript('mushaf')">Mushaf</button>
       </div>
-      <!-- In-context shortcut to the bookmarked ayah — Mushaf mode already has
-           its own visible bookmark star in its footer while reading, so this is
-           specifically for Uthmani/IndoPak, which otherwise required going back
-           to the Quran home screen to reach "Continue reading". Hidden when no
-           bookmark exists or when in Mushaf mode. -->
-      <button id="quran-goto-bookmark-btn" onclick="gotoBookmark()" style="display:none;border:none;background:#FDF6E3;border:1px solid #e8d9a8;border-radius:8px;padding:7px 12px;cursor:pointer;font-size:12px;font-weight:600;color:#B8860B;font-family:var(--font-sans);white-space:nowrap;margin-bottom:.6rem;width:100%"></button>
-
-      <!-- Transliteration only applies to the continuous reader (Uthmani/IndoPak) —
-           Mushaf mode is rendered from page-glyph fonts, not plain text, so there's
-           no verse-text line to attach a transliteration to there. -->
-      <div class="quran-translit-toggle-row" id="quran-translit-toggle-row">
-        <button class="quran-translit-toggle" id="quran-translit-toggle-btn" onclick="toggleQuranTransliteration()" aria-label="Toggle transliteration"></button>
-        <span>Transliteration</span>
-      </div>
-      <!-- Bold also only applies to the continuous reader — Mushaf mode uses
-           page-glyph fonts where this toggle wouldn't do anything anyway. -->
-      <div class="quran-translit-toggle-row" id="quran-bold-toggle-row">
-        <button class="quran-translit-toggle" id="quran-bold-toggle-btn" onclick="toggleQuranBoldArabic()" aria-label="Toggle bold Arabic text"></button>
-        <span>Bold Arabic text</span>
+      <!-- Single row: Transliteration toggle (left), Bold Arabic toggle (middle),
+           bookmark shortcut (right) — Transliteration/Bold only apply to the
+           continuous reader (Mushaf is page-glyph fonts, not plain text, so
+           neither would do anything there). The bookmark shortcut is the
+           in-context "jump to my bookmarked ayah" button — Mushaf mode already
+           has its own equivalent (a bookmark star in its own footer), so this
+           is specifically for Uthmani/IndoPak, which otherwise required going
+           back to the Quran home screen to reach "Continue reading". Each
+           piece hides itself independently when not applicable (Mushaf mode,
+           or no bookmark set), via flex so the row re-balances automatically. -->
+      <div class="quran-translit-toggle-row" style="justify-content:space-between;margin-bottom:.75rem">
+        <div class="quran-translit-toggle-row" id="quran-translit-toggle-row" style="margin-bottom:0">
+          <button class="quran-translit-toggle" id="quran-translit-toggle-btn" onclick="toggleQuranTransliteration()" aria-label="Toggle transliteration"></button>
+          <span>Transliteration</span>
+        </div>
+        <div class="quran-translit-toggle-row" id="quran-bold-toggle-row" style="margin-bottom:0">
+          <button class="quran-translit-toggle" id="quran-bold-toggle-btn" onclick="toggleQuranBoldArabic()" aria-label="Toggle bold Arabic text"></button>
+          <span>Bold</span>
+        </div>
+        <button id="quran-goto-bookmark-btn" onclick="gotoBookmark()" style="display:none;border:none;background:#FDF6E3;border:1px solid #e8d9a8;border-radius:8px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:600;color:#B8860B;font-family:var(--font-sans);white-space:nowrap"></button>
       </div>
 
       <!-- Continuous reader (Uthmani / IndoPak) — now paginated to match the
