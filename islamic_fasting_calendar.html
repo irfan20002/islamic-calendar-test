@@ -3564,7 +3564,16 @@ function mushafFitLinesToWidth() {
     if (natural > safeTarget && natural > 0) {
       let ratio = safeTarget / natural;
       line.style.transform = `scaleX(${ratio})`;
-      line.style.transformOrigin = 'center';
+      // Anchor the shrink to the RIGHT edge, not the center — this is RTL
+      // content where the right edge is supposed to stay flush against the
+      // page's right border (that's where Arabic text starts). Scaling from
+      // center pulls BOTH edges inward equally, which correctly stops the
+      // left-edge overflow but also incorrectly retreats the right edge
+      // away from the border, creating a growing gap there as more shrink
+      // is needed (visible at higher zoom) — exactly the "text shifts left,
+      // right-side space grows" symptom. Right-edge anchoring only moves
+      // the left edge inward, which is the only edge that should move.
+      line.style.transformOrigin = 'right';
 
       // Verify against the ACTUAL rendered/painted width (getBoundingClientRect
       // reflects genuine post-transform geometry, unlike scrollWidth which can
