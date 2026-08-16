@@ -4179,7 +4179,7 @@ function renderContinuousPage(n) {
     const juzEl = document.getElementById('continuous-juz-label');
     const surahEl = document.getElementById('continuous-surah-label');
     const primaryChapter = MUSHAF_INDEX.chapters.find(c => c.id === surahIds[0]);
-    if (juzEl) juzEl.textContent = `Juz ${mushafJuzForPage(n)}`;
+    if (juzEl) juzEl.textContent = primaryChapter ? `Ch ${primaryChapter.id} · Juz ${mushafJuzForPage(n)}` : `Juz ${mushafJuzForPage(n)}`;
     if (surahEl) surahEl.textContent = primaryChapter ? `${primaryChapter.name_arabic} — ${primaryChapter.name}` : '';
     if (title) title.innerHTML = primaryChapter ? `${primaryChapter.id}. ${primaryChapter.name}` : '';
 
@@ -4393,7 +4393,7 @@ function mushafGoPage(n) {
     const surahId = mushafSurahForPage(n);
     const chapter = MUSHAF_INDEX.chapters.find(c => c.id === surahId);
     document.getElementById('mushaf-surah-label').textContent = chapter ? `${chapter.name_arabic} — ${chapter.name}` : '';
-    document.getElementById('mushaf-juz-label').textContent = `Juz ${mushafJuzForPage(n)}`;
+    document.getElementById('mushaf-juz-label').textContent = chapter ? `Ch ${chapter.id} · Juz ${mushafJuzForPage(n)}` : `Juz ${mushafJuzForPage(n)}`;
 
     container.innerHTML = pageData.lines.map(line => {
       const w = line.words;
