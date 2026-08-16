@@ -599,7 +599,7 @@
       <div id="quran-reader-continuous">
         <div class="mushaf-header-bar">
           <button class="mushaf-nav-btn" id="continuous-prev-btn" onclick="continuousGoPage(mushafCurrentPage() - 1)" aria-label="Previous page">&#9654;</button>
-          <div class="mushaf-header-pill">
+          <div class="mushaf-header-pill" onclick="openGoToPanel()" style="cursor:pointer" role="button" aria-label="Go to surah or ayah">
             <span class="juz-label" id="continuous-juz-label">Juz 1</span>
             <span class="surah-label" id="continuous-surah-label">Al-Fatihah</span>
           </div>
@@ -623,7 +623,7 @@
       <div id="quran-reader-mushaf" style="display:none">
         <div class="mushaf-header-bar">
           <button class="mushaf-nav-btn" id="mushaf-prev-btn" onclick="mushafGoPage(mushafCurrentPage() - 1)" aria-label="Previous page">&#9654;</button>
-          <div class="mushaf-header-pill">
+          <div class="mushaf-header-pill" onclick="openGoToPanel()" style="cursor:pointer" role="button" aria-label="Go to surah or ayah">
             <span class="juz-label" id="mushaf-juz-label">Juz 1</span>
             <span class="surah-label" id="mushaf-surah-label">Al-Fatihah</span>
           </div>
@@ -637,6 +637,28 @@
           <span id="mushaf-page-label">Page 1 of 604</span>
           <span></span>
         </div>
+      </div>
+    </div>
+
+    <!-- "Go to" panel — opened by tapping the Juz/Surah pill in either reader
+         header. Reuses the same surah search/filter logic already built for
+         the Quran home screen's surah list, plus an ayah number field, so
+         you can jump straight to any surah:ayah from wherever you currently
+         are in the reader, without backing out first. -->
+    <div id="quran-goto-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:600;align-items:flex-start;justify-content:center;padding-top:8vh" onclick="if(event.target===this) closeGoToPanel()">
+      <div style="background:var(--color-background-primary);border-radius:14px;padding:16px;width:90%;max-width:420px;max-height:78vh;display:flex;flex-direction:column;box-shadow:0 8px 30px rgba(0,0,0,0.3)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-weight:700;font-size:16px;color:var(--color-text-primary);font-family:var(--font-sans)">Go to</div>
+          <button onclick="closeGoToPanel()" aria-label="Close" style="border:none;background:none;font-size:22px;color:var(--color-text-tertiary);cursor:pointer;line-height:1;padding:2px 6px">&times;</button>
+        </div>
+        <input type="text" id="goto-surah-search" placeholder="Search surah by name or number…" oninput="filterGotoSurahList()" style="width:100%;box-sizing:border-box;padding:9px 12px;border-radius:var(--border-radius-md);border:1px solid var(--color-border-tertiary);font-size:16px;margin-bottom:8px;font-family:var(--font-sans);color:var(--color-text-primary);background:var(--color-background-primary)">
+        <div id="goto-surah-list" style="overflow-y:auto;flex:1;min-height:120px;margin-bottom:10px;border:1px solid var(--color-border-tertiary);border-radius:8px"></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="font-size:13px;color:var(--color-text-secondary);white-space:nowrap;font-family:var(--font-sans)">Ayah</span>
+          <input type="number" id="goto-ayah-input" min="1" value="1" style="width:76px;padding:8px;border-radius:8px;border:1px solid var(--color-border-tertiary);font-size:15px;font-family:var(--font-sans);color:var(--color-text-primary);background:var(--color-background-primary)">
+          <span id="goto-selected-surah" style="font-size:13px;color:var(--color-text-tertiary);flex:1;text-align:right;font-family:var(--font-sans);overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+        </div>
+        <button onclick="confirmGoTo()" style="background:#B8860B;color:#fff;border:none;border-radius:10px;padding:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--font-sans)">Go</button>
       </div>
     </div>
   </div>
@@ -3424,6 +3446,88 @@ function filterSurahList() {
   });
 }
 
+// "Go to" panel — opened by tapping the Juz/Surah pill in either reader
+// header, so surah:ayah navigation is reachable from wherever you currently
+// are in the reader, not just from the Quran home screen. Reuses the exact
+// same search/normalize logic as the home screen's surah list.
+let _gotoSelectedSurah = null;
+
+function openGoToPanel() {
+  _gotoSelectedSurah = _currentOpenSurah;
+  const searchEl = document.getElementById('goto-surah-search');
+  const ayahEl = document.getElementById('goto-ayah-input');
+  if (searchEl) searchEl.value = '';
+  if (ayahEl) ayahEl.value = '1';
+  document.getElementById('quran-goto-overlay').style.display = 'flex';
+  if (_quranSurahList) {
+    renderGotoSurahList(_quranSurahList);
+  } else {
+    // Reader can be opened (e.g. via Al-Kahf shortcut) without the home
+    // screen's surah list ever having loaded yet — fetch it directly rather
+    // than leaving the panel empty.
+    document.getElementById('goto-surah-list').innerHTML = '<div style="text-align:center;padding:16px;color:var(--color-text-tertiary);font-size:13px">Loading surahs…</div>';
+    fetch('https://api.alquran.cloud/v1/surah').then(r => r.json()).then(data => {
+      if (data.code !== 200) throw new Error('bad response');
+      _quranSurahList = data.data;
+      try { localStorage.setItem('quran_surah_list', JSON.stringify(_quranSurahList)); } catch (e) {}
+      renderGotoSurahList(_quranSurahList);
+    }).catch(() => {
+      document.getElementById('goto-surah-list').innerHTML = '<div style="text-align:center;padding:16px;color:var(--color-text-tertiary);font-size:13px">Could not load surah list.</div>';
+    });
+  }
+  updateGotoSelectedLabel();
+}
+
+function closeGoToPanel() {
+  document.getElementById('quran-goto-overlay').style.display = 'none';
+}
+
+function renderGotoSurahList(surahs) {
+  const list = document.getElementById('goto-surah-list');
+  list.innerHTML = surahs.map(s => {
+    const norm = normalizeSearchText(`${s.englishName} ${s.name} ${s.number} ${s.englishNameTranslation}`);
+    const searchIndex = `${norm} ${collapseRepeatedLetters(norm)}`;
+    const safeName = s.englishName.replace(/'/g, "\\'");
+    return `
+    <div class="surah-item" data-surah-search="${searchIndex}" onclick="selectGotoSurah(${s.number}, '${safeName}')" style="cursor:pointer">
+      <div class="surah-num">${s.number}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:14px;color:var(--color-text-primary)">${s.englishName}</div>
+        <div style="font-size:11px;color:var(--color-text-tertiary)">${s.numberOfAyahs} ayahs</div>
+      </div>
+      <div style="font-size:16px;color:var(--color-text-primary);direction:rtl">${s.name}</div>
+    </div>
+  `;
+  }).join('');
+}
+
+function filterGotoSurahList() {
+  const q = normalizeSearchText(document.getElementById('goto-surah-search').value.trim());
+  document.querySelectorAll('#goto-surah-list .surah-item').forEach(el => {
+    el.style.display = el.dataset.surahSearch.includes(q) ? 'flex' : 'none';
+  });
+}
+
+function selectGotoSurah(number) {
+  _gotoSelectedSurah = number;
+  updateGotoSelectedLabel();
+}
+
+function updateGotoSelectedLabel() {
+  const label = document.getElementById('goto-selected-surah');
+  if (!label) return;
+  const s = (_quranSurahList || []).find(x => x.number === _gotoSelectedSurah);
+  label.textContent = s ? `Selected: ${s.number}. ${s.englishName}` : 'Tap a surah below';
+}
+
+function confirmGoTo() {
+  if (!_gotoSelectedSurah) return; // nothing picked yet — no-op rather than guessing
+  const ayahEl = document.getElementById('goto-ayah-input');
+  const ayah = Math.max(1, parseInt(ayahEl.value, 10) || 1);
+  closeGoToPanel();
+  openSurah(_gotoSelectedSurah, ayah);
+}
+
 function updateQuranContinueReading() {
   const el = document.getElementById('quran-continue-reading');
   if (!el) return;
@@ -3683,9 +3787,17 @@ function openSurah(number, scrollToAyah) {
   applyQuranTextScale();
   document.getElementById('quran-float-textsize').classList.add('visible');
   if (_quranScript === 'mushaf') {
-    mushafLoadIndex().then(() => {
-      const ch = MUSHAF_INDEX.chapters.find(c => c.id === number);
-      openMushafReaderAt(ch ? ch.pages[0] : 1);
+    Promise.all([mushafLoadIndex(), mushafLoadVerses()]).then(() => {
+      let page = null;
+      if (scrollToAyah != null) {
+        const vkey = `${number}:${scrollToAyah}`;
+        page = (MUSHAF_VERSES[vkey] || {}).page || null;
+      }
+      if (page == null) {
+        const ch = MUSHAF_INDEX.chapters.find(c => c.id === number);
+        page = ch ? ch.pages[0] : 1;
+      }
+      openMushafReaderAt(page);
     });
     return;
   }
