@@ -562,7 +562,13 @@
     <div class="section" id="quran-reader-view" style="display:none">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:.75rem">
         <button onclick="closeSurahReader()" style="border:none;background:var(--color-background-secondary);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:13px;color:var(--color-text-primary);font-family:var(--font-sans)">&larr; Back</button>
-        <div id="quran-reader-title" style="font-weight:700;font-size:15px;color:var(--color-text-primary)"></div>
+        <div id="quran-reader-title" style="font-weight:700;font-size:15px;color:var(--color-text-primary);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+        <!-- In-context shortcut to the bookmarked ayah — Mushaf mode already has
+             its own visible bookmark star in its footer while reading, so this is
+             specifically for Uthmani/IndoPak, which otherwise required going back
+             to the Quran home screen to reach "Continue reading". Hidden when no
+             bookmark exists or when in Mushaf mode. -->
+        <button id="quran-goto-bookmark-btn" onclick="gotoBookmark()" style="display:none;border:none;background:#FDF6E3;border:1px solid #e8d9a8;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;font-weight:600;color:#B8860B;font-family:var(--font-sans);white-space:nowrap;flex-shrink:0"></button>
       </div>
       <div class="script-toggle">
         <button class="script-toggle-btn" id="script-btn-uthmani" onclick="setQuranScript('uthmani')">Uthmani</button>
@@ -3492,6 +3498,29 @@ function toggleAyahBookmark(surahNumber, ayahNumber, surahName) {
   }
   updateQuranContinueReading();
   updateBookmarkIconsUI();
+  updateGotoBookmarkBtn();
+}
+
+// In-context "go to bookmark" shortcut in the reader header — lets Uthmani/
+// IndoPak jump straight to the bookmarked ayah without backing out to the
+// Quran home screen first (Mushaf mode already has its own equivalent: a
+// visible bookmark star right in its footer while reading).
+function updateGotoBookmarkBtn() {
+  const btn = document.getElementById('quran-goto-bookmark-btn');
+  if (!btn) return;
+  if (_quranScript === 'mushaf') { btn.style.display = 'none'; return; }
+  const bm = getBookmark();
+  if (bm && bm.surahName) {
+    btn.style.display = 'inline-block';
+    btn.textContent = `★ ${bm.surahName} ${bm.ayah}`;
+    return;
+  }
+  btn.style.display = 'none';
+}
+
+function gotoBookmark() {
+  const bm = getBookmark();
+  if (bm && bm.surah) openSurah(bm.surah, bm.ayah);
 }
 
 function updateBookmarkIconsUI() {
@@ -3624,6 +3653,7 @@ function updateScriptToggleUI() {
   document.getElementById('quran-reader-mushaf').style.display = _quranScript === 'mushaf' ? 'block' : 'none';
   updateTranslitToggleUI();
   updateBoldToggleUI();
+  updateGotoBookmarkBtn();
 }
 
 function setQuranScript(script) {
