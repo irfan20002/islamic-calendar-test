@@ -4240,6 +4240,34 @@ function updateMushafBookmarkUI() {
   }, { passive: true });
 })();
 
+// Same swipe gesture for the continuous reader (Uthmani/IndoPak), but mapped
+// to surah navigation instead of page navigation — that reader is a single
+// long vertical scroll per surah (no "pages" to flip between), so the
+// natural equivalent unit to move between horizontally is the surah itself,
+// not a page. Same direction convention as the Mushaf swipe above (right =
+// previous, left = next) for consistency across the app. Applies regardless
+// of which script is active, since it's about surah navigation, not script.
+(function setupSurahSwipe() {
+  let startX = null, startY = null;
+  document.addEventListener('touchstart', e => {
+    const content = e.target.closest && e.target.closest('#quran-reader-content');
+    if (!content) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+  document.addEventListener('touchend', e => {
+    if (startX == null) return;
+    const dx = (e.changedTouches[0].clientX - startX);
+    const dy = (e.changedTouches[0].clientY - startY);
+    startX = null; startY = null;
+    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (_quranScript === 'mushaf' || _currentOpenSurah == null) return;
+    const target = dx > 0 ? _currentOpenSurah - 1 : _currentOpenSurah + 1;
+    if (target < 1 || target > 114) return; // no surah before 1 or after 114
+    openSurah(target);
+  }, { passive: true });
+})();
+
 // Re-fit Mushaf lines on rotation/resize — a line that fit in portrait may
 // not fit the same way in landscape, or vice versa.
 let _mushafResizeTimer = null;
