@@ -3552,12 +3552,16 @@ function mushafFitLinesToWidth() {
     line.style.transform = '';
     const natural = line.scrollWidth;
     if (natural > targetWidth && natural > 0) {
-      // Floor lowered from 0.72 — that was too conservative and, combined
-      // with .mushaf-page now clipping overflow, was causing lines to get
-      // visibly cut off rather than shrinking enough to actually fit. 0.55
-      // still stops short of illegible, but leaves much less for the clip
-      // to have to hide.
-      const ratio = Math.max(0.55, targetWidth / natural);
+      // No artificial floor on this ratio — a previous version capped it at
+      // 0.55/0.72 to avoid over-shrinking, but that meant a line that
+      // genuinely needed MORE shrink than the floor allowed would still not
+      // fit, and with .mushaf-page now clipping overflow, that showed up as
+      // visibly cut-off text instead of spilling past the border. Using the
+      // exact ratio needed guarantees the full line is always visible,
+      // however small that makes it at extreme zoom/line-length
+      // combinations — a small-but-complete line is correct; a clipped one
+      // is not, at any size.
+      const ratio = targetWidth / natural;
       line.style.transform = `scaleX(${ratio})`;
       line.style.transformOrigin = 'center';
     }
