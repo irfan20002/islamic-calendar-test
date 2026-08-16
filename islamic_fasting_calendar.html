@@ -4174,11 +4174,21 @@ function mushafGoPage(n) {
     // Wait for the actual QCF glyphs to be applied (not just the fallback
     // font) before measuring line widths — measuring too early would size
     // against the wrong font's metrics and squeeze lines that don't need it.
+    // document.fonts.ready alone isn't fully reliable here: the page's QCF
+    // font is injected via a fresh @font-face just moments before this, and
+    // in practice that promise can resolve slightly before that specific,
+    // just-injected font has actually finished loading — the fit then runs
+    // once against not-quite-final metrics. A second delayed pass catches
+    // and corrects that case without needing to fully pin down the exact
+    // browser-internal race (this matches the observed symptom exactly:
+    // pressing the zoom button again — which re-runs this same fit function
+    // later, after the font has genuinely settled — always self-corrects it).
     if (document.fonts && document.fonts.ready) {
       document.fonts.ready.then(() => requestAnimationFrame(mushafFitLinesToWidth));
     } else {
       setTimeout(mushafFitLinesToWidth, 150);
     }
+    setTimeout(mushafFitLinesToWidth, 500);
   }).catch(() => {
     container.innerHTML = '<div class="mushaf-page-loading">Could not load this page. Check your connection and try again.</div>';
   });
