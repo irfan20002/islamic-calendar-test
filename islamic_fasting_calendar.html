@@ -105,6 +105,11 @@
   .surah-ayah-block.bookmarked { background:#FDF6E3; border-radius:8px; padding-left:8px; padding-right:8px; }
   .surah-ayah-block.ayah-flash { background:#F5E0A3; border-radius:8px; padding-left:8px; padding-right:8px; }
   .ayah-bookmark-btn { position:absolute; top:14px; left:0; border:none; background:none; font-size:18px; color:#B8860B; cursor:pointer; padding:2px 6px; line-height:1; }
+  /* Plays the Arabic recitation (streamed from everyayah.com, no hosting
+     needed), then automatically follows with the English translation read
+     aloud via the browser's built-in speech synthesis. Positioned opposite
+     the bookmark star (right side vs left) so the two don't collide. */
+  .ayah-play-btn { position:absolute; top:14px; right:0; border:none; background:none; font-size:15px; color:#117A65; cursor:pointer; padding:2px 6px; line-height:1; }
   /* font-weight:700 isn't enough — the actual Arabic fonts used (Uthmani
      system font, and the self-hosted Nastaleeq/Naskh for IndoPak) only ship
      a single weight, no real bold variant. Text-stroke alone and text-shadow
@@ -3792,6 +3797,7 @@ function updateScriptToggleUI() {
 
 function setQuranScript(script) {
   if (script === _quranScript) return;
+  if (typeof stopAyahPlayback === 'function') stopAyahPlayback();
   _quranScript = script;
   try { localStorage.setItem('quran_script_pref', script); } catch (e) {}
   updateScriptToggleUI();
@@ -4126,6 +4132,106 @@ const SAJDA_VERSES = new Set([
   '25:60', '27:26', '32:15', '38:24', '41:38', '53:62', '84:21', '96:19'
 ]);
 
+// Audio recitation + spoken translation for a single ayah. Recitation
+// streams directly from everyayah.com (Alafasy, 128kbps) — no hosting or
+// bundling needed, same pattern as every other free data source this app
+// already uses. Once the recitation finishes, the English translation is
+// read aloud via the browser's built-in speech synthesis (no external
+// service). Tapping the same ayah's play button again while it's playing
+// stops it; tapping a different ayah stops whatever was playing first.
+let _audioPlayerEl = null;
+let _currentPlayingAyahKey = null;
+let _speechPrimed = false;
+
+function getAudioPlayerEl() {
+  if (!_audioPlayerEl) {
+    _audioPlayerEl = new Audio();
+    _audioPlayerEl.preload = 'none';
+  }
+  return _audioPlayerEl;
+}
+
+function pad3(n) { return String(n).padStart(3, '0'); }
+
+function stopAyahPlayback() {
+  const audio = getAudioPlayerEl();
+  audio.onended = null;
+  audio.onerror = null;
+  audio.pause();
+  try { audio.currentTime = 0; } catch (e) {}
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  if (_currentPlayingAyahKey) {
+    const [s, a] = _currentPlayingAyahKey.split(':');
+    const block = document.getElementById(`ayah-${s}-${a}`);
+    if (block) {
+      block.classList.remove('ayah-flash');
+      const btn = block.querySelector('.ayah-play-btn');
+      if (btn) btn.textContent = '▶';
+    }
+  }
+  _currentPlayingAyahKey = null;
+}
+
+function speakText(text) {
+  return new Promise((resolve) => {
+    if (!window.speechSynthesis || !text) { resolve(); return; }
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = 'en-US';
+    utter.onend = () => resolve();
+    utter.onerror = () => resolve(); // don't hang the sequence on a TTS failure
+    window.speechSynthesis.speak(utter);
+  });
+}
+
+function playAyahAudio(surah, ayah, evt) {
+  if (evt) evt.stopPropagation();
+  const key = `${surah}:${ayah}`;
+
+  if (_currentPlayingAyahKey === key) {
+    stopAyahPlayback(); // tapping the currently-playing ayah again stops it
+    return;
+  }
+
+  // iOS Safari requires speechSynthesis.speak() to be called at least once
+  // directly inside a genuine user-gesture handler to "unlock" it for the
+  // rest of the session — a later call from an async callback (like the
+  // audio 'ended' handler below, which is exactly how the translation gets
+  // triggered) won't work unless this priming call already happened here,
+  // synchronously, in direct response to the tap.
+  if (!_speechPrimed && window.speechSynthesis) {
+    window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+    _speechPrimed = true;
+  }
+
+  stopAyahPlayback(); // stop whatever else was playing first
+  _currentPlayingAyahKey = key;
+
+  const block = document.getElementById(`ayah-${surah}-${ayah}`);
+  const btn = block ? block.querySelector('.ayah-play-btn') : null;
+  if (btn) btn.textContent = '⏸';
+  if (block) block.classList.add('ayah-flash');
+
+  const audio = getAudioPlayerEl();
+  audio.src = `https://everyayah.com/data/Alafasy_128kbps/${pad3(surah)}${pad3(ayah)}.mp3`;
+
+  const afterRecitation = () => {
+    if (_currentPlayingAyahKey !== key) return; // superseded by a newer tap
+    getSurahData(surah).then(sd => {
+      if (_currentPlayingAyahKey !== key) return;
+      const a = sd.ayahs.find(x => x.numberInSurah === ayah);
+      speakText(a ? a.translation : '').then(() => {
+        if (_currentPlayingAyahKey === key) stopAyahPlayback();
+      });
+    }).catch(() => { if (_currentPlayingAyahKey === key) stopAyahPlayback(); });
+  };
+
+  audio.onended = afterRecitation;
+  // Still speak the translation even if the recitation file itself fails to
+  // load/play — partial playback is better than silently doing nothing.
+  audio.onerror = afterRecitation;
+  audio.play().catch(afterRecitation);
+}
+
 function buildAyahBlockHtml(surahData, a, arabicClass) {
   const isSajda = SAJDA_VERSES.has(`${surahData.number}:${a.numberInSurah}`);
   const sajdaMark = isSajda ? '<span class="sajda-mark" title="Sajdah al-Tilawah">۩</span>' : '';
@@ -4138,6 +4244,7 @@ function buildAyahBlockHtml(surahData, a, arabicClass) {
       <div class="surah-ayah-translit" style="display:${_quranShowTranslit ? 'block' : 'none'}">${a.translit || ''}</div>
       <div class="surah-ayah-translation">${a.translation}</div>
       <button class="ayah-bookmark-btn" onclick="toggleAyahBookmark(${surahData.number}, ${a.numberInSurah}, '${safeName}')" aria-label="Bookmark this ayah">☆</button>
+      <button class="ayah-play-btn" onclick="playAyahAudio(${surahData.number}, ${a.numberInSurah}, event)" aria-label="Play recitation and translation">▶</button>
     </div>
   `;
 }
@@ -4159,6 +4266,7 @@ function surahsOnPage(n) {
 // the page-glyph font there.
 function renderContinuousPage(n) {
   n = Math.max(1, Math.min(MUSHAF_TOTAL_PAGES, n));
+  if (typeof stopAyahPlayback === 'function') stopAyahPlayback(); // don't keep playing across a page change
   _mushafCurrentPage = n;
   try { localStorage.setItem('quran_mushaf_last_page', String(n)); } catch (e) {}
 
@@ -4232,6 +4340,7 @@ function continuousGoPage(n) {
 }
 
 function closeSurahReader() {
+  if (typeof stopAyahPlayback === 'function') stopAyahPlayback();
   document.getElementById('quran-reader-view').style.display = 'none';
   document.getElementById('quran-home-view').style.display = 'block';
   document.getElementById('quran-float-textsize').classList.remove('visible');
