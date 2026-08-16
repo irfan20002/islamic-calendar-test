@@ -3527,7 +3527,12 @@ function adjustQuranTextSize(delta) {
     _mushafTextScale = MUSHAF_TEXT_SCALE_STEPS[newIdx];
     try { localStorage.setItem('quran_mushaf_text_scale', _mushafTextScale); } catch (e) {}
     applyQuranTextScale();
-    mushafFitLinesToWidth();
+    // Wait a frame before measuring — calling mushafFitLinesToWidth()
+    // synchronously right after the CSS custom property change (which
+    // drives the font-size) risked measuring against not-yet-settled
+    // layout, which is the likely reason lines could still clip even
+    // though the shrink calculation looked correct at measurement time.
+    requestAnimationFrame(mushafFitLinesToWidth);
     return;
   }
   const idx = QURAN_TEXT_SCALE_STEPS.indexOf(_quranTextScale);
@@ -3548,22 +3553,32 @@ function mushafFitLinesToWidth() {
   if (!container) return;
   const targetWidth = container.clientWidth;
   if (!targetWidth) return;
+  // Small safety margin (97% of the true available width) — guards against
+  // sub-pixel rounding in the scaleX calculation still leaving a line a
+  // hair too wide to fully clear the container.
+  const safeTarget = targetWidth * 0.97;
+
   container.querySelectorAll('.mushaf-line:not(.mushaf-line-center)').forEach(line => {
     line.style.transform = '';
-    const natural = line.scrollWidth;
-    if (natural > targetWidth && natural > 0) {
-      // No artificial floor on this ratio — a previous version capped it at
-      // 0.55/0.72 to avoid over-shrinking, but that meant a line that
-      // genuinely needed MORE shrink than the floor allowed would still not
-      // fit, and with .mushaf-page now clipping overflow, that showed up as
-      // visibly cut-off text instead of spilling past the border. Using the
-      // exact ratio needed guarantees the full line is always visible,
-      // however small that makes it at extreme zoom/line-length
-      // combinations — a small-but-complete line is correct; a clipped one
-      // is not, at any size.
-      const ratio = targetWidth / natural;
+    let natural = line.scrollWidth;
+    if (natural > safeTarget && natural > 0) {
+      let ratio = safeTarget / natural;
       line.style.transform = `scaleX(${ratio})`;
       line.style.transformOrigin = 'center';
+
+      // Verify against the ACTUAL rendered/painted width (getBoundingClientRect
+      // reflects genuine post-transform geometry, unlike scrollWidth which can
+      // reflect stale layout if read too soon after a font-size change from a
+      // CSS custom property update — that stale-read is the likely cause of
+      // lines still clipping even when the upfront ratio looked correct).
+      // Re-check and correct further if it's still too wide, rather than
+      // trusting a single calculation.
+      const renderedWidth = line.getBoundingClientRect().width;
+      if (renderedWidth > targetWidth && renderedWidth > 0) {
+        const correction = targetWidth / renderedWidth;
+        ratio = ratio * correction * 0.97; // extra margin on the correction too
+        line.style.transform = `scaleX(${ratio})`;
+      }
     }
   });
 }
