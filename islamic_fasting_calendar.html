@@ -187,7 +187,16 @@
      right-to-left in correct reading order. Adding row-reverse on top of that
      compounds with the inherited RTL and flips it back to left-to-right, which is
      the bug that made words render in the wrong order. Do not add row-reverse here. */
-  .mushaf-line { display:flex; flex-direction:row; justify-content:space-between; align-items:baseline; gap:0; line-height:2.15; flex-wrap:nowrap; }
+  /* justify-content:flex-start, not space-between — QCF page-specific fonts
+     already have the correct justification (kashida/letter-stretching) baked
+     directly into the glyphs, sized precisely so a normal, unstretched row of
+     words already fills the exact line width for that page. Adding
+     space-between on top of that double-justifies: mostly unnoticeable on
+     lines with many words (many small gaps to absorb the leftover space),
+     but on a line with very few words — like a surah's short final line —
+     nearly all the leftover space collapses into one large, visibly wrong
+     gap. Trusting the font's own pre-fit widths avoids this entirely. */
+  .mushaf-line { display:flex; flex-direction:row; justify-content:flex-start; align-items:baseline; gap:0; line-height:2.15; flex-wrap:nowrap; }
   .mushaf-line.mushaf-line-center { justify-content:center; gap:4px; }
   .mushaf-word { white-space:nowrap; font-size:calc(21px * var(--mushaf-scale, 1)); color:#1b1b1b; }
   .mushaf-word.mushaf-word-end { color:#117A65; }
