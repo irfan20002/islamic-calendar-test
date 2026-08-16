@@ -175,7 +175,13 @@
   .mushaf-header-pill .surah-label { font-size:13px; font-weight:700; color:#1b2740; display:block; }
   .mushaf-nav-btn { border:none; background:rgba(255,255,255,.6); color:#33415c; width:30px; height:30px; border-radius:50%; font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-family:var(--font-sans); }
   .mushaf-nav-btn:disabled { opacity:.35; cursor:default; }
-  .mushaf-page { background:#FFFDF7; border:1px solid #9fb3d6; border-top:none; border-radius:0 0 10px 10px; padding:18px 14px 10px; min-height:340px; direction:rtl; }
+  /* overflow:hidden is a genuine safety net, not just cosmetic — scaleX() on
+     a line only shrinks how it PAINTS, not its actual layout box width, so a
+     line whose natural width still exceeds the container even after the
+     capped shrink in mushafFitLinesToWidth() would otherwise visibly spill
+     past this border (seen at higher zoom levels) instead of being clipped
+     to it. */
+  .mushaf-page { background:#FFFDF7; border:1px solid #9fb3d6; border-top:none; border-radius:0 0 10px 10px; padding:18px 14px 10px; min-height:340px; direction:rtl; overflow:hidden; }
   /* .mushaf-page (ancestor) already sets direction:rtl, which alone makes flex's
      main-start the right edge — so plain flex-direction:row already lays words out
      right-to-left in correct reading order. Adding row-reverse on top of that
@@ -3495,7 +3501,10 @@ if (!QURAN_TEXT_SCALE_STEPS.includes(_quranTextScale)) _quranTextScale = 1;
 // Mushaf's own scale steps are narrower and centered on 1 — since QCF lines are
 // pre-fit to the page width, there's much less headroom before a line would
 // need to shrink itself back down to still fit (see mushafFitLinesToWidth).
-const MUSHAF_TEXT_SCALE_STEPS = [0.75, 0.85, 1, 1.1, 1.2];
+// Cap raised from 1.2 to 1.5 now that .mushaf-page clips overflow and the
+// fit function has more shrink headroom (0.55 floor) — the previous 1.2 cap
+// was a workaround for overflow that's now handled properly at the source.
+const MUSHAF_TEXT_SCALE_STEPS = [0.75, 0.85, 1, 1.1, 1.2, 1.35, 1.5];
 let _mushafTextScale = parseFloat(localStorage.getItem('quran_mushaf_text_scale') || '1');
 if (!MUSHAF_TEXT_SCALE_STEPS.includes(_mushafTextScale)) _mushafTextScale = 1;
 
@@ -3543,7 +3552,12 @@ function mushafFitLinesToWidth() {
     line.style.transform = '';
     const natural = line.scrollWidth;
     if (natural > targetWidth && natural > 0) {
-      const ratio = Math.max(0.72, targetWidth / natural);
+      // Floor lowered from 0.72 — that was too conservative and, combined
+      // with .mushaf-page now clipping overflow, was causing lines to get
+      // visibly cut off rather than shrinking enough to actually fit. 0.55
+      // still stops short of illegible, but leaves much less for the clip
+      // to have to hide.
+      const ratio = Math.max(0.55, targetWidth / natural);
       line.style.transform = `scaleX(${ratio})`;
       line.style.transformOrigin = 'center';
     }
