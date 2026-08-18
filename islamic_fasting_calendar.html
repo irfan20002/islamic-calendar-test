@@ -4420,7 +4420,12 @@ function prefixRepeatCounts(text) {
     out += between;
     if (out && !/\s$/.test(out) && !between) out += ' ';
     const clause = text.slice(clauseStart, r.start).trim();
-    out += clause + ` ${r.digit}x`;
+    // Wrap the LTR "Nx" marker in Unicode directional isolate characters
+    // (U+2066 LRI ... U+2069 PDI) so it can't disrupt the surrounding RTL
+    // Arabic text's bidi reordering — without this, mixing LTR digits into
+    // an RTL string can cause the browser to visually reorder or swallow
+    // adjacent punctuation in confusing ways.
+    out += clause + ` (\u2066${r.digit}x\u2069)`;
     cursor = r.end;
   }
   out += text.slice(cursor);
