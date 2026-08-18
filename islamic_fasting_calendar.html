@@ -4297,6 +4297,30 @@ function renderAdkarHome() {
 // text for both times when there's no bracket, or when the source only
 // provides a truncated fragment ending in "..." rather than full wording —
 // showing identical-but-correct text beats showing a broken fragment.
+// The repeat count is already shown separately by the tap-to-count widget
+// (repeat > 1), so leaving "(three times)" / "(ثلاثَ مرَّاتٍ)" embedded in
+// the displayed text says the same thing twice. Strips any parenthesized/
+// bracketed phrase mentioning "times" (English) or مرات/مرة (Arabic,
+// diacritic-tolerant since combining marks can appear between any letters)
+// — covers every number-word variant without enumerating them, since
+// "times"/مرات is the one word always present in these annotations.
+function stripRepeatPhrase(text) {
+  if (!text) return text;
+  const D = '[\u064B-\u065F\u0670]*';
+  const marat = `م${D}ر${D}[اه]?${D}[تة]${D}`;
+  let s = text
+    .replace(new RegExp(`[\\(\\[][^\\)\\]]*${marat}[^\\)\\]]*[\\)\\]]`, 'g'), '')
+    .replace(/[\(\[][^\)\]]*\btimes?\b[^\)\]]*[\)\]]/gi, '')
+    .replace(/\s+/g, ' ')
+    .replace(/\s+([.,؛،])/g, '$1')
+    .trim();
+  // Clean up an orphaned connector left behind when the source had two
+  // repeat-phrases joined by "or" (e.g. "...(ten times), or (once if
+  // lazy)." -> after stripping both, a dangling ", or." remains).
+  s = s.replace(/[,،]?\s*(أَوْ|or)\.?\s*$/i, '').trim();
+  return s;
+}
+
 function splitEveningVariant(text) {
   if (!text) return { primary: text, evening: text };
   const patterns = [
@@ -4342,15 +4366,24 @@ function openAdkarCategory(key) {
     const items = category.items.map((it, i) => {
       if (key === 'morning' || key === 'evening') {
         const which = key === 'evening' ? 'evening' : 'primary';
+        const arabic = splitEveningVariant(it.arabic)[which];
+        const translit = splitEveningVariant(it.translit)[which];
+        const translation = splitEveningVariant(it.translation)[which];
         return {
-          arabic: splitEveningVariant(it.arabic)[which],
-          translit: splitEveningVariant(it.translit)[which],
-          translation: splitEveningVariant(it.translation)[which],
+          arabic: it.repeat > 1 ? stripRepeatPhrase(arabic) : arabic,
+          translit: it.repeat > 1 ? stripRepeatPhrase(translit) : translit,
+          translation: it.repeat > 1 ? stripRepeatPhrase(translation) : translation,
           repeat: it.repeat,
           idx: i
         };
       }
-      return { ...it, idx: i };
+      return {
+        ...it,
+        arabic: it.repeat > 1 ? stripRepeatPhrase(it.arabic) : it.arabic,
+        translit: it.repeat > 1 ? stripRepeatPhrase(it.translit) : it.translit,
+        translation: it.repeat > 1 ? stripRepeatPhrase(it.translation) : it.translation,
+        idx: i
+      };
     });
 
     content.innerHTML = items.map(it => `
