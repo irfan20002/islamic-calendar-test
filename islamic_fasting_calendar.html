@@ -170,7 +170,7 @@
      blocks (Arabic RTL, italic gray transliteration, green translation) for
      consistency across the app. */
   .adkar-item-block { background:var(--color-background-secondary); border-radius:12px; padding:14px; margin-bottom:12px; }
-  .adkar-item-arabic { direction:rtl; text-align:right; font-size:20px; line-height:1.9; color:var(--color-text-primary); margin-bottom:10px; }
+  .adkar-item-arabic { direction:rtl; text-align:right; font-family:'Quran Naskh Full', serif; font-size:22px; line-height:2.1; color:var(--color-text-primary); margin-bottom:10px; }
   .adkar-item-translit { font-style:italic; color:var(--color-text-tertiary); font-size:13px; margin-bottom:8px; line-height:1.5; }
   .adkar-item-translation { color:#117A65; font-size:13px; line-height:1.5; margin-bottom:10px; }
   .adkar-item-footer { display:flex; align-items:center; justify-content:space-between; }
@@ -766,6 +766,10 @@
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:.75rem">
         <button onclick="closeAdkarCategory()" style="border:none;background:var(--color-background-secondary);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:13px;color:var(--color-text-primary);font-family:var(--font-sans)">&larr; Back</button>
         <div id="adkar-reader-title" style="font-weight:700;font-size:15px;color:var(--color-text-primary)"></div>
+      </div>
+      <div class="quran-translit-toggle-row" id="adkar-translit-toggle-row">
+        <button class="quran-translit-toggle" id="adkar-translit-toggle-btn" onclick="toggleAdkarTransliteration()" aria-label="Toggle transliteration"></button>
+        <span>Transliteration</span>
       </div>
       <div id="adkar-reader-content"></div>
     </div>
@@ -4257,6 +4261,7 @@ function pad3(n) { return String(n).padStart(3, '0'); }
 // (Morning & Evening, Sleep, Waking, After Salah) to keep the payload small.
 let _adkarData = null;
 let _adkarCurrentCategory = null;
+let _adkarShowTranslit = localStorage.getItem('adkar_show_translit') !== '0'; // on by default
 
 function getAdkarData() {
   if (_adkarData) return Promise.resolve(_adkarData);
@@ -4264,6 +4269,20 @@ function getAdkarData() {
     _adkarData = data;
     return data;
   });
+}
+
+function updateAdkarTranslitToggleUI() {
+  const btn = document.getElementById('adkar-translit-toggle-btn');
+  if (btn) btn.classList.toggle('on', _adkarShowTranslit);
+  document.querySelectorAll('#adkar-reader-content .adkar-item-translit').forEach(el => {
+    el.style.display = _adkarShowTranslit ? 'block' : 'none';
+  });
+}
+
+function toggleAdkarTransliteration() {
+  _adkarShowTranslit = !_adkarShowTranslit;
+  try { localStorage.setItem('adkar_show_translit', _adkarShowTranslit ? '1' : '0'); } catch (e) {}
+  updateAdkarTranslitToggleUI();
 }
 
 function renderAdkarHome() {
@@ -4337,7 +4356,7 @@ function openAdkarCategory(key) {
     content.innerHTML = items.map(it => `
       <div class="adkar-item-block">
         <div class="adkar-item-arabic">${it.arabic}</div>
-        ${it.translit ? `<div class="adkar-item-translit">${it.translit}</div>` : ''}
+        ${it.translit ? `<div class="adkar-item-translit" style="display:${_adkarShowTranslit ? 'block' : 'none'}">${it.translit}</div>` : ''}
         ${it.translation ? `<div class="adkar-item-translation">${it.translation}</div>` : ''}
         <div class="adkar-item-footer">
           <span></span>
@@ -4350,6 +4369,7 @@ function openAdkarCategory(key) {
         </div>
       </div>
     `).join('');
+    updateAdkarTranslitToggleUI();
   });
 }
 
