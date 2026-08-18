@@ -184,7 +184,7 @@
   .adkar-virtue-body.open { display:block; }
   .adkar-virtue-ref { font-weight:600; color:var(--color-text-primary); margin-bottom:3px; }
   .adkar-grading-weak { color:#c0392b; font-weight:700; }
-  .adkar-item-arabic { direction:rtl; text-align:justify; text-justify:inter-word; font-family:'Amiri', serif; font-size:44px; line-height:2.1; color:var(--color-text-primary); margin-bottom:10px; }
+  .adkar-item-arabic { direction:rtl; text-align:justify; text-justify:inter-word; font-family:'Amiri', serif; font-size:calc(44px * var(--adkar-text-scale, 1)); line-height:2.1; color:var(--color-text-primary); margin-bottom:10px; }
   .adkar-item-translit { font-style:italic; color:var(--color-text-tertiary); font-size:13px; margin-bottom:8px; line-height:1.5; }
   .adkar-item-translation { color:#117A65; font-size:13px; line-height:1.5; margin-bottom:10px; }
   .adkar-item-footer { display:flex; align-items:center; justify-content:space-between; }
@@ -804,6 +804,16 @@
   <button class="quran-text-size-btn" onclick="adjustQuranTextSize(1)" aria-label="Larger text">A</button>
   <span class="quran-text-size-label" id="quran-text-size-label">100%</span>
   <button class="quran-text-size-btn" onclick="adjustQuranTextSize(-1)" aria-label="Smaller text">A</button>
+</div>
+
+<!-- Floating text-size control for the Adkar reader — matches the Quran
+     tab's pattern. Changes a CSS custom property on the Arabic text, so
+     text-align:justify naturally recalculates line breaks at every size
+     rather than a visual/browser zoom that just scales the whole page. -->
+<div id="adkar-float-textsize" class="quran-float-textsize">
+  <button class="quran-text-size-btn" onclick="adjustAdkarTextSize(1)" aria-label="Larger text, up to 100%">A</button>
+  <span class="quran-text-size-label" id="adkar-text-size-label">100%</span>
+  <button class="quran-text-size-btn" onclick="adjustAdkarTextSize(-1)" aria-label="Smaller text">A</button>
 </div>
 
 <!-- Monthly Prayer Schedule Modal -->
@@ -1708,6 +1718,7 @@ function showTab(name) {
   // Leaving the Quran tab entirely (without pressing Back first) should also
   // hide the floating text-size widget — it's reader-specific.
   if (name !== 'quran') document.getElementById('quran-float-textsize').classList.remove('visible');
+  if (name !== 'adkar') document.getElementById('adkar-float-textsize').classList.remove('visible');
 }
 
 function renderStats() {
@@ -4277,6 +4288,29 @@ let _adkarData = null;
 let _adkarCurrentCategory = null;
 let _adkarShowTranslit = localStorage.getItem('adkar_show_translit') !== '0'; // on by default
 
+// Adkar text-size control — mirrors the Quran tab's floating widget pattern.
+// Adjusts a CSS custom property rather than relying on browser/pinch zoom,
+// so text-align:justify naturally recalculates correct line breaks at every
+// size instead of just visually scaling a fixed layout.
+const ADKAR_TEXT_SCALE_STEPS = [0.5, 0.6, 0.7, 0.8, 0.9, 1];
+let _adkarTextScale = parseFloat(localStorage.getItem('adkar_text_scale')) || 1;
+if (!ADKAR_TEXT_SCALE_STEPS.includes(_adkarTextScale)) _adkarTextScale = 1;
+
+function applyAdkarTextScale() {
+  document.documentElement.style.setProperty('--adkar-text-scale', _adkarTextScale);
+  const label = document.getElementById('adkar-text-size-label');
+  if (label) label.textContent = Math.round(_adkarTextScale * 100) + '%';
+}
+
+function adjustAdkarTextSize(delta) {
+  const idx = ADKAR_TEXT_SCALE_STEPS.indexOf(_adkarTextScale);
+  const newIdx = Math.max(0, Math.min(ADKAR_TEXT_SCALE_STEPS.length - 1, idx + delta));
+  _adkarTextScale = ADKAR_TEXT_SCALE_STEPS[newIdx];
+  try { localStorage.setItem('adkar_text_scale', _adkarTextScale); } catch (e) {}
+  applyAdkarTextScale();
+}
+applyAdkarTextScale();
+
 function getAdkarData() {
   if (_adkarData) return Promise.resolve(_adkarData);
   return fetch('./adkar/adhkar.json').then(r => r.json()).then(data => {
@@ -4541,6 +4575,8 @@ function splitEveningVariant(text) {
 function openAdkarCategory(key) {
   document.getElementById('adkar-home-view').style.display = 'none';
   document.getElementById('adkar-reader-view').style.display = 'block';
+  document.getElementById('adkar-float-textsize').classList.add('visible');
+  applyAdkarTextScale();
   _adkarCurrentCategory = key;
   const titles = {
     morning: 'Morning Adkar (incl. After Salah)', evening: 'Evening Adkar',
@@ -4633,6 +4669,7 @@ function tickAdkarCounter(key, idx, total) {
 function closeAdkarCategory() {
   document.getElementById('adkar-reader-view').style.display = 'none';
   document.getElementById('adkar-home-view').style.display = 'block';
+  document.getElementById('adkar-float-textsize').classList.remove('visible');
   _adkarCurrentCategory = null;
 }
 
