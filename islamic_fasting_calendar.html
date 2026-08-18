@@ -4376,10 +4376,14 @@ function prefixRepeatCounts(text) {
   const numWithSuffix = `(?:${numAlt})${D}ا?${D}`;
   // Compound "X and Y" tens-form (33, 34...) doesn't require a trailing
   // مرات in the source — implied by context. A single number-word DOES
-  // require مرات, to avoid matching incidental numbers that aren't counts.
+  // require مرات, to avoid matching incidental numbers that aren't counts —
+  // EXCEPT when the number stands entirely alone inside its own bracket
+  // (e.g. "(ثَلاَثاً)"), which is an unambiguous repeat-count marker in this
+  // text convention regardless of whether مرات is spelled out.
   const compoundPattern = `${numWithSuffix}\\s+${D}و${D}${numWithSuffix}`;
+  const bareBracketedPattern = `(?<=[\\(\\[])${numWithSuffix}(?=[\\)\\]])`;
   const singlePattern = `${numWithSuffix}\\s*${marat}`;
-  const countPattern = new RegExp(`${compoundPattern}|${singlePattern}`, 'g');
+  const countPattern = new RegExp(`${compoundPattern}|${bareBracketedPattern}|${singlePattern}`, 'g');
 
   let match;
   const replacements = [];
@@ -4397,16 +4401,26 @@ function prefixRepeatCounts(text) {
   }
   if (!replacements.length) return text;
 
+  // A single count in the whole text applies to the ENTIRE preceding
+  // sentence (however many internal commas it has) — only when there are
+  // MULTIPLE counts in one text (each modifying its own short clause, like
+  // the 33/33/34 tasbih) does "since the last comma" correctly separate
+  // them into per-clause scopes.
+  const useCommaScoping = replacements.length > 1;
+
   let out = '';
   let cursor = 0;
   for (const r of replacements) {
-    let clauseStart = Math.max(text.lastIndexOf('،', r.start - 1), text.lastIndexOf(',', r.start - 1)) + 1;
-    if (clauseStart < cursor) clauseStart = cursor;
+    let clauseStart = cursor;
+    if (useCommaScoping) {
+      clauseStart = Math.max(text.lastIndexOf('،', r.start - 1), text.lastIndexOf(',', r.start - 1)) + 1;
+      if (clauseStart < cursor) clauseStart = cursor;
+    }
     const between = text.slice(cursor, clauseStart);
     out += between;
     if (out && !/\s$/.test(out) && !between) out += ' ';
     const clause = text.slice(clauseStart, r.start).trim();
-    out += `${r.digit}x ` + clause;
+    out += clause + ` ${r.digit}x`;
     cursor = r.end;
   }
   out += text.slice(cursor);
