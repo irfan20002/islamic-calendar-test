@@ -157,6 +157,27 @@
   .goto-wheel-pad { height:72px; }
   .goto-wheel-item { height:36px; line-height:36px; text-align:center; scroll-snap-align:center; font-size:14px; color:var(--color-text-primary); font-family:var(--font-sans); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0 6px; }
   .goto-wheel-highlight { position:absolute; left:4px; right:4px; top:91px; height:36px; border-top:1px solid var(--color-border-tertiary); border-bottom:1px solid var(--color-border-tertiary); pointer-events:none; background:rgba(184,134,11,0.08); }
+  /* Adkar grid tiles — full-width for Morning/Evening (most-used, matching
+     the reference layout's emphasis), half-width pairs for the rest. */
+  .adkar-tile { border-radius:14px; padding:20px 16px; display:flex; flex-direction:column; justify-content:flex-end; min-height:100px; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+  .adkar-tile-wide { min-height:130px; }
+  .adkar-tile-icon { font-size:28px; margin-bottom:8px; }
+  .adkar-tile-label { font-size:16px; font-weight:700; color:#1a1a1a; font-family:var(--font-sans); }
+  .adkar-tile-placeholder { background:var(--color-background-secondary); border:1.5px dashed var(--color-border-tertiary); align-items:center; justify-content:center; cursor:default; box-shadow:none; }
+  .adkar-tile-placeholder .adkar-tile-icon { color:var(--color-text-tertiary); margin-bottom:4px; }
+  .adkar-tile-placeholder .adkar-tile-label { color:var(--color-text-tertiary); font-weight:600; font-size:13px; }
+  /* Adkar detail list — reuses the same visual language as the Quran ayah
+     blocks (Arabic RTL, italic gray transliteration, green translation) for
+     consistency across the app. */
+  .adkar-item-block { background:var(--color-background-secondary); border-radius:12px; padding:14px; margin-bottom:12px; }
+  .adkar-item-arabic { direction:rtl; text-align:right; font-size:20px; line-height:1.9; color:var(--color-text-primary); margin-bottom:10px; }
+  .adkar-item-translit { font-style:italic; color:var(--color-text-tertiary); font-size:13px; margin-bottom:8px; line-height:1.5; }
+  .adkar-item-translation { color:#117A65; font-size:13px; line-height:1.5; margin-bottom:10px; }
+  .adkar-item-footer { display:flex; align-items:center; justify-content:space-between; }
+  .adkar-repeat-counter { display:flex; align-items:center; gap:10px; background:var(--color-background-primary); border-radius:20px; padding:4px 6px 4px 14px; }
+  .adkar-repeat-counter-btn { border:none; background:#B8860B; color:#fff; width:26px; height:26px; border-radius:50%; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-family:var(--font-sans); }
+  .adkar-repeat-counter-label { font-size:12px; color:var(--color-text-secondary); font-family:var(--font-sans); min-width:44px; text-align:center; }
+  .adkar-repeat-counter.complete .adkar-repeat-counter-label { color:#117A65; font-weight:700; }
   .surah-bismillah-block .surah-ayah-arabic { text-align:center; margin-bottom:6px; }
   .surah-bismillah-block .surah-ayah-translit { text-align:center; }
   .sajda-badge { font-size:11px; font-weight:600; color:#8a6300; background:#FBEBB8; border-radius:6px; padding:3px 8px; display:inline-block; margin:4px 0; }
@@ -500,6 +521,7 @@
     <button class="tab" data-tab="guide" onclick="showTab('guide')">Guide</button>
     <button class="tab" data-tab="stats" onclick="showTab('stats')">Stats</button>
     <button class="tab" data-tab="quran" onclick="showTab('quran')">Quran</button>
+    <button class="tab" data-tab="adkar" onclick="showTab('adkar')">Adkar</button>
   </div>
 
   <div id="tab-upcoming">
@@ -699,6 +721,53 @@
         </div>
         <button onclick="confirmGoTo()" style="margin-top:14px;width:100%;background:#B8860B;color:#fff;border:none;border-radius:10px;padding:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--font-sans)">Go</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Adkar tab -->
+  <div id="tab-adkar" style="display:none">
+    <div class="section" id="adkar-home-view">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="adkar-tile adkar-tile-wide" onclick="openAdkarCategory('morning')" style="background:linear-gradient(135deg,#bfe0f5 0%,#eaf6e8 100%)">
+          <span class="adkar-tile-icon">☀️</span>
+          <span class="adkar-tile-label">Morning</span>
+        </div>
+        <div class="adkar-tile adkar-tile-wide" onclick="openAdkarCategory('evening')" style="background:linear-gradient(135deg,#f7d9b6 0%,#f3b89a 100%)">
+          <span class="adkar-tile-icon">🌇</span>
+          <span class="adkar-tile-label">Evening</span>
+        </div>
+        <div style="display:flex;gap:10px">
+          <div class="adkar-tile" onclick="openAdkarCategory('waking')" style="background:linear-gradient(135deg,#d6e0f5 0%,#eef1fb 100%);flex:1">
+            <span class="adkar-tile-icon">🌅</span>
+            <span class="adkar-tile-label">After Waking</span>
+          </div>
+          <div class="adkar-tile" onclick="openAdkarCategory('sleep')" style="background:linear-gradient(135deg,#232b4d 0%,#4a5788 100%);color:#fff;flex:1">
+            <span class="adkar-tile-icon">🌙</span>
+            <span class="adkar-tile-label" style="color:#fff">Before Sleep</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <div class="adkar-tile" onclick="openAdkarCategory('after_salah')" style="background:linear-gradient(135deg,#cde8d9 0%,#a8d4bb 100%);flex:1">
+            <span class="adkar-tile-icon">🕌</span>
+            <span class="adkar-tile-label">After Salah</span>
+          </div>
+          <!-- Placeholder sixth tile — category to be decided later. Kept
+               visually present (not hidden) so the grid reads as complete,
+               but styled as inactive and does nothing on tap yet. -->
+          <div class="adkar-tile adkar-tile-placeholder" style="flex:1">
+            <span class="adkar-tile-icon">➕</span>
+            <span class="adkar-tile-label">More soon</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" id="adkar-reader-view" style="display:none">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:.75rem">
+        <button onclick="closeAdkarCategory()" style="border:none;background:var(--color-background-secondary);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:13px;color:var(--color-text-primary);font-family:var(--font-sans)">&larr; Back</button>
+        <div id="adkar-reader-title" style="font-weight:700;font-size:15px;color:var(--color-text-primary)"></div>
+      </div>
+      <div id="adkar-reader-content"></div>
     </div>
   </div>
 
@@ -1606,7 +1675,7 @@ function prevMonth() { viewMonth--; if (viewMonth < 0)  { viewMonth = 11; viewYe
 function nextMonth() { viewMonth++; if (viewMonth > 11) { viewMonth = 0;  viewYear++; } renderCalendar(); }
 
 function showTab(name) {
-  ['upcoming', 'calendar', 'guide', 'stats', 'quran'].forEach(t => {
+  ['upcoming', 'calendar', 'guide', 'stats', 'quran', 'adkar'].forEach(t => {
     document.getElementById('tab-' + t).style.display = t === name ? 'block' : 'none';
   });
   document.querySelectorAll('.tab').forEach(btn => {
@@ -1617,6 +1686,7 @@ function showTab(name) {
   if (name === 'calendar') { renderCalendar(); renderIslamicDayCountdown(); }
   if (name === 'stats') renderStats();
   if (name === 'quran') { _currentReaderContext = 'quran'; renderQuranHome(); }
+  if (name === 'adkar') renderAdkarHome();
   // Leaving the Quran tab entirely (without pressing Back first) should also
   // hide the floating text-size widget — it's reader-specific.
   if (name !== 'quran') document.getElementById('quran-float-textsize').classList.remove('visible');
@@ -3050,10 +3120,23 @@ function _setCountdownRight(html) {
   cdRight.innerHTML = html;
 }
 // ── Export / Import fasting data ────────────────────────────────────────
+// Exact-match keys (not prefix-matched like fast_*) included in export/import.
+// Quran keys are deliberately limited to real user data/preferences —
+// bookmark, reading position, script/toggle/zoom preferences — not caches
+// like quran_surah_list or quran_indopak_full or the per-surah text caches
+// (quran_surah_{n}_{script}_v9), which are large, numerous, and trivially
+// re-fetched from the network rather than meaningful to back up.
+const EXPORT_EXACT_KEYS = [
+  'hijri_offset', 'prayer_method', 'prayer_school', 'install_hijri_ym',
+  'quran_bookmark', 'quran_bookmark_kahf', 'quran_mushaf_bookmark',
+  'quran_mushaf_last_page', 'quran_show_translit', 'quran_bold_arabic',
+  'quran_script_pref', 'quran_text_scale', 'quran_mushaf_text_scale'
+];
+
 function exportFastingData() {
   const data = {};
   Object.keys(localStorage).forEach(k => {
-    if (k.startsWith('fast_') || k === 'hijri_offset' || k === 'prayer_method' || k === 'prayer_school' || k === 'install_hijri_ym') data[k] = localStorage.getItem(k);
+    if (k.startsWith('fast_') || EXPORT_EXACT_KEYS.includes(k)) data[k] = localStorage.getItem(k);
   });
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
@@ -3073,7 +3156,7 @@ function importFastingData(event) {
       const data = JSON.parse(e.target.result);
       let count = 0;
       Object.keys(data).forEach(k => {
-        if (k.startsWith('fast_') || k === 'hijri_offset' || k === 'prayer_method' || k === 'prayer_school' || k === 'install_hijri_ym') {
+        if (k.startsWith('fast_') || EXPORT_EXACT_KEYS.includes(k)) {
           localStorage.setItem(k, data[k]);
           count++;
         }
@@ -4168,6 +4251,123 @@ function getAudioPlayerEl() {
 }
 
 function pad3(n) { return String(n).padStart(3, '0'); }
+
+// Adkar tab — self-hosted, filtered data (adkar/adhkar.json), derived from
+// the Hisn Al-Muslim book. Only 4 of that book's 132 categories are bundled
+// (Morning & Evening, Sleep, Waking, After Salah) to keep the payload small.
+let _adkarData = null;
+let _adkarCurrentCategory = null;
+
+function getAdkarData() {
+  if (_adkarData) return Promise.resolve(_adkarData);
+  return fetch('./adkar/adhkar.json').then(r => r.json()).then(data => {
+    _adkarData = data;
+    return data;
+  });
+}
+
+function renderAdkarHome() {
+  // Static grid — nothing to render dynamically, just here for symmetry
+  // with the other tabs' showTab() hooks and as a place to extend later.
+}
+
+// The source data bundles Morning and Evening into one list, with the
+// evening-specific wording embedded inline in brackets (Arabic:
+// "[وإذا أمسى قال: ...]", English: "[In the evening:] (...)"). Extracts
+// that variant when it's genuine replacement text; falls back to the same
+// text for both times when there's no bracket, or when the source only
+// provides a truncated fragment ending in "..." rather than full wording —
+// showing identical-but-correct text beats showing a broken fragment.
+function splitEveningVariant(text) {
+  if (!text) return { primary: text, evening: text };
+  const patterns = [
+    /\[?\s*وإذا أمسى[^:\]]*:\s*([^\]]*)\]/g,
+    /\[In the evening:\]\s*\(([^)]*)\)/gi
+  ];
+  for (const re of patterns) {
+    const matches = [...text.matchAll(re)];
+    if (matches.length) {
+      let primary = text;
+      const eveningParts = [];
+      matches.forEach(m => {
+        primary = primary.replace(m[0], '');
+        const variant = (m[1] || '').trim();
+        const isTruncated = variant.endsWith('...') || variant.endsWith('…') || variant.length < 8;
+        if (!isTruncated) eveningParts.push(variant);
+      });
+      primary = primary.replace(/\s+/g, ' ').trim();
+      const evening = eveningParts.length ? eveningParts.join(' ') : primary;
+      return { primary, evening };
+    }
+  }
+  return { primary: text.trim(), evening: text.trim() };
+}
+
+function openAdkarCategory(key) {
+  document.getElementById('adkar-home-view').style.display = 'none';
+  document.getElementById('adkar-reader-view').style.display = 'block';
+  _adkarCurrentCategory = key;
+  const titles = {
+    morning: 'Morning Adkar', evening: 'Evening Adkar',
+    sleep: 'Before Sleep', waking: 'After Waking', after_salah: 'After Salah'
+  };
+  document.getElementById('adkar-reader-title').textContent = titles[key] || '';
+  const content = document.getElementById('adkar-reader-content');
+  content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--color-text-tertiary);font-size:13px">Loading…</div>';
+
+  getAdkarData().then(data => {
+    const sourceKey = (key === 'morning' || key === 'evening') ? 'morning_evening' : key;
+    const category = data[sourceKey];
+    if (!category) { content.innerHTML = ''; return; }
+
+    const items = category.items.map((it, i) => {
+      if (key === 'morning' || key === 'evening') {
+        const which = key === 'evening' ? 'evening' : 'primary';
+        return {
+          arabic: splitEveningVariant(it.arabic)[which],
+          translit: splitEveningVariant(it.translit)[which],
+          translation: splitEveningVariant(it.translation)[which],
+          repeat: it.repeat,
+          idx: i
+        };
+      }
+      return { ...it, idx: i };
+    });
+
+    content.innerHTML = items.map(it => `
+      <div class="adkar-item-block">
+        <div class="adkar-item-arabic">${it.arabic}</div>
+        ${it.translit ? `<div class="adkar-item-translit">${it.translit}</div>` : ''}
+        ${it.translation ? `<div class="adkar-item-translation">${it.translation}</div>` : ''}
+        <div class="adkar-item-footer">
+          <span></span>
+          ${it.repeat > 1 ? `
+            <div class="adkar-repeat-counter" id="adkar-counter-${key}-${it.idx}">
+              <span class="adkar-repeat-counter-label">0 / ${it.repeat}</span>
+              <button class="adkar-repeat-counter-btn" onclick="tickAdkarCounter('${key}', ${it.idx}, ${it.repeat})" aria-label="Count">+</button>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    `).join('');
+  });
+}
+
+function tickAdkarCounter(key, idx, total) {
+  const el = document.getElementById(`adkar-counter-${key}-${idx}`);
+  if (!el) return;
+  const label = el.querySelector('.adkar-repeat-counter-label');
+  let current = parseInt(label.textContent.split('/')[0].trim(), 10) || 0;
+  current = current >= total ? 0 : current + 1; // tapping past completion resets, so it's reusable next time
+  label.textContent = `${current} / ${total}`;
+  el.classList.toggle('complete', current >= total);
+}
+
+function closeAdkarCategory() {
+  document.getElementById('adkar-reader-view').style.display = 'none';
+  document.getElementById('adkar-home-view').style.display = 'block';
+  _adkarCurrentCategory = null;
+}
 
 function stopAyahPlayback() {
   const audio = getAudioPlayerEl();
