@@ -4427,23 +4427,71 @@ function prefixRepeatCounts(text) {
   return out.replace(/\s+/g, ' ').replace(/\s+([.,؛،])/g, '$1').trim();
 }
 
+// Depth-aware bracket removal — finds genuine matched bracket PAIRS via
+// proper nesting-depth tracking (not a naive regex, which can span across
+// separate bracket groups or leave dangling unmatched brackets when the
+// source has nested/doubled parens). Only removes the most specific pair
+// genuinely "about" a repeat count; a broad outer wrapper that merely
+// happens to contain one deep within a much larger span is left alone.
 function stripRepeatPhrase(text) {
   if (!text) return text;
   const D = '[\u064B-\u065F\u0670]*';
   const marat = `م${D}ر${D}[اه]?${D}[تة]${D}`;
-  let s = text
-    .replace(new RegExp(`[\\(\\[][^\\)\\]]*${marat}[^\\)\\]]*[\\)\\]]`, 'g'), '')
-    .replace(/[\(\[][^\)\]]*\btimes?\b[^\)\]]*[\)\]]/gi, '');
-  // Second pass: an unbracketed "<number-word> <marat>" phrase (e.g. "عَشْرَ
-  // مَرّاتٍ بَعْدَ صَلاةِ الْمَغْرِبِ") — strips just the number+times words,
-  // leaving any surrounding context (like a following "after Maghrib and
-  // Fajr" timing note) intact, since that context isn't redundant with the
-  // counter the way the count itself is — only the count duplicates what
-  // the counter widget already shows.
-  const numberWords = ['ثلاث','أربع','خمس','ست','سبع','ثمان','تسع','عشر','عشرين','ثلاثين','أربعين','مائة','مئة'];
-  const numAlt = numberWords.map(w => w.split('').join(D)).join('|');
-  s = s.replace(new RegExp(`(${numAlt})${D}\\s+${marat}`, 'g'), '');
-  s = s
+  const timesRe = new RegExp(`\\btimes?\\b|${marat}`, 'i');
+
+  const pairs = [];
+  const stack = [];
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '(' || ch === '[') {
+      stack.push({ ch, i });
+    } else if (ch === ')' || ch === ']') {
+      const open = stack.pop();
+      if (open) pairs.push({ start: open.i, end: i + 1 });
+    }
+  }
+  if (!pairs.length) return text;
+
+  function contentExcludingChildren(p) {
+    const children = pairs.filter(c => c !== p && c.start > p.start && c.end < p.end);
+    const directChildren = children.filter(c =>
+      !children.some(other => other !== c && other.start <= c.start && other.end >= c.end)
+    ).sort((a, b) => a.start - b.start);
+    let result = '';
+    let cursor = p.start + 1;
+    for (const c of directChildren) {
+      result += text.slice(cursor, c.start);
+      cursor = c.end;
+    }
+    result += text.slice(cursor, p.end - 1);
+    return result;
+  }
+
+  const toRemove = pairs.filter(p => timesRe.test(contentExcludingChildren(p)));
+  if (!toRemove.length) return text;
+
+  const finalRemovals = toRemove.filter(p =>
+    !toRemove.some(other => other !== p && other.start >= p.start && other.end <= p.end && (other.end - other.start) < (p.end - p.start))
+  );
+  finalRemovals.sort((a, b) => a.start - b.start || (a.end - a.start) - (b.end - b.start));
+  const selected = [];
+  for (const p of finalRemovals) {
+    if (!selected.some(s => p.start >= s.start && p.end <= s.end)) selected.push(p);
+  }
+
+  let out = '';
+  let cursor = 0;
+  for (const r of selected) {
+    out += text.slice(cursor, r.start);
+    cursor = r.end;
+  }
+  out += text.slice(cursor);
+  // Cleanup pass: removing an inner pair can leave its outer wrapper empty
+  // (e.g. "((one hundred times))" -> "()" after the inner is removed) —
+  // strip any now-empty or whitespace-only bracket pairs left behind.
+  out = out.replace(/\(\s*\)|\[\s*\]/g, '');
+
+  let s = out
     .replace(/\s+/g, ' ')
     .replace(/\s+([.,؛،])/g, '$1')
     .trim();
