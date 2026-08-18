@@ -4315,6 +4315,96 @@ function spaceOutAdjacentParens(text) {
   return text.replace(/\)([\(\[])/g, ') $1');
 }
 
+// Strips the outer "((...))" double-parenthesis wrapper that marks exact
+// hadith wording in Arabic — Arabic-only display convenience, removes only
+// the leading "((" and the LAST "))" in the string (assumed to be the true
+// closing pair), leaving any inner single-paren notes untouched.
+function stripDoubleParenWrapper(text) {
+  if (!text) return text;
+  let s = text;
+  if (s.startsWith('((')) s = s.slice(2);
+  const lastIdx = s.lastIndexOf('))');
+  if (lastIdx !== -1) s = s.slice(0, lastIdx) + s.slice(lastIdx + 2);
+  return s.trim();
+}
+
+// Converts Arabic repeat-count number-words (ثلاث=3, عشر=10, مائة=100, and
+// compound tens like ثلاثاً وثلاثين=33) into a compact "Nx" prefix placed
+// BEFORE the phrase it applies to, so the count is visible before reading
+// rather than discovered mid-sentence or at the end.
+function arabicNumberWordToDigit(phrase) {
+  const D = '[\u064B-\u065F\u0670]*';
+  const onesAtStart = (word) => new RegExp(`^${word.split('').join(D)}`).test(phrase);
+  let tens = 0;
+  if (/ثلاثين/.test(phrase)) tens = 30;
+  else if (/أربعين/.test(phrase)) tens = 40;
+  else if (/عشرين/.test(phrase)) tens = 20;
+  if (tens > 0) {
+    if (onesAtStart('ثلاث')) return 3 + tens;
+    if (onesAtStart('أربع')) return 4 + tens;
+    if (onesAtStart('خمس')) return 5 + tens;
+    if (onesAtStart('ست')) return 6 + tens;
+    if (onesAtStart('سبع')) return 7 + tens;
+    if (onesAtStart('ثمان')) return 8 + tens;
+    if (onesAtStart('تسع')) return 9 + tens;
+    return tens;
+  }
+  const SIMPLE = { 'مائة':100,'مئة':100,'عشر':10,'تسع':9,'ثمان':8,'سبع':7,'ست':6,'خمس':5,'أربع':4,'ثلاث':3 };
+  for (const [word, val] of Object.entries(SIMPLE)) {
+    if (onesAtStart(word)) return val;
+  }
+  return null;
+}
+
+function prefixRepeatCounts(text) {
+  if (!text) return text;
+  const D = '[\u064B-\u065F\u0670]*';
+  const marat = `م${D}ر${D}[اه]?${D}[تة]${D}`;
+  // Longest-first so "ثلاثين" (30) matches before the shorter "ثلاث" (3)
+  // it contains as a substring — alternation tries options in order, not
+  // by longest match, so ordering here is load-bearing.
+  const numberWords = ['عشرين','ثلاثين','أربعين','مائة','مئة','ثلاث','أربع','خمس','ست','سبع','ثمان','تسع','عشر'];
+  const numAlt = numberWords.map(w => w.split('').join(D)).join('|');
+  const numWithSuffix = `(?:${numAlt})${D}ا?${D}`;
+  // Compound "X and Y" tens-form (33, 34...) doesn't require a trailing
+  // مرات in the source — implied by context. A single number-word DOES
+  // require مرات, to avoid matching incidental numbers that aren't counts.
+  const compoundPattern = `${numWithSuffix}\\s+${D}و${D}${numWithSuffix}`;
+  const singlePattern = `${numWithSuffix}\\s*${marat}`;
+  const countPattern = new RegExp(`${compoundPattern}|${singlePattern}`, 'g');
+
+  let match;
+  const replacements = [];
+  while ((match = countPattern.exec(text)) !== null) {
+    const digit = arabicNumberWordToDigit(match[0]);
+    if (digit == null) continue;
+    let start = match.index, end = match.index + match[0].length;
+    const hadOpenBracket = start > 0 && (text[start - 1] === '(' || text[start - 1] === '[');
+    if (hadOpenBracket) {
+      start -= 1;
+      const closeIdx = text.indexOf(text[start] === '(' ? ')' : ']', end);
+      if (closeIdx !== -1) end = closeIdx + 1;
+    }
+    replacements.push({ start, end, digit });
+  }
+  if (!replacements.length) return text;
+
+  let out = '';
+  let cursor = 0;
+  for (const r of replacements) {
+    let clauseStart = Math.max(text.lastIndexOf('،', r.start - 1), text.lastIndexOf(',', r.start - 1)) + 1;
+    if (clauseStart < cursor) clauseStart = cursor;
+    const between = text.slice(cursor, clauseStart);
+    out += between;
+    if (out && !/\s$/.test(out) && !between) out += ' ';
+    const clause = text.slice(clauseStart, r.start).trim();
+    out += `${r.digit}x ` + clause;
+    cursor = r.end;
+  }
+  out += text.slice(cursor);
+  return out.replace(/\s+/g, ' ').replace(/\s+([.,؛،])/g, '$1').trim();
+}
+
 function stripRepeatPhrase(text) {
   if (!text) return text;
   const D = '[\u064B-\u065F\u0670]*';
@@ -4385,13 +4475,14 @@ function openAdkarCategory(key) {
     // broader morning adhkar — so Morning now includes both, in that
     // chronological order. After Salah still exists as its own tile too,
     // since it's also relevant standalone after Dhuhr/Asr/Maghrib/Isha.
+    const processArabic = (arabic) => prefixRepeatCounts(stripDoubleParenWrapper(arabic));
     const buildItems = (category, variantKey) => category.items.map((it, i) => {
       if (variantKey) {
         const arabic = splitEveningVariant(it.arabic)[variantKey];
         const translit = splitEveningVariant(it.translit)[variantKey];
         const translation = splitEveningVariant(it.translation)[variantKey];
         return {
-          arabic: spaceOutAdjacentParens(it.repeat > 1 ? stripRepeatPhrase(arabic) : arabic),
+          arabic: processArabic(arabic),
           translit: spaceOutAdjacentParens(it.repeat > 1 ? stripRepeatPhrase(translit) : translit),
           translation: spaceOutAdjacentParens(it.repeat > 1 ? stripRepeatPhrase(translation) : translation),
           repeat: it.repeat
@@ -4399,7 +4490,7 @@ function openAdkarCategory(key) {
       }
       return {
         ...it,
-        arabic: spaceOutAdjacentParens(it.repeat > 1 ? stripRepeatPhrase(it.arabic) : it.arabic),
+        arabic: processArabic(it.arabic),
         translit: spaceOutAdjacentParens(it.repeat > 1 ? stripRepeatPhrase(it.translit) : it.translit),
         translation: spaceOutAdjacentParens(it.repeat > 1 ? stripRepeatPhrase(it.translation) : it.translation)
       };
