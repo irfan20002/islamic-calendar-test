@@ -4351,7 +4351,7 @@ function openAdkarCategory(key) {
   document.getElementById('adkar-reader-view').style.display = 'block';
   _adkarCurrentCategory = key;
   const titles = {
-    morning: 'Morning Adkar', evening: 'Evening Adkar',
+    morning: 'Morning Adkar (incl. After Salah)', evening: 'Evening Adkar',
     sleep: 'Before Sleep', waking: 'After Waking', after_salah: 'After Salah'
   };
   document.getElementById('adkar-reader-title').textContent = titles[key] || '';
@@ -4359,32 +4359,43 @@ function openAdkarCategory(key) {
   content.innerHTML = '<div style="text-align:center;padding:20px;color:var(--color-text-tertiary);font-size:13px">Loading…</div>';
 
   getAdkarData().then(data => {
-    const sourceKey = (key === 'morning' || key === 'evening') ? 'morning_evening' : key;
-    const category = data[sourceKey];
-    if (!category) { content.innerHTML = ''; return; }
-
-    const items = category.items.map((it, i) => {
-      if (key === 'morning' || key === 'evening') {
-        const which = key === 'evening' ? 'evening' : 'primary';
-        const arabic = splitEveningVariant(it.arabic)[which];
-        const translit = splitEveningVariant(it.translit)[which];
-        const translation = splitEveningVariant(it.translation)[which];
+    // Build a list of {category, items} to render. Morning is a merged
+    // session: After Salah adhkar are recited right after Fajr, before the
+    // broader morning adhkar — so Morning now includes both, in that
+    // chronological order. After Salah still exists as its own tile too,
+    // since it's also relevant standalone after Dhuhr/Asr/Maghrib/Isha.
+    const buildItems = (category, variantKey) => category.items.map((it, i) => {
+      if (variantKey) {
+        const arabic = splitEveningVariant(it.arabic)[variantKey];
+        const translit = splitEveningVariant(it.translit)[variantKey];
+        const translation = splitEveningVariant(it.translation)[variantKey];
         return {
           arabic: it.repeat > 1 ? stripRepeatPhrase(arabic) : arabic,
           translit: it.repeat > 1 ? stripRepeatPhrase(translit) : translit,
           translation: it.repeat > 1 ? stripRepeatPhrase(translation) : translation,
-          repeat: it.repeat,
-          idx: i
+          repeat: it.repeat
         };
       }
       return {
         ...it,
         arabic: it.repeat > 1 ? stripRepeatPhrase(it.arabic) : it.arabic,
         translit: it.repeat > 1 ? stripRepeatPhrase(it.translit) : it.translit,
-        translation: it.repeat > 1 ? stripRepeatPhrase(it.translation) : it.translation,
-        idx: i
+        translation: it.repeat > 1 ? stripRepeatPhrase(it.translation) : it.translation
       };
     });
+
+    let items = [];
+    if (key === 'morning') {
+      if (data.after_salah) items = items.concat(buildItems(data.after_salah, null));
+      if (data.morning_evening) items = items.concat(buildItems(data.morning_evening, 'primary'));
+    } else if (key === 'evening') {
+      if (data.morning_evening) items = items.concat(buildItems(data.morning_evening, 'evening'));
+    } else {
+      const category = data[key];
+      if (category) items = buildItems(category, null);
+    }
+    items = items.map((it, i) => ({ ...it, idx: i }));
+    if (!items.length) { content.innerHTML = ''; return; }
 
     content.innerHTML = items.map(it => `
       <div class="adkar-item-block">
