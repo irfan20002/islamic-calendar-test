@@ -4432,7 +4432,7 @@ const ADKAR_REFERENCES = {
     'Hisn al-Muslim 96 — Al-Bukhari, cf. Fathul-Bari 11/101; Muslim 4/2075',
     'Hisn al-Muslim 97 — Ahmad 2/290, An-Nasa\u2019i no. 590, At-Tirmidhi 3/187, Ibn as-Sunni no. 68',
     'Hisn al-Muslim 98 — At-Tabarani; Majma\u2019uz-Zawa\u2019id 10/120, Sahih at-Targhib wat-Tarhib 1/273',
-    null,
+    'An-Nasa\u2019i, as-Sunan al-Kubra no. 10588',
     'Hisn al-Muslim 121 — Al-Bukhari 7/158; Al-Asqalani, Fathul-Bari 11/173',
     null,
     null,
@@ -4462,6 +4462,23 @@ function getAdkarReference(sourceCategory, sourceIdx) {
   const ref = list && list[sourceIdx];
   return ref || '';
 }
+
+// Extra dhikr not present in the adhkar.json source data, added directly
+// here rather than editing that file. Appended after the normal
+// Morning/Evening items in both the Morning and Evening tabs (it's
+// timeless — no morning- or evening-specific wording — so it fits either).
+const EXTRA_ADKAR_ITEMS = {
+  morning_evening: [
+    {
+      title: 'More Beloved Than All Upon Which the Sun Rises',
+      arabic: 'سُبْحَانَ اللَّهِ وَالْحَمْدُ لِلَّهِ وَلَا إِلَٰهَ إِلَّا اللَّهُ وَاللَّهُ أَكْبَرُ',
+      translit: 'Subhan Allah wal hamdu lillah wa la ilaha illa Allah wallahu akbar',
+      translation: 'Glory be to Allah, praise be to Allah, there is no god but Allah, and Allah is the Most Great.',
+      repeat: 1,
+      reference: 'Sahih Muslim 2695 \u2014 narrated by Abu Hurairah: "...more beloved to me than everything upon which the sun rises."'
+    }
+  ]
+};
 
 function updateAdkarTranslitToggleUI() {
   const btn = document.getElementById('adkar-translit-toggle-btn');
@@ -4767,8 +4784,10 @@ function openAdkarCategory(key) {
     if (key === 'morning') {
       if (data.after_salah) items = items.concat(buildItems(data.after_salah, null, 'after_salah'));
       if (data.morning_evening) items = items.concat(buildItems(data.morning_evening, 'primary', 'morning_evening'));
+      items = items.concat(EXTRA_ADKAR_ITEMS.morning_evening);
     } else if (key === 'evening') {
       if (data.morning_evening) items = items.concat(buildItems(data.morning_evening, 'evening', 'morning_evening'));
+      items = items.concat(EXTRA_ADKAR_ITEMS.morning_evening);
     } else {
       const category = data[key];
       if (category) items = buildItems(category, null, key);
