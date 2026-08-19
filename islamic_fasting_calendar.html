@@ -4398,6 +4398,71 @@ function getAdkarTitle(sourceCategory, sourceIdx) {
   return (list && list[sourceIdx]) || '';
 }
 
+// Hadith references for each dua, sourced and content-matched against
+// sunnah.com's Hisn al-Muslim (the same book adhkar.json is derived from).
+// Keyed the same way as ADKAR_TITLES. Only items with a confidently
+// verified match are included — unverified items are simply omitted
+// rather than guessed, since misattributing a hadith reference is worse
+// than leaving it blank. (Coverage as of this pass: all of after_salah
+// and waking, and the first 23 of morning_evening's 29 items — the
+// remaining 6 morning_evening items and all 13 sleep items pull from
+// different Hisn al-Muslim chapters not yet cross-referenced.)
+const ADKAR_REFERENCES = {
+  morning_evening: [
+    'Hisn al-Muslim 75 — An-Nasa\u2019i and At-Tabarani; Al-Hakim 1/562, graded authentic in Sahih at-Targhib wat-Tarhib 1/273',
+    'Hisn al-Muslim 76 — Abu Dawud 4/322, At-Tirmidhi 5/567',
+    'Hisn al-Muslim 77 — Muslim 4/2088',
+    'Hisn al-Muslim 78 — Sahih at-Tirmidhi 3/142',
+    'Hisn al-Muslim 79 — Al-Bukhari 7/150',
+    'Hisn al-Muslim 80 — Abu Dawud 4/317; Al-Bukhari (Al-Adab al-Mufrad), An-Nasa\u2019i',
+    'Hisn al-Muslim 81 — Abu Dawud 4/318, An-Nasa\u2019i, Ibn as-Sunni no. 41, Ibn Hibban no. 2361',
+    'Hisn al-Muslim 82 — Abu Dawud 4/324, Ahmad 5/42, An-Nasa\u2019i no. 22, Ibn as-Sunni no. 69',
+    'Hisn al-Muslim 83 — Abu Dawud 4/321, Ibn as-Sunni no. 71',
+    'Hisn al-Muslim 84 — Abu Dawud, Sahih Ibn Majah 2/332',
+    'Hisn al-Muslim 85 — Abu Dawud, Sahih at-Tirmidhi 3/142',
+    'Hisn al-Muslim 86 — Abu Dawud 4/323, At-Tirmidhi 5/465, Ibn Majah 2/332',
+    'Hisn al-Muslim 87 — Ahmad 4/337, An-Nasa\u2019i, Ibn as-Sunni no. 68, At-Tirmidhi 5/465',
+    'Hisn al-Muslim 88 — Al-Hakim 1/545, graded authentic in Sahih at-Targhib wat-Tarhib 1/273',
+    'Hisn al-Muslim 89 — Abu Dawud 4/322',
+    'Hisn al-Muslim 90 — Ahmad 3/406\u20137, 5/123, An-Nasa\u2019i no. 34, At-Tirmidhi 4/209',
+    'Hisn al-Muslim 91 — Al-Bukhari 4/2071',
+    'Hisn al-Muslim 92 — An-Nasa\u2019i no. 24, Ahmad 8/704',
+    'Hisn al-Muslim 94 — Muslim 4/2090',
+    'Hisn al-Muslim 95 — Ibn as-Sunni no. 54, Ibn Majah no. 925',
+    'Hisn al-Muslim 96 — Al-Bukhari, cf. Fathul-Bari 11/101; Muslim 4/2075',
+    'Hisn al-Muslim 97 — Ahmad 2/290, An-Nasa\u2019i no. 590, At-Tirmidhi 3/187, Ibn as-Sunni no. 68',
+    'Hisn al-Muslim 98 — At-Tabarani; Majma\u2019uz-Zawa\u2019id 10/120, Sahih at-Targhib wat-Tarhib 1/273',
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+  ],
+  waking: [
+    'Hisn al-Muslim 1 — Al-Bukhari, cf. Fathul-Bari 11/113; Muslim 4/2083',
+    'Hisn al-Muslim 2 — Al-Bukhari, cf. Fathul-Bari 3/39; wording from Ibn Majah 2/335',
+    'Hisn al-Muslim 3 — At-Tirmidhi 5/473; Sahih at-Tirmidhi 3/144',
+    'Hisn al-Muslim 4 — Qur\u2019an Aal \u2018Imran 3:190\u2013200; Al-Bukhari, Fathul-Bari 8/237; Muslim 1/530'
+  ],
+  after_salah: [
+    'Hisn al-Muslim 66 — Muslim 1/414',
+    'Hisn al-Muslim 67 — Al-Bukhari 1/255, Muslim 1/414',
+    'Hisn al-Muslim 68 — Muslim 1/415',
+    'Hisn al-Muslim 69 — Muslim 1/418',
+    'Hisn al-Muslim 70 — Abu Dawud 2/86, An-Nasa\u2019i 3/68',
+    'Hisn al-Muslim 71 — An-Nasa\u2019i, \u2018Amal al-Yawm wal-Laylah no. 100; Ibn as-Sunni no. 121',
+    'Hisn al-Muslim 72 — At-Tirmidhi 5/515, Ahmad 4/227',
+    'Hisn al-Muslim 73 — Ibn Majah; Sahih Ibn Majah 1/152'
+  ]
+};
+
+function getAdkarReference(sourceCategory, sourceIdx) {
+  const list = ADKAR_REFERENCES[sourceCategory];
+  const ref = list && list[sourceIdx];
+  return ref || '';
+}
+
 function updateAdkarTranslitToggleUI() {
   const btn = document.getElementById('adkar-translit-toggle-btn');
   if (btn) btn.classList.toggle('on', _adkarShowTranslit);
@@ -4674,12 +4739,14 @@ function openAdkarCategory(key) {
     const processArabic = (arabic) => prefixRepeatCounts(stripDoubleParenWrapper(arabic));
     const buildItems = (category, variantKey, sourceCategory) => category.items.map((it, i) => {
       const title = getAdkarTitle(sourceCategory, i);
+      const reference = getAdkarReference(sourceCategory, i);
       if (variantKey) {
         const arabic = splitEveningVariant(it.arabic)[variantKey];
         const translit = splitEveningVariant(it.translit)[variantKey];
         const translation = splitEveningVariant(it.translation)[variantKey];
         return {
           title,
+          reference,
           arabic: processArabic(arabic),
           translit: spaceOutAdjacentParens(it.repeat > 1 ? stripRepeatPhrase(translit) : translit),
           translation: spaceOutAdjacentParens(it.repeat > 1 ? stripRepeatPhrase(translation) : translation),
@@ -4689,6 +4756,7 @@ function openAdkarCategory(key) {
       return {
         ...it,
         title,
+        reference,
         arabic: processArabic(it.arabic),
         translit: spaceOutAdjacentParens(it.repeat > 1 ? stripRepeatPhrase(it.translit) : it.translit),
         translation: spaceOutAdjacentParens(it.repeat > 1 ? stripRepeatPhrase(it.translation) : it.translation)
@@ -4716,8 +4784,8 @@ function openAdkarCategory(key) {
         ${it.translit ? `<div class="adkar-item-translit" style="display:${_adkarShowTranslit ? 'block' : 'none'}">${it.translit}</div>` : ''}
         ${it.translation ? `<div class="adkar-item-translation">${it.translation}</div>` : ''}
         ${it.virtue || it.reference ? `
-          <button class="adkar-virtue-toggle" onclick="this.nextElementSibling.classList.toggle('open')" aria-label="Toggle virtue">
-            <i class="ti ti-sparkles"></i> Virtue
+          <button class="adkar-virtue-toggle" onclick="this.nextElementSibling.classList.toggle('open')" aria-label="Toggle reference">
+            <i class="ti ti-sparkles"></i> ${it.virtue ? 'Virtue' : 'Reference'}
           </button>
           <div class="adkar-virtue-body">
             ${it.reference ? `<div class="adkar-virtue-ref">${it.reference}</div>` : ''}
