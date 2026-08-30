@@ -198,6 +198,17 @@
   .sajda-badge { font-size:11px; font-weight:600; color:#8a6300; background:#FBEBB8; border-radius:6px; padding:3px 8px; display:inline-block; margin:4px 0; }
   .surah-ayah-translation { font-size:calc(13px * var(--quran-text-scale, 1)); color:#117A65; line-height:1.6; }
   .surah-ayah-translit { font-size:calc(12.5px * var(--quran-text-scale, 1)); color:var(--color-text-tertiary); font-style:italic; line-height:1.5; margin-bottom:2px; }
+  /* Tafsir toggle — same tap-to-expand language as .adkar-virtue-toggle, but
+     backed by a lazy per-ayah fetch (toggleAyahTafsir) instead of static
+     inline markup, since a whole surah's Ibn Kathir commentary can run into
+     the megabytes and most readers only open a handful of verses. */
+  .ayah-tafsir-toggle { display:flex; align-items:center; gap:5px; background:none; border:none; color:#B8860B; font-size:12px; font-weight:600; padding:0; cursor:pointer; font-family:var(--font-sans); margin-top:8px; }
+  .ayah-tafsir-toggle .ayah-tafsir-chevron { display:inline-block; transition:transform 0.2s ease; font-size:10px; }
+  .ayah-tafsir-toggle.open .ayah-tafsir-chevron { transform:rotate(180deg); }
+  .ayah-tafsir-body { display:none; margin-top:8px; padding:10px 12px; background:var(--color-background-secondary); border-radius:10px; font-size:12.5px; line-height:1.7; color:var(--color-text-secondary); font-family:var(--font-sans); }
+  .ayah-tafsir-body.open { display:block; }
+  .ayah-tafsir-source { font-size:11px; font-weight:700; color:#B8860B; margin-bottom:6px; }
+  .ayah-tafsir-loading { font-size:12px; color:var(--color-text-tertiary); font-style:italic; }
   .quran-translit-toggle-row { display:flex; align-items:center; gap:8px; margin-bottom:.5rem; font-size:12px; color:var(--color-text-secondary); font-family:var(--font-sans); }
   .quran-translit-toggle { position:relative; width:34px; height:20px; border-radius:10px; background:var(--color-border-tertiary); border:none; cursor:pointer; flex-shrink:0; }
   .quran-translit-toggle::after { content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:#fff; transition:transform .15s; }
@@ -5075,10 +5086,76 @@ function buildAyahBlockHtml(surahData, a, arabicClass) {
       ${sajdaBadge}
       <div class="surah-ayah-translit" style="display:${_quranShowTranslit ? 'block' : 'none'}">${a.translit || ''}</div>
       <div class="surah-ayah-translation">${a.translation}</div>
+      <button class="ayah-tafsir-toggle" onclick="toggleAyahTafsir(${surahData.number}, ${a.numberInSurah}, this)" aria-expanded="false" aria-label="Toggle tafsir">📖 Tafsir <span class="ayah-tafsir-chevron">▾</span></button>
+      <div class="ayah-tafsir-body" id="tafsir-${surahData.number}-${a.numberInSurah}"></div>
       <button class="ayah-bookmark-btn" onclick="toggleAyahBookmark(${surahData.number}, ${a.numberInSurah}, '${safeName}')" aria-label="Bookmark this ayah">☆</button>
       <button class="ayah-play-btn" onclick="playAyahAudio(${surahData.number}, ${a.numberInSurah}, event)" aria-label="Play recitation and translation">▶</button>
     </div>
   `;
+}
+
+// Tafsir (verse-by-verse commentary). Ibn Kathir's abridged English tafsir,
+// served from the spa5k/tafsir_api mirror on jsDelivr (same free/no-key CDN
+// pattern already used above for the IndoPak text). Fetched lazily per ayah
+// the first time its toggle is opened — unlike the Arabic/translation text,
+// tafsir is NOT prefetched with the rest of the surah, because a single
+// surah's full Ibn Kathir commentary can run into the megabytes (Al-Baqarah
+// alone is ~2.4MB) while most readers only open tafsir for a few verses.
+// Each ayah's text is cached in localStorage once fetched so re-opening it
+// later (even in a new session) doesn't re-hit the network.
+const TAFSIR_EDITION = 'en-tafisr-ibn-kathir';
+const TAFSIR_SOURCE_LABEL = 'Tafsir Ibn Kathir (abridged)';
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function fetchAyahTafsir(surah, ayah) {
+  const cacheKey = `quran_tafsir_${TAFSIR_EDITION}_${surah}_${ayah}_v1`;
+  try {
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) return Promise.resolve(cached);
+  } catch (e) {}
+  return fetch(`https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/${TAFSIR_EDITION}/${surah}/${ayah}.json`)
+    .then(r => r.json())
+    .then(data => {
+      const text = (data && data.text) ? data.text.trim() : '';
+      if (!text) throw new Error('empty tafsir');
+      try { localStorage.setItem(cacheKey, text); } catch (e) {}
+      return text;
+    });
+}
+
+function toggleAyahTafsir(surah, ayah, btn) {
+  const body = document.getElementById(`tafsir-${surah}-${ayah}`);
+  if (!body) return;
+  const isOpen = body.classList.contains('open');
+
+  if (isOpen) {
+    body.classList.remove('open');
+    btn.classList.remove('open');
+    btn.setAttribute('aria-expanded', 'false');
+    return;
+  }
+
+  body.classList.add('open');
+  btn.classList.add('open');
+  btn.setAttribute('aria-expanded', 'true');
+
+  if (body.dataset.loaded === '1') return; // already have the text, just showing it again
+
+  body.innerHTML = '<div class="ayah-tafsir-loading">Loading tafsir…</div>';
+  fetchAyahTafsir(surah, ayah).then(text => {
+    if (!body.classList.contains('open')) return; // collapsed again before the fetch returned
+    body.dataset.loaded = '1';
+    body.innerHTML = `<div class="ayah-tafsir-source">${TAFSIR_SOURCE_LABEL}</div><div>${escapeHtml(text).replace(/\n/g, '<br>')}</div>`;
+  }).catch(() => {
+    body.innerHTML = '<div class="ayah-tafsir-loading">Could not load tafsir. Check your connection and try again.</div>';
+    delete body.dataset.loaded;
+  });
 }
 
 // Which surah(s) a given physical Mushaf page belongs to — usually one, but
