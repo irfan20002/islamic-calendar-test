@@ -1,5 +1,5 @@
-const CACHE_NAME = 'islamic-calendar-v9';
-const ASSETS = ['islamic_fasting_calendar.html', 'manifest.json'];
+const CACHE_NAME = 'islamic-calendar-v10';
+const ASSETS = ['islamic_fasting_calendar.html', 'manifest.json', 'fonts/NooreHiraIndoPak.woff2'];
 
 // ── Install & cache ──────────────────────────────────────────────────────
 self.addEventListener('install', e => {
