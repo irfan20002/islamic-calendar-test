@@ -140,7 +140,10 @@
      fixes a WebKit stroke/fill compositing quirk with dynamically-loaded
      complex-script fonts; the layered text-shadow is redundant reinforcement
      since it doesn't share that failure mode. */
-  .quran-bold-arabic .surah-ayah-arabic { -webkit-text-stroke:0.9px currentColor; paint-order:stroke fill; text-shadow:0.6px 0 0 currentColor, -0.6px 0 0 currentColor, 0 0.6px 0 currentColor, 0 -0.6px 0 currentColor; }
+  /* Dialled down from 0.9px/0.6px: those were tuned against the thin Nastaleeq.
+     Noore Hira carries ~20% more ink already, and at the old values the stroke
+     closes up the counters and smears the harakat. */
+  .quran-bold-arabic .surah-ayah-arabic { -webkit-text-stroke:0.5px currentColor; paint-order:stroke fill; text-shadow:0.35px 0 0 currentColor, -0.35px 0 0 currentColor, 0 0.35px 0 currentColor, 0 -0.35px 0 currentColor; }
   .surah-ayah-num { display:inline-block; font-size:11px; font-weight:700; color:#ffffff; background:#117A65; border-radius:50%; width:20px; height:20px; text-align:center; line-height:20px; margin-left:6px; }
   .sajda-mark { color:#B8860B; font-size:22px; margin:0 4px; }
   .surah-ayah-block.has-sajda { background:#FDF6E3; border-radius:8px; padding-left:8px; padding-right:8px; border-bottom-color:#B8860B; }
@@ -221,7 +224,11 @@
   .quran-corner.tr { top:-9px; right:14px; }
   .quran-corner.bl { bottom:-9px; left:14px; }
   .quran-corner.br { bottom:-9px; right:14px; }
-  .surah-ayah-arabic.indopak { font-family:'Quran Naskh Full', serif; font-size:calc(24px * var(--quran-text-scale, 1)); line-height:2.3; }
+  /* Noore Hira instead of the Nastaleeq above: ~20% more ink at the same
+     optical size (measured, not eyeballed — same ink height, so font-size and
+     line-height are unchanged from the Nastaleeq they replace). The file is a
+     locally-patched build; see the @font-face comment for what was patched. */
+  .surah-ayah-arabic.indopak { font-family:'Quran IndoPak Heavy', serif; font-size:calc(24px * var(--quran-text-scale, 1)); line-height:2.3; }
   .quran-text-size-row { display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:.75rem; }
   .quran-float-textsize { display:none; position:fixed; right:14px; bottom:24px; z-index:500; flex-direction:column; gap:8px; background:var(--color-background-primary); border:1px solid var(--color-border-tertiary); border-radius:14px; padding:6px; box-shadow:0 2px 10px rgba(0,0,0,0.15); }
   .quran-float-textsize.visible { display:flex; }
@@ -432,6 +439,37 @@
        than rendering in a generic serif first and then swapping. Removes
        any chance of the bold styling looking like it "reverts" partway
        through, since there's only ever one font shown, not two. */
+    font-display: block;
+  }
+  /* The face the IndoPak toggle actually uses now. Noore Hira, self-hosted,
+     55KB woff2. Same structural profile as the Nastaleeq above — plain static
+     TrueType, glyf outlines, no fvar/gvar/CFF2 — and it has no GPOS 'curs'
+     feature at all (it joins via GSUB contextual forms), so it can't hit the
+     cursive-attachment bug that killed digital-khatt-indopak.otf on WebKit.
+
+     This is a locally-patched build, not stock Noore Hira. Three fixes, all
+     verified by rendering the affected ayat rather than assuming:
+       1. U+0617 SMALL HIGH ZAIN (238 occurrences in the IndoPak edition) was
+          unmapped. The outline was in the font all along as glyph 'highzay';
+          stock Noore Hira just points the wrong codepoint at it.
+       2. U+06EB (128 occurrences) should be qif but rendered as zain, because
+          it was the codepoint wrongly aimed at 'highzay'. Repointed at
+          'highqaf', which stock parks on U+066D — a codepoint the text never
+          uses.
+       3. U+065A sakta (8 occurrences) had no outline at all; grafted in from
+          an IndoPak donor of the same 2048 UPM, rescaled and re-origined to
+          Noore Hira's waqf-mark convention (marks start at x=0 extending
+          right, y~1300+; the donor's sit at negative x around y~900, so
+          dropping it in untransformed put it on top of the next letter).
+     Regression-checked against the full IndoPak corpus: exactly one codepoint
+     remapped, two newly mapped, nothing else touched. Arabic-block coverage
+     69/71 -> 71/71. Rebuild script: fonts/patch_font.py.
+
+     Verses that exercise each fix, for spot-checking on device: 4:121 (zain),
+     3:197 (qif), 83:14 (sakta). */
+  @font-face {
+    font-family: 'Quran IndoPak Heavy';
+    src: url('./fonts/NooreHiraIndoPak.woff2') format('woff2');
     font-display: block;
   }
   /* Mushaf (Madinah page-accurate) QCF4 fonts are NOT declared here — there are
