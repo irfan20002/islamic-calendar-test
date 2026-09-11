@@ -113,6 +113,19 @@
   .surah-ayah-block.bookmarked { background:#FDF6E3; border-radius:8px; padding-left:8px; padding-right:8px; }
   .surah-ayah-block.ayah-flash { background:#F5E0A3; border-radius:8px; padding-left:8px; padding-right:8px; }
   .ayah-bookmark-btn { position:absolute; top:14px; left:0; border:none; background:none; font-size:18px; color:#B8860B; cursor:pointer; padding:2px 6px; line-height:1; }
+  /* Favourites are a separate axis from the bookmark star. The star is a
+     single-slot "where I left off" marker that gets overwritten every time
+     it moves; the heart adds to a list that only grows until you remove an
+     entry. Sat beside the star rather than opposite it, because the right
+     side is already taken by the play button. */
+  .ayah-fav-btn { position:absolute; top:14px; left:30px; border:none; background:none; font-size:16px; color:#C75146; cursor:pointer; padding:2px 6px; line-height:1; }
+  .fav-item { position:relative; border:1px solid var(--color-border-tertiary); border-radius:10px; padding:12px 14px 10px; margin-bottom:10px; background:var(--color-background-primary); cursor:pointer; }
+  .fav-item-ref { font-size:11px; font-weight:700; color:#B8860B; font-family:var(--font-sans); margin-bottom:6px; }
+  .fav-item-arabic { direction:rtl; text-align:right; font-size:calc(20px * var(--quran-text-scale, 1)); line-height:2.2; color:var(--color-text-primary); margin-bottom:6px; }
+  .fav-item-arabic.indopak { font-family:'Quran IndoPak Heavy', serif; word-spacing:0.236em; }
+  .fav-item-translation { font-size:12.5px; line-height:1.6; color:var(--color-text-secondary); font-family:var(--font-sans); }
+  .fav-item-remove { position:absolute; top:8px; right:8px; border:none; background:none; font-size:15px; color:var(--color-text-tertiary); cursor:pointer; padding:2px 6px; line-height:1; }
+  .fav-empty { text-align:center; padding:28px 16px; color:var(--color-text-tertiary); font-size:13px; font-family:var(--font-sans); line-height:1.7; }
   /* Plays the Arabic recitation (streamed from everyayah.com, no hosting
      needed), then automatically follows with the English translation read
      aloud via the browser's built-in speech synthesis. Positioned opposite
@@ -667,11 +680,23 @@
         <div id="quran-continue-reading" style="font-size:12px;color:#B8860B;font-weight:600;cursor:pointer;white-space:nowrap"></div>
       </div>
       <button class="kahf-shortcut" id="kahf-shortcut-btn" onclick="openKahf()">🕌 Read Al-Kahf</button>
+      <button class="kahf-shortcut" id="quran-fav-shortcut-btn" onclick="openFavourites()" style="background:#C75146">♥ Saved verses <span id="quran-fav-count" style="font-weight:600;opacity:.85"></span></button>
       <input type="text" id="quran-search" placeholder="Search surah by name or number..." oninput="filterSurahList()"
         style="width:100%;box-sizing:border-box;padding:9px 12px;border-radius:var(--border-radius-md);border:1px solid var(--color-border-tertiary);font-size:16px;margin-bottom:.75rem;font-family:var(--font-sans);color:var(--color-text-primary);background:var(--color-background-primary)">
       <div id="quran-surah-list" style="max-height:480px;overflow-y:auto">
         <div style="text-align:center;padding:20px;color:var(--color-text-tertiary);font-size:13px">Loading surahs…</div>
       </div>
+    </div>
+    <!-- Third view in the Quran tab, alongside home and reader. Kept as its own
+         screen rather than a modal so the saved verses get full width for the
+         Arabic, and so tapping one can hand off to the reader the same way the
+         surah list does. -->
+    <div class="section" id="quran-favourites-view" style="display:none">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:.75rem">
+        <button onclick="closeFavourites()" style="border:none;background:var(--color-background-secondary);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:13px;color:var(--color-text-primary);font-family:var(--font-sans)">&larr; Back</button>
+        <div style="font-weight:700;font-size:15px;color:var(--color-text-primary)">Saved verses</div>
+      </div>
+      <div id="quran-favourites-list"></div>
     </div>
     <div class="section" id="quran-reader-view" style="display:none">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:.75rem">
@@ -3207,7 +3232,7 @@ function _setCountdownRight(html) {
 // re-fetched from the network rather than meaningful to back up.
 const EXPORT_EXACT_KEYS = [
   'hijri_offset', 'prayer_method', 'prayer_school', 'install_hijri_ym',
-  'quran_bookmark', 'quran_bookmark_kahf', 'quran_mushaf_bookmark',
+  'quran_bookmark', 'quran_bookmark_kahf', 'quran_mushaf_bookmark', 'quran_favourites',
   'quran_mushaf_last_page', 'quran_show_translit', 'quran_bold_arabic',
   'quran_script_pref', 'quran_text_scale', 'quran_mushaf_text_scale'
 ];
@@ -3575,9 +3600,11 @@ let _quranSurahList = null;
 
 function renderQuranHome() {
   document.getElementById('quran-reader-view').style.display = 'none';
+  document.getElementById('quran-favourites-view').style.display = 'none';
   document.getElementById('quran-home-view').style.display = 'block';
   document.getElementById('quran-float-textsize').classList.remove('visible');
   updateQuranContinueReading();
+  updateFavCount();
   if (_quranSurahList) { renderSurahListUI(_quranSurahList); return; }
 
   try {
@@ -3818,6 +3845,131 @@ function toggleAyahBookmark(surahNumber, ayahNumber, surahName) {
   updateGotoBookmarkBtn();
 }
 
+// ── Saved verses ─────────────────────────────────────────────────────────
+// Deliberately NOT built on the bookmark above. That one is a reading
+// position: one slot, overwritten on every move, and cleared when you reach
+// the end. This is a collection — it only changes when you explicitly add or
+// remove an entry, so the two can't share storage or share the star.
+//
+// Each entry snapshots the Arabic and translation as they were on screen when
+// saved, rather than storing just a surah/ayah reference. That keeps the list
+// readable offline and instant to open, without re-fetching a surah just to
+// show three lines of it. The cost is that an entry saved in IndoPak keeps its
+// IndoPak text even if you later switch scripts — acceptable, because tapping
+// the entry opens the real reader, which always renders in the current script.
+const FAV_KEY = 'quran_favourites';
+
+function getFavourites() {
+  try {
+    const list = JSON.parse(localStorage.getItem(FAV_KEY) || '[]');
+    return Array.isArray(list) ? list : [];
+  } catch (e) { return []; }
+}
+
+function saveFavourites(list) {
+  try { localStorage.setItem(FAV_KEY, JSON.stringify(list)); } catch (e) {}
+  updateFavCount();
+}
+
+function isFavourite(surah, ayah) {
+  return getFavourites().some(f => f.surah === surah && f.ayah === ayah);
+}
+
+function toggleAyahFavourite(surahNumber, ayahNumber, surahName, btn) {
+  const list = getFavourites();
+  const idx = list.findIndex(f => f.surah === surahNumber && f.ayah === ayahNumber);
+  if (idx >= 0) {
+    list.splice(idx, 1);
+  } else {
+    // Pull the text straight off the rendered block so the snapshot matches
+    // exactly what the reader was showing, including the active script.
+    const block = document.getElementById(`ayah-${surahNumber}-${ayahNumber}`);
+    const arabicEl = block && block.querySelector('.surah-ayah-arabic');
+    const transEl = block && block.querySelector('.surah-ayah-translation');
+    let arabic = '';
+    if (arabicEl) {
+      // Clone so removing the inline ayah-number badge doesn't touch the reader.
+      const clone = arabicEl.cloneNode(true);
+      clone.querySelectorAll('.surah-ayah-num').forEach(n => n.remove());
+      arabic = clone.innerHTML.trim();
+    }
+    list.unshift({
+      surah: surahNumber,
+      ayah: ayahNumber,
+      surahName: surahName,
+      arabic: arabic,
+      translation: transEl ? transEl.textContent.trim() : '',
+      script: (typeof _quranScript !== 'undefined' ? _quranScript : 'uthmani'),
+      savedAt: Date.now()
+    });
+  }
+  saveFavourites(list);
+  if (btn) btn.textContent = isFavourite(surahNumber, ayahNumber) ? '♥' : '♡';
+}
+
+function updateFavIconsUI() {
+  document.querySelectorAll('.surah-ayah-block').forEach(block => {
+    const s = parseInt(block.dataset.surah, 10);
+    const a = parseInt(block.dataset.ayah, 10);
+    const icon = block.querySelector('.ayah-fav-btn');
+    if (icon) icon.textContent = isFavourite(s, a) ? '♥' : '♡';
+  });
+}
+
+function updateFavCount() {
+  const el = document.getElementById('quran-fav-count');
+  if (!el) return;
+  const n = getFavourites().length;
+  el.textContent = n ? `(${n})` : '';
+}
+
+function openFavourites() {
+  document.getElementById('quran-home-view').style.display = 'none';
+  document.getElementById('quran-reader-view').style.display = 'none';
+  document.getElementById('quran-favourites-view').style.display = 'block';
+  renderFavourites();
+}
+
+function closeFavourites() {
+  document.getElementById('quran-favourites-view').style.display = 'none';
+  document.getElementById('quran-home-view').style.display = 'block';
+}
+
+function renderFavourites() {
+  const wrap = document.getElementById('quran-favourites-list');
+  if (!wrap) return;
+  const list = getFavourites();
+  if (!list.length) {
+    wrap.innerHTML = '<div class="fav-empty">No saved verses yet.<br>Tap the ♡ beside any verse while reading to save it here.</div>';
+    return;
+  }
+  wrap.innerHTML = list.map((f, i) => `
+    <div class="fav-item" onclick="gotoFavourite(${i})">
+      <div class="fav-item-ref">${f.surah}. ${escapeHtml(f.surahName)} &middot; Ayah ${f.ayah}</div>
+      <div class="fav-item-arabic${f.script === 'indopak' ? ' indopak' : ''}">${f.arabic || ''}</div>
+      <div class="fav-item-translation">${escapeHtml(f.translation || '')}</div>
+      <button class="fav-item-remove" onclick="removeFavourite(${i}, event)" aria-label="Remove from saved verses">✕</button>
+    </div>
+  `).join('');
+}
+
+function removeFavourite(index, ev) {
+  if (ev) ev.stopPropagation(); // don't also open the verse we're deleting
+  const list = getFavourites();
+  list.splice(index, 1);
+  saveFavourites(list);
+  renderFavourites();
+  updateFavIconsUI();
+}
+
+function gotoFavourite(index) {
+  const f = getFavourites()[index];
+  if (!f) return;
+  document.getElementById('quran-favourites-view').style.display = 'none';
+  document.getElementById('quran-home-view').style.display = 'block';
+  openSurah(f.surah, f.ayah);
+}
+
 // In-context "go to bookmark" shortcut in the reader header — lets Uthmani/
 // IndoPak jump straight to the bookmarked ayah without backing out to the
 // Quran home screen first (Mushaf mode already has its own equivalent: a
@@ -3993,6 +4145,7 @@ function setQuranScript(script) {
 
 function openSurah(number, scrollToAyah) {
   document.getElementById('quran-home-view').style.display = 'none';
+  document.getElementById('quran-favourites-view').style.display = 'none';
   const readerView = document.getElementById('quran-reader-view');
   readerView.style.display = 'block';
   _currentOpenSurah = number;
@@ -5127,6 +5280,7 @@ function buildAyahBlockHtml(surahData, a, arabicClass) {
       <button class="ayah-tafsir-toggle" onclick="toggleAyahTafsir(${surahData.number}, ${a.numberInSurah}, this)" aria-expanded="false" aria-label="Toggle tafsir">📖 Tafsir <span class="ayah-tafsir-chevron">▾</span></button>
       <div class="ayah-tafsir-body" id="tafsir-${surahData.number}-${a.numberInSurah}"></div>
       <button class="ayah-bookmark-btn" onclick="toggleAyahBookmark(${surahData.number}, ${a.numberInSurah}, '${safeName}')" aria-label="Bookmark this ayah">☆</button>
+      <button class="ayah-fav-btn" onclick="toggleAyahFavourite(${surahData.number}, ${a.numberInSurah}, '${safeName}', this)" aria-label="Save this verse">♡</button>
       <button class="ayah-play-btn" onclick="playAyahAudio(${surahData.number}, ${a.numberInSurah}, event)" aria-label="Play recitation and translation">▶</button>
     </div>
   `;
@@ -5263,6 +5417,7 @@ function renderContinuousPage(n, preserveAudio) {
       });
       content.innerHTML = html || '<div style="text-align:center;padding:20px;color:var(--color-text-tertiary);font-size:13px">No content found for this page.</div>';
       updateBookmarkIconsUI();
+      updateFavIconsUI();
       updateTranslitToggleUI();
       updateBoldToggleUI();
       updateQuranContinueReading();
@@ -5292,6 +5447,7 @@ function continuousGoPage(n) {
 function closeSurahReader() {
   if (typeof stopContinuousPlayback === 'function') stopContinuousPlayback();
   document.getElementById('quran-reader-view').style.display = 'none';
+  document.getElementById('quran-favourites-view').style.display = 'none';
   document.getElementById('quran-home-view').style.display = 'block';
   document.getElementById('quran-float-textsize').classList.remove('visible');
   _currentOpenSurah = null;
