@@ -162,7 +162,7 @@
      explicitly because this badge sits inside the Arabic block and would
      otherwise inherit Noore Hira, which maps ASCII 0-9 to Arabic-Indic glyphs
      -- that is why "122" was drawing as ١٢٢. */
-  .surah-ayah-num { display:inline-block; font-family:var(--font-sans); font-size:calc(13px * var(--quran-text-scale, 1)); font-weight:700; color:#ffffff; background:#117A65; border-radius:50%; width:calc(24px * var(--quran-text-scale, 1)); height:calc(24px * var(--quran-text-scale, 1)); text-align:center; line-height:calc(24px * var(--quran-text-scale, 1)); margin-left:6px; vertical-align:middle; }
+  .surah-ayah-num { display:inline-block; font-family:var(--font-sans); font-size:clamp(11px, calc(9px * var(--quran-text-scale, 1)), 16px); font-weight:700; color:#ffffff; background:#117A65; border-radius:50%; width:clamp(20px, calc(16px * var(--quran-text-scale, 1)), 28px); height:clamp(20px, calc(16px * var(--quran-text-scale, 1)), 28px); text-align:center; line-height:clamp(20px, calc(16px * var(--quran-text-scale, 1)), 28px); margin-left:6px; vertical-align:middle; }
   .sajda-mark { color:#B8860B; font-size:22px; margin:0 4px; }
   .surah-ayah-block.has-sajda { background:#FDF6E3; border-radius:8px; padding-left:8px; padding-right:8px; border-bottom-color:#B8860B; }
   .surah-bismillah-block { padding:10px 0 16px; text-align:center; border-bottom:1px solid var(--color-border-tertiary); }
