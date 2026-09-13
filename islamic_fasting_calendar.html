@@ -3240,7 +3240,10 @@ const EXPORT_EXACT_KEYS = [
   'hijri_offset', 'prayer_method', 'prayer_school', 'install_hijri_ym',
   'quran_bookmark', 'quran_bookmark_indopak', 'quran_bookmark_kahf', 'quran_mushaf_bookmark', 'quran_favourites',
   'quran_mushaf_last_page', 'quran_show_translit', 'quran_bold_arabic',
-  'quran_script_pref', 'quran_text_scale', 'quran_mushaf_text_scale'
+  'quran_script_pref', 'quran_text_scale', 'quran_mushaf_text_scale',
+  // Adkar tab preferences. Same class of thing as the Quran toggles above --
+  // real user settings, not caches -- so they belong in a restore.
+  'adkar_show_translit', 'adkar_text_scale'
 ];
 
 function exportFastingData() {
