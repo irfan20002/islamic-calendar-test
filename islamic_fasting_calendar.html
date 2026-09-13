@@ -482,7 +482,7 @@
      3:197 (qif), 83:14 (sakta). */
   @font-face {
     font-family: 'Quran IndoPak Heavy';
-    src: url('./fonts/NooreHiraIndoPak.woff2') format('woff2');
+    src: url('./fonts/NooreHiraIndoPak.woff2?v=2') format('woff2');
     font-display: block;
   }
   /* Mushaf (Madinah page-accurate) QCF4 fonts are NOT declared here — there are
@@ -3232,7 +3232,7 @@ function _setCountdownRight(html) {
 // re-fetched from the network rather than meaningful to back up.
 const EXPORT_EXACT_KEYS = [
   'hijri_offset', 'prayer_method', 'prayer_school', 'install_hijri_ym',
-  'quran_bookmark', 'quran_bookmark_kahf', 'quran_mushaf_bookmark', 'quran_favourites',
+  'quran_bookmark', 'quran_bookmark_indopak', 'quran_bookmark_kahf', 'quran_mushaf_bookmark', 'quran_favourites',
   'quran_mushaf_last_page', 'quran_show_translit', 'quran_bold_arabic',
   'quran_script_pref', 'quran_text_scale', 'quran_mushaf_text_scale'
 ];
@@ -3808,7 +3808,11 @@ function updateQuranContinueReading() {
 let _currentReaderContext = 'quran';
 
 function bookmarkKey() {
-  return _currentReaderContext === 'kahf' ? 'quran_bookmark_kahf' : 'quran_bookmark';
+  if (_currentReaderContext === 'kahf') return 'quran_bookmark_kahf';
+  // One bookmark per script. Uthmani keeps the original 'quran_bookmark' key so
+  // any existing bookmark survives and simply becomes the Uthmani one -- no
+  // migration needed. Mushaf already had its own separate key.
+  return _quranScript === 'indopak' ? 'quran_bookmark_indopak' : 'quran_bookmark';
 }
 
 function todayDateStr() {
@@ -3866,9 +3870,59 @@ function getFavourites() {
   } catch (e) { return []; }
 }
 
+// Caches this app can rebuild from the network, cheapest to re-fetch first.
+// Everything else in localStorage is either a preference, real user data, or
+// device state (push_device_id, notif_granted) and must never be evicted.
+const REFETCHABLE_CACHES = [
+  [/^quran_tafsir_/, /^quran_surah_\d+_/, /^prayer_\d/],   // small, per-item
+  ['quran_surah_list', 'quran_indopak_full', 'quran_translit_data_v1']  // whole-Quran blobs
+];
+
+function evictCacheTier(tier) {
+  const rules = REFETCHABLE_CACHES[tier];
+  const doomed = [];
+  // Collect first, delete after: removing while walking by index reshuffles
+  // the key order and would skip entries.
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k) continue;
+    if (rules.some(r => (typeof r === 'string' ? r === k : r.test(k)))) doomed.push(k);
+  }
+  let freed = 0;
+  for (const k of doomed) {
+    try { localStorage.removeItem(k); freed++; } catch (e) {}
+  }
+  return freed;
+}
+
 function saveFavourites(list) {
-  try { localStorage.setItem(FAV_KEY, JSON.stringify(list)); } catch (e) {}
+  // Saved verses are the only thing in localStorage the user can't get back by
+  // re-fetching, so when space runs out they win. A silent catch here is what
+  // made this look like "you can only save one verse": the first write fitted,
+  // every later one threw QuotaExceededError and was discarded with no error.
+  const payload = JSON.stringify(list);
+  for (let tier = -1; tier < REFETCHABLE_CACHES.length; tier++) {
+    if (tier >= 0) {
+      const freed = evictCacheTier(tier);
+      console.warn(`Saved verses: storage full, evicted ${freed} cached entries (tier ${tier}).`);
+      if (!freed) continue;  // nothing to reclaim at this tier, try the next
+    }
+    try {
+      localStorage.setItem(FAV_KEY, payload);
+      updateFavCount();
+      return true;
+    } catch (e) {
+      if (e && e.name && !/quota|QUOTA/i.test(e.name)) {
+        // Not a space problem -- private browsing, disabled storage, etc.
+        updateFavCount();
+        alert('This verse could not be saved: browser storage is unavailable.');
+        return false;
+      }
+    }
+  }
   updateFavCount();
+  alert('Storage is full and could not be freed, so this verse was not saved. Try removing a few saved verses.');
+  return false;
 }
 
 function isFavourite(surah, ayah) {
@@ -4150,6 +4204,10 @@ function setQuranScript(script) {
   } else {
     renderContinuousPage(mushafCurrentPage());
   }
+  // bookmarkKey() now depends on _quranScript, so anything reading a bookmark
+  // is showing the previous script's answer until it repaints.
+  updateGotoBookmarkBtn();
+  updateQuranContinueReading();
 }
 
 function openSurah(number, scrollToAyah) {
