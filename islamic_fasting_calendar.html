@@ -157,12 +157,13 @@
      Noore Hira carries ~20% more ink already, and at the old values the stroke
      closes up the counters and smears the harakat. */
   .quran-bold-arabic .surah-ayah-arabic { -webkit-text-stroke:0.5px currentColor; paint-order:stroke fill; text-shadow:0.35px 0 0 currentColor, -0.35px 0 0 currentColor, 0 0.35px 0 currentColor, 0 -0.35px 0 currentColor; }
-  /* Sized off --quran-text-scale like the verse text around it; fixed at 11px
-     it stayed tiny however far you scaled the Arabic up. font-family is set
+  /* Deliberately NOT scaled by --quran-text-scale. Tying it to the scale made
+     the badge grow with the Arabic and compete with it at high zoom; a constant
+     marker reads better against text of any size. font-family is set
      explicitly because this badge sits inside the Arabic block and would
      otherwise inherit Noore Hira, which maps ASCII 0-9 to Arabic-Indic glyphs
      -- that is why "122" was drawing as ١٢٢. */
-  .surah-ayah-num { display:inline-block; font-family:var(--font-sans); font-size:clamp(11px, calc(9px * var(--quran-text-scale, 1)), 16px); font-weight:700; color:#ffffff; background:#117A65; border-radius:50%; width:clamp(20px, calc(16px * var(--quran-text-scale, 1)), 28px); height:clamp(20px, calc(16px * var(--quran-text-scale, 1)), 28px); text-align:center; line-height:clamp(20px, calc(16px * var(--quran-text-scale, 1)), 28px); margin-left:6px; vertical-align:middle; }
+  .surah-ayah-num { display:inline-block; font-family:var(--font-sans); font-size:11px; font-weight:700; color:#ffffff; background:#117A65; border-radius:50%; width:20px; height:20px; text-align:center; line-height:20px; margin-left:6px; vertical-align:middle; }
   .sajda-mark { color:#B8860B; font-size:22px; margin:0 4px; }
   .surah-ayah-block.has-sajda { background:#FDF6E3; border-radius:8px; padding-left:8px; padding-right:8px; border-bottom-color:#B8860B; }
   .surah-bismillah-block { padding:10px 0 16px; text-align:center; border-bottom:1px solid var(--color-border-tertiary); }
